@@ -958,3 +958,12 @@
 
 /* ==== STAT SPARK REMOVAL (cleaner look) ==== */
 .stat-spark { display: none; }
+.loginUsername {
+    margin-bottom: 12px;
+}
+.loginPassword {
+    margin-bottom: 12px;
+    margin-top: 12px;
+    margin-bottom: 24px;
+    margin-top: 24px;
+}
