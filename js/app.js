@@ -1,11 +1,11 @@
 const API = {
     async getCars() {
-        const res = await fetch("/api/cars");
+        const res = await fetch("/api/products.php");
         if (!res.ok) throw new Error("Không tải được danh sách xe");
         return res.json();
     },
     async createBooking(data) {
-        const res = await fetch("/api/bookings", {
+        const res = await fetch("/api/orders.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
@@ -15,10 +15,10 @@ const API = {
         return body;
     },
     async lookupBookings({ email, phone }) {
-        const qs = new URLSearchParams();
+        const qs = new URLSearchParams({ action: "lookup" });
         if (email) qs.set("email", email);
         if (phone) qs.set("phone", phone);
-        const res = await fetch(`/api/bookings/lookup?${qs.toString()}`);
+        const res = await fetch(`/api/orders.php?${qs.toString()}`);
         if (!res.ok) throw new Error((await res.json()).error || "Lỗi tra cứu");
         return res.json();
     }
@@ -73,6 +73,16 @@ async function loadCars() {
     }
 }
 
+function carImageBlock(car, extraClass = "") {
+    const type = (car.type || "").toLowerCase();
+    const img = (car.image || "").trim();
+    const tag = car.featured ? '<span class="car-tag">Được yêu thích</span>' : "";
+    if (img) {
+        return `<div class="car-image has-photo ${extraClass}">${tag}<img src="${img}" alt="${car.name || "Xe"}" /></div>`;
+    }
+    return `<div class="car-image ${type} ${extraClass}">${tag}</div>`;
+}
+
 function renderCars() {
     const location = $("#locationFilter").value;
     const sort = $("#sortCars").value;
@@ -87,9 +97,7 @@ function renderCars() {
 
     $("#carGrid").innerHTML = result.map(car => `
     <article class="car-card">
-      <div class="car-image ${(car.type || "").toLowerCase()}">
-        ${car.featured ? '<span class="car-tag">Được yêu thích</span>' : ""}
-      </div>
+      ${carImageBlock(car)}
       <div class="car-info">
         <div class="car-name-row">
           <span class="car-name">${car.name}</span>
@@ -125,7 +133,7 @@ function openBooking(carId) {
 
     $("#bookingContent").innerHTML = `
     <div class="booking-head">
-      <div class="car-image ${(car.type || "").toLowerCase()}"></div>
+      ${carImageBlock(car)}
       <div><h2>${car.name}</h2><p>${car.brand} · ${car.type} · ${car.seats} chỗ</p></div>
     </div>
     <form id="bookingForm">

@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="car-rental-app-admin.css" />
+    <link rel="stylesheet" href="/css/admin.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
@@ -41,10 +41,11 @@
     </div>
 
     <div id="adminAppWrapper" class="hidden">
-        <aside class="sidebar">
+        <aside class="sidebar" id="adminSidebar">
             <div class="admin-brand">
                 <span class="logo">G</span>
                 <span>Go<span>Ride</span></span>
+                <button type="button" class="sidebar-close" id="sidebarClose" aria-label="Đóng menu">×</button>
             </div>
 
             <div class="admin-profile">
@@ -83,6 +84,8 @@
                 <button class="logout-btn" id="logoutBtn">⇥ Đăng xuất</button>
             </div>
         </aside>
+
+        <div class="sidebar-overlay" id="sidebarOverlay" hidden></div>
 
         <main class="main-content">
             <header class="topbar">
@@ -290,6 +293,20 @@
             <h2 id="carModalTitle">Thêm xe mới</h2>
             <form id="carForm">
                 <input type="hidden" id="carId" />
+                <input type="hidden" id="carImage" />
+                <div class="car-image-editor">
+                    <div class="car-image-preview" id="carImagePreview">
+                        <span id="carImagePlaceholder">Chưa có ảnh</span>
+                        <img id="carImagePreviewImg" alt="Ảnh xe" hidden />
+                    </div>
+                    <div class="car-image-actions">
+                        <label>Link ảnh xe
+                            <input type="url" id="carImageUrl" placeholder="https://example.com/car.jpg" />
+                        </label>
+                        <button type="button" class="btn btn-outline full" id="carImageClearBtn">Xóa ảnh</button>
+                        <p class="car-image-hint">Dán URL ảnh (JPG, PNG, WEBP…)</p>
+                    </div>
+                </div>
                 <label>Tên xe <input id="carName" required placeholder="Toyota Camry" /></label>
                 <label>Hãng xe <input id="carBrand" required placeholder="Toyota" /></label>
                 <label>Loại xe
@@ -302,7 +319,7 @@
                 <label>Số chỗ <input id="carSeats" required type="number" min="2" value="5" /></label>
                 <label>Giá thuê/ngày <input id="carPrice" required type="number" min="0" /></label>
                 <label>Địa điểm <input id="carLocation" required value="Hà Nội" /></label>
-                <button class="btn btn-primary full" type="submit">Lưu thông tin</button>
+                <button class="btn btn-primary full" type="submit" id="carSaveBtn">Lưu thông tin</button>
             </form>
         </div>
     </div>
@@ -335,7 +352,7 @@
         </div>
     </div>
 
-    <script src="car-rental-app-admin.js"></script>
+    <script src="/js/admin.js"></script>
 </body>
 
 </html>

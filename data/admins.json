@@ -4,7 +4,7 @@
     "username": "admin",
     "name": "Administrator",
     "email": "admin@goride.vn",
-    "passwordHash": "$2a$10$Nm11/FXPOUaEEfSxbe2HyuMkiixx7Vck2y9f4Iy7kzu3i/fuq7f/q",
+    "passwordHash": "$2y$10$aNkZnurWmVv7SUDo4g5o0.gn5WiQiXkl3bxsrMW/rcB61Hb4aZcPG",
     "createdAt": "2026-09-19T07:19:32.158Z"
   }
 ]

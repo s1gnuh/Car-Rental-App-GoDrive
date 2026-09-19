@@ -1,4 +1,4 @@
-const TOKEN_KEY = "goride_admin_token";
+﻿const TOKEN_KEY = "goride_admin_token";
 const CURRENT_ADMIN_KEY = "goride_admin_info";
 
 let cars = [];
@@ -44,6 +44,39 @@ async function api(path, opts = {}) {
     return body;
 }
 
+function carThumbHtml(car, extraClass = "") {
+    const type = (car.type || "").toLowerCase();
+    const img = (car.image || "").trim();
+    if (img) {
+        return `<div class="fleet-car-image has-photo ${extraClass}"><img src="${img}" alt="${car.name || "Xe"}" /></div>`;
+    }
+    return `<div class="fleet-car-image ${type} ${extraClass}"></div>`;
+}
+
+function setCarImagePreview(src) {
+    const img = $("#carImagePreviewImg");
+    const placeholder = $("#carImagePlaceholder");
+    const box = $("#carImagePreview");
+    if (!img || !placeholder || !box) return;
+    if (src) {
+        img.src = src;
+        img.hidden = false;
+        placeholder.hidden = true;
+        box.classList.add("has-photo");
+    } else {
+        img.removeAttribute("src");
+        img.hidden = true;
+        placeholder.hidden = false;
+        box.classList.remove("has-photo");
+    }
+}
+
+function resetCarImageFields() {
+    if ($("#carImage")) $("#carImage").value = "";
+    if ($("#carImageUrl")) $("#carImageUrl").value = "";
+    setCarImagePreview("");
+}
+
 function statusLabel(s) {
     return {
         pending: "Chờ duyệt", confirmed: "Đã xác nhận", cancelled: "Đã hủy",
@@ -73,7 +106,7 @@ function showApp() {
 }
 
 async function login(username, password) {
-    const res = await fetch("/api/admin/login", {
+    const res = await fetch("/api/login.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password })
@@ -138,12 +171,12 @@ async function afterLoginInit() {
 async function loadAllData() {
     try {
         const [c, b, cu, p, m, a] = await Promise.all([
-            api("/api/admin/cars"),
-            api("/api/admin/bookings"),
-            api("/api/admin/customers"),
-            api("/api/admin/payments"),
-            api("/api/admin/maintenance"),
-            api("/api/admin/admins")
+            api("/api/products.php"),
+            api("/api/orders.php"),
+            api("/api/users.php"),
+            api("/api/users.php?action=payments"),
+            api("/api/users.php?action=maintenance"),
+            api("/api/login.php?action=admins")
         ]);
         cars = c; bookings = b; customers = cu; payments = p; maintenance = m; admins = a;
     } catch (err) {
@@ -257,7 +290,7 @@ function renderFleet() {
     const box = $("#fleetCards"); if (!box) return;
     box.innerHTML = res.map(c => `
         <article class="fleet-car-card">
-            <div class="fleet-car-image ${(c.type || "").toLowerCase()}"></div>
+            ${carThumbHtml(c)}
             <h3>${c.name}</h3>
             <p>${c.brand} · ${c.type} · ${c.seats} chỗ · ${c.location}</p>
             <div class="car-card-row">
@@ -421,7 +454,7 @@ function renderMaintenancePage() {
         if (!cars.length) return showToast("Chưa có xe trong hệ thống.");
         const car = cars[0];
         try {
-            const m = await api("/api/admin/maintenance", { method: "POST", body: JSON.stringify({
+            const m = await api("/api/users.php?action=maintenance", { method: "POST", body: JSON.stringify({
                 carId: car.id, carName: car.name, type: "Bảo dưỡng định kỳ",
                 cost: 500000, startDate: new Date().toISOString().slice(0, 10),
                 endDate: new Date().toISOString().slice(0, 10), status: "scheduled", note: "Được tạo từ dashboard"
@@ -465,19 +498,19 @@ function renderEverything() {
 
 /* ===== ACTIONS ===== */
 window.confirmBooking = async (id) => {
-    try { const b = await api(`/api/admin/bookings/${id}`, { method: "PATCH", body: JSON.stringify({ status: "confirmed" }) });
+    try { const b = await api(`/api/orders.php?id=${id}`, { method: "PATCH", body: JSON.stringify({ status: "confirmed" }) });
         const idx = bookings.findIndex(x => x.id === id); if (idx >= 0) bookings[idx] = b;
         renderEverything(); showToast("Đã xác nhận đơn.");
     } catch (e) { showToast(e.message); }
 };
 window.cancelBooking = async (id) => {
-    try { const b = await api(`/api/admin/bookings/${id}`, { method: "PATCH", body: JSON.stringify({ status: "cancelled" }) });
+    try { const b = await api(`/api/orders.php?id=${id}`, { method: "PATCH", body: JSON.stringify({ status: "cancelled" }) });
         const idx = bookings.findIndex(x => x.id === id); if (idx >= 0) bookings[idx] = b;
         renderEverything(); showToast("Đã hủy đơn.");
     } catch (e) { showToast(e.message); }
 };
 window.markRented = async (id) => {
-    try { await api(`/api/admin/bookings/${id}/mark-rented`, { method: "POST" });
+    try { await api(`/api/orders.php?action=mark-rented&id=${id}`, { method: "PATCH" });
         const idx = bookings.findIndex(b => b.id === id); if (idx >= 0) {
             const c = cars.find(c => c.id === bookings[idx].carId);
             if (c) c.status = "rented";
@@ -489,7 +522,7 @@ window.changeCarStatus = async (id) => {
     const car = cars.find(c => c.id === id); if (!car) return;
     const list = ["available", "rented", "maintenance"];
     const next = list[(list.indexOf(car.status) + 1) % list.length];
-    try { const c = await api(`/api/admin/cars/${id}/change-status`, { method: "PATCH", body: JSON.stringify({ status: next }) });
+    try { const c = await api(`/api/products.php?action=status&id=${id}`, { method: "PATCH", body: JSON.stringify({ status: next }) });
         const idx = cars.findIndex(x => x.id === id); if (idx >= 0) cars[idx] = c;
         renderEverything(); showToast(`Xe chuyển sang ${statusLabel(next)}`);
     } catch (e) { showToast(e.message); }
@@ -500,16 +533,20 @@ window.editCar = (id) => {
     $("#carId").value = car.id; $("#carName").value = car.name; $("#carBrand").value = car.brand;
     $("#carType").value = car.type || "Sedan"; $("#carSeats").value = car.seats || 5;
     $("#carPrice").value = car.price || 0; $("#carLocation").value = car.location || "Hà Nội";
+    const image = (car.image || "").trim();
+    $("#carImage").value = image;
+    $("#carImageUrl").value = image;
+    setCarImagePreview(image);
     $("#carModal").classList.remove("hidden");
 };
 window.deleteCar = async (id) => {
     if (!confirm("Bạn có chắc muốn xóa xe này?")) return;
-    try { await api(`/api/admin/cars/${id}`, { method: "DELETE" });
+    try { await api(`/api/products.php?id=${id}`, { method: "DELETE" });
         cars = cars.filter(c => c.id !== id); renderEverything(); showToast("Đã xóa xe.");
     } catch (e) { showToast(e.message); }
 };
 window.updateMaint = async (id, st) => {
-    try { const m = await api(`/api/admin/maintenance/${id}`, { method: "PATCH", body: JSON.stringify({ status: st }) });
+    try { const m = await api(`/api/users.php?action=maintenance&id=${id}`, { method: "PATCH", body: JSON.stringify({ status: st }) });
         const idx = maintenance.findIndex(x => x.id === id); if (idx >= 0) maintenance[idx] = m;
         if (m.carId) {
             const cIdx = cars.findIndex(c => c.id === m.carId);
@@ -523,13 +560,13 @@ window.updateMaint = async (id, st) => {
 };
 window.deleteMaint = async (id) => {
     if (!confirm("Xóa lịch bảo trì này?")) return;
-    try { await api(`/api/admin/maintenance/${id}`, { method: "DELETE" });
+    try { await api(`/api/users.php?action=maintenance&id=${id}`, { method: "DELETE" });
         maintenance = maintenance.filter(m => m.id !== id); renderEverything(); showToast("Đã xóa lịch bảo trì.");
     } catch (e) { showToast(e.message); }
 };
 window.deleteAdmin = async (id) => {
     if (!confirm("Bạn có chắc muốn xóa admin này?")) return;
-    try { await api(`/api/admin/admins/${id}`, { method: "DELETE" });
+    try { await api(`/api/login.php?action=admins&id=${id}`, { method: "DELETE" });
         admins = admins.filter(a => Number(a.id) !== Number(id)); renderAdminsList(); showToast("Đã xóa admin.");
     } catch (e) { showToast(e.message); }
 };
@@ -538,26 +575,45 @@ window.deleteAdmin = async (id) => {
 $("#addCarBtn")?.addEventListener("click", () => {
     $("#carModalTitle").textContent = "Thêm xe mới";
     $("#carForm").reset(); $("#carId").value = ""; $("#carSeats").value = 5; $("#carLocation").value = "Hà Nội";
+    resetCarImageFields();
     $("#carModal").classList.remove("hidden");
 });
+
+$("#carImageUrl")?.addEventListener("input", () => {
+    const url = $("#carImageUrl").value.trim();
+    $("#carImage").value = url;
+    setCarImagePreview(url);
+});
+
+$("#carImageClearBtn")?.addEventListener("click", () => {
+    resetCarImageFields();
+});
+
 $("#carForm")?.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const data = {
-        name: $("#carName").value, brand: $("#carBrand").value, type: $("#carType").value,
-        seats: Number($("#carSeats").value), price: Number($("#carPrice").value), location: $("#carLocation").value
-    };
-    const id = $("#carId").value;
+    const btn = $("#carSaveBtn");
+    if (btn) { btn.disabled = true; btn.textContent = "Đang lưu..."; }
     try {
+        const image = ($("#carImageUrl").value || $("#carImage").value || "").trim();
+        const data = {
+            name: $("#carName").value, brand: $("#carBrand").value, type: $("#carType").value,
+            seats: Number($("#carSeats").value), price: Number($("#carPrice").value),
+            location: $("#carLocation").value, image
+        };
+        const id = $("#carId").value;
         if (id) {
-            const c = await api(`/api/admin/cars/${id}`, { method: "PUT", body: JSON.stringify(data) });
+            const c = await api(`/api/products.php?id=${id}`, { method: "PUT", body: JSON.stringify(data) });
             const idx = cars.findIndex(x => x.id === c.id); if (idx >= 0) cars[idx] = c;
             showToast("Đã cập nhật xe.");
         } else {
-            const c = await api("/api/admin/cars", { method: "POST", body: JSON.stringify(data) });
+            const c = await api("/api/products.php", { method: "POST", body: JSON.stringify(data) });
             cars.push(c); showToast("Đã thêm xe mới.");
         }
         $("#carModal").classList.add("hidden"); renderEverything();
-    } catch (e) { showToast(e.message); }
+    } catch (err) { showToast(err.message); }
+    finally {
+        if (btn) { btn.disabled = false; btn.textContent = "Lưu thông tin"; }
+    }
 });
 
 /* ===== CHANGE PASSWORD ===== */
@@ -570,7 +626,7 @@ $("#changePwdForm")?.addEventListener("submit", async (e) => {
     if (newP.length < 6) return showToast("Mật khẩu mới ít nhất 6 ký tự");
     if (newP !== newP2) return showToast("Xác nhận mật khẩu không khớp");
     try {
-        await api("/api/admin/change-password", { method: "POST", body: JSON.stringify({ oldPassword: oldP, newPassword: newP }) });
+        await api("/api/login.php?action=change-password", { method: "POST", body: JSON.stringify({ oldPassword: oldP, newPassword: newP }) });
         $("#changePwdModal").classList.add("hidden");
         showToast("Đổi mật khẩu thành công.");
     } catch (e) { showToast(e.message); }
@@ -584,7 +640,7 @@ $("#newAdminForm")?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const data = { name: $("#a_name").value.trim(), username: $("#a_user").value.trim(), email: ($("#a_email").value || "").trim(), password: $("#a_pwd").value };
     try {
-        const a = await api("/api/admin/admins", { method: "POST", body: JSON.stringify(data) });
+        const a = await api("/api/login.php?action=admins", { method: "POST", body: JSON.stringify(data) });
         admins.push(a);
         $("#newAdminForm").reset();
         renderAdminsList();
@@ -593,6 +649,43 @@ $("#newAdminForm")?.addEventListener("submit", async (e) => {
 });
 
 /* ===== NAV ===== */
+function isMobileSidebar() {
+    return window.matchMedia("(max-width: 750px)").matches;
+}
+
+function openSidebar() {
+    const sidebar = $("#adminSidebar") || $(".sidebar");
+    const overlay = $("#sidebarOverlay");
+    if (!sidebar) return;
+    sidebar.classList.add("open");
+    if (overlay) {
+        overlay.hidden = false;
+        requestAnimationFrame(() => overlay.classList.add("show"));
+    }
+    document.body.style.overflow = isMobileSidebar() ? "hidden" : "";
+}
+
+function closeSidebar() {
+    const sidebar = $("#adminSidebar") || $(".sidebar");
+    const overlay = $("#sidebarOverlay");
+    if (!sidebar) return;
+    sidebar.classList.remove("open");
+    if (overlay) {
+        overlay.classList.remove("show");
+        const hide = () => { if (!overlay.classList.contains("show")) overlay.hidden = true; };
+        overlay.addEventListener("transitionend", hide, { once: true });
+        setTimeout(hide, 300);
+    }
+    document.body.style.overflow = "";
+}
+
+function toggleSidebar() {
+    const sidebar = $("#adminSidebar") || $(".sidebar");
+    if (!sidebar) return;
+    if (sidebar.classList.contains("open")) closeSidebar();
+    else openSidebar();
+}
+
 function openPage(name) {
     $$(".page").forEach(p => p.classList.remove("page-active"));
     $$(".side-link").forEach(l => l.classList.remove("active"));
@@ -606,6 +699,7 @@ function openPage(name) {
     if (name === "customers") renderCustomers();
     if (name === "payments") renderPayments();
     if (name === "maintenance") renderMaintenancePage();
+    closeSidebar();
 }
 $$(".side-link").forEach(l => l.addEventListener("click", () => openPage(l.dataset.page)));
 $$("[data-go]").forEach(b => b.addEventListener("click", () => openPage(b.dataset.go)));
@@ -616,7 +710,15 @@ $("#bookingSearch")?.addEventListener("input", renderAllBookings);
 $("#bookingStatusFilter")?.addEventListener("change", renderAllBookings);
 $("#fleetSearch")?.addEventListener("input", renderFleet);
 $("#fleetStatusFilter")?.addEventListener("change", renderFleet);
-$("#mobileMenu")?.addEventListener("click", () => $(".sidebar").classList.toggle("open"));
+$("#mobileMenu")?.addEventListener("click", toggleSidebar);
+$("#sidebarClose")?.addEventListener("click", closeSidebar);
+$("#sidebarOverlay")?.addEventListener("click", closeSidebar);
+document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeSidebar();
+});
+window.addEventListener("resize", () => {
+    if (!isMobileSidebar()) closeSidebar();
+});
 $$("[data-close]").forEach(b => b.addEventListener("click", () => $(`#${b.dataset.close}`).classList.add("hidden")));
 window.addEventListener("click", e => { if (e.target.classList.contains("modal")) e.target.classList.add("hidden"); });
 $("#logoutBtn")?.addEventListener("click", () => { logout(); showToast("Đã đăng xuất."); });
@@ -632,7 +734,7 @@ $("#exportBookings")?.addEventListener("click", () => {
 (async function boot() {
     if (!getToken()) { showLogin(); return; }
     try {
-        currentAdmin = await api("/api/admin/me");
+        currentAdmin = await api("/api/login.php?action=me");
         localStorage.setItem(CURRENT_ADMIN_KEY, JSON.stringify(currentAdmin));
         showApp();
         await afterLoginInit();
