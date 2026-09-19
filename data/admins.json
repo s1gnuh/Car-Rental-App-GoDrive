@@ -1,0 +1,10 @@
+[
+  {
+    "id": 1,
+    "username": "admin",
+    "name": "Administrator",
+    "email": "admin@goride.vn",
+    "passwordHash": "$2a$10$awFCXBcy8r4cFiwpIp82l.hqg7c8J6u3qO23QsCKh2KigDGGIurPK",
+    "createdAt": "2026-09-19T07:19:32.158Z"
+  }
+]

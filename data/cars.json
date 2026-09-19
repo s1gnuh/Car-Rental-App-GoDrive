@@ -1,0 +1,98 @@
+[
+  {
+    "id": 1,
+    "name": "Toyota Camry",
+    "brand": "Toyota",
+    "type": "Sedan",
+    "seats": 5,
+    "price": 850000,
+    "location": "Hà Nội",
+    "status": "available",
+    "rating": 4.9,
+    "featured": true
+  },
+  {
+    "id": 2,
+    "name": "Mazda CX-5",
+    "brand": "Mazda",
+    "type": "SUV",
+    "seats": 5,
+    "price": 950000,
+    "location": "TP. Hồ Chí Minh",
+    "status": "rented",
+    "rating": 4.8,
+    "featured": true
+  },
+  {
+    "id": 3,
+    "name": "Honda City",
+    "brand": "Honda",
+    "type": "Sedan",
+    "seats": 5,
+    "price": 650000,
+    "location": "Đà Nẵng",
+    "status": "available",
+    "rating": 4.7,
+    "featured": false
+  },
+  {
+    "id": 4,
+    "name": "VinFast VF 8",
+    "brand": "VinFast",
+    "type": "SUV",
+    "seats": 5,
+    "price": 1100000,
+    "location": "Hà Nội",
+    "status": "maintenance",
+    "rating": 4.9,
+    "featured": true
+  },
+  {
+    "id": 5,
+    "name": "Hyundai Grand i10",
+    "brand": "Hyundai",
+    "type": "Hatchback",
+    "seats": 5,
+    "price": 500000,
+    "location": "TP. Hồ Chí Minh",
+    "status": "available",
+    "rating": 4.6,
+    "featured": false
+  },
+  {
+    "id": 6,
+    "name": "Kia Seltos",
+    "brand": "Kia",
+    "type": "SUV",
+    "seats": 5,
+    "price": 780000,
+    "location": "Đà Nẵng",
+    "status": "available",
+    "rating": 4.8,
+    "featured": true
+  },
+  {
+    "id": 7,
+    "name": "Toyota Vios",
+    "brand": "Toyota",
+    "type": "Sedan",
+    "seats": 5,
+    "price": 600000,
+    "location": "Hà Nội",
+    "status": "available",
+    "rating": 4.7,
+    "featured": false
+  },
+  {
+    "id": 8,
+    "name": "Honda Brio",
+    "brand": "Honda",
+    "type": "Hatchback",
+    "seats": 5,
+    "price": 480000,
+    "location": "TP. Hồ Chí Minh",
+    "status": "available",
+    "rating": 4.6,
+    "featured": false
+  }
+]

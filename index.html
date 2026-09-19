@@ -29,14 +29,8 @@
       </nav>
 
       <div class="nav-actions">
-        <button class="btn btn-light" id="loginBtn">Đăng nhập</button>
-        <button class="btn btn-primary" id="registerBtn">Đăng ký</button>
-        <div class="user-menu hidden" id="userMenu">
-          <span id="userName"></span>
-          <button class="btn btn-light" id="myBookingsBtn">Đơn của tôi</button>
-          <button class="btn btn-outline hidden" id="adminDashboardBtn">Dashboard</button>
-          <button class="btn btn-outline" id="logoutBtn">Đăng xuất</button>
-        </div>
+        <button class="btn btn-light" id="lookupBtn">Tra cứu đơn</button>
+        <a href="/admin" class="btn btn-outline">Admin</a>
       </div>
 
       <button class="menu-toggle" id="menuToggle">☰</button>
@@ -49,7 +43,7 @@
         <div class="hero-content">
           <span class="eyebrow">THUÊ XE DỄ DÀNG · DI CHUYỂN TỰ DO</span>
           <h1>Khám phá hành trình<br><span>theo cách của bạn</span></h1>
-          <p>Đặt chiếc xe phù hợp trong vài phút. Nhanh chóng, minh bạch và luôn sẵn sàng đồng hành cùng bạn.</p>
+          <p>Đặt chiếc xe phù hợp trong vài phút. Không cần tài khoản, nhanh chóng & minh bạch.</p>
           <div class="hero-buttons">
             <a href="#cars" class="btn btn-primary btn-large">Tìm xe ngay <span>→</span></a>
             <a href="#about" class="btn btn-white btn-large">Tìm hiểu thêm</a>
@@ -87,7 +81,7 @@
             <span class="search-icon">⌕</span>
             <div>
               <h3>Tìm chiếc xe phù hợp</h3>
-              <p>Chọn thông tin chuyến đi của bạn</p>
+              <p>Chọn thông tin chuyến đi của bạn (không cần đăng ký)</p>
             </div>
           </div>
 
@@ -149,8 +143,8 @@
         <div class="feature-grid">
           <article class="feature-card">
             <div class="feature-icon purple">⌁</div>
-            <h3>Đặt xe nhanh chóng</h3>
-            <p>Chỉ vài thao tác đơn giản, bạn đã có ngay chiếc xe cho hành trình của mình.</p>
+            <h3>Không cần tài khoản</h3>
+            <p>Chỉ cần nhập thông tin liên lạc. Đơn giản, nhanh chóng trong 30 giây.</p>
           </article>
           <article class="feature-card">
             <div class="feature-icon orange">▣</div>
@@ -185,7 +179,7 @@
         <h4>Khám phá</h4><a href="#cars">Tìm xe</a><a href="#about">Về chúng tôi</a>
       </div>
       <div>
-        <h4>Hỗ trợ</h4><a href="#contact">Trung tâm trợ giúp</a><a href="#contact">Liên hệ</a>
+        <h4>Hỗ trợ</h4><a href="#" id="footerLookupBtn">Tra cứu đơn</a><a href="#contact">Liên hệ</a>
       </div>
       <div>
         <h4>Liên hệ</h4>
@@ -196,23 +190,6 @@
     <div class="copyright">© 2024 GoRide. Bản quyền thuộc về GoRide.</div>
   </footer>
 
-  <div class="modal hidden" id="authModal">
-    <div class="modal-box">
-      <button class="modal-close" data-close="authModal">×</button>
-      <div class="modal-logo"><span class="brand-icon">G</span>
-        <h2 id="authTitle">Chào mừng trở lại</h2>
-        <p id="authSubtitle">Đăng nhập để tiếp tục</p>
-      </div>
-      <form id="authForm">
-        <label>Họ và tên<input type="text" id="authName" placeholder="Nguyễn Văn A"></label>
-        <label>Email<input type="email" id="authEmail" placeholder="email@example.com" required></label>
-        <label>Mật khẩu<input type="password" id="authPassword" placeholder="••••••••" required></label>
-        <button class="btn btn-primary full" type="submit" id="authSubmit">Đăng nhập</button>
-      </form>
-      <p class="switch-auth" id="switchAuth">Chưa có tài khoản? <button type="button">Đăng ký ngay</button></p>
-    </div>
-  </div>
-
   <div class="modal hidden" id="bookingModal">
     <div class="modal-box booking-modal">
       <button class="modal-close" data-close="bookingModal">×</button>
@@ -220,11 +197,21 @@
     </div>
   </div>
 
-  <div class="modal hidden" id="myBookingsModal">
-    <div class="modal-box wide">
-      <button class="modal-close" data-close="myBookingsModal">×</button>
-      <h2>Đơn đặt xe của tôi</h2>
-      <div id="myBookingsList"></div>
+  <div class="modal hidden" id="lookupModal">
+    <div class="modal-box">
+      <button class="modal-close" data-close="lookupModal">×</button>
+      <div class="modal-logo">
+        <span class="brand-icon">⌕</span>
+        <h2>Tra cứu đơn đặt xe</h2>
+        <p>Nhập Email hoặc Số điện thoại đã dùng khi đặt</p>
+      </div>
+      <form id="lookupForm">
+        <label>Email<input type="email" id="lookupEmail" placeholder="email@example.com"></label>
+        <div style="text-align:center;margin:6px 0;color:#aaa;font-size:12px">— HOẶC —</div>
+        <label>Số điện thoại<input type="text" id="lookupPhone" placeholder="0912 345 678"></label>
+        <button class="btn btn-primary full" type="submit">Xem đơn của tôi</button>
+      </form>
+      <div id="lookupResults" style="margin-top:16px"></div>
     </div>
   </div>
 

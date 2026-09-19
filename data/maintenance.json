@@ -1,0 +1,46 @@
+[
+  {
+    "id": 701,
+    "carId": 4,
+    "carName": "VinFast VF 8",
+    "type": "Bảo dưỡng định kỳ 10.000km",
+    "cost": 1200000,
+    "startDate": "2026-09-18",
+    "endDate": "2026-09-20",
+    "status": "in_progress",
+    "note": "Thay dầu, kiểm tra phanh và lọc gió"
+  },
+  {
+    "id": 702,
+    "carId": 7,
+    "carName": "Toyota Vios",
+    "type": "Sửa chữa lốp xe",
+    "cost": 1800000,
+    "startDate": "2026-09-10",
+    "endDate": "2026-09-11",
+    "status": "completed",
+    "note": "Thay 2 lốp trước mới Bridgestone"
+  },
+  {
+    "id": 703,
+    "carId": 2,
+    "carName": "Mazda CX-5",
+    "type": "Kiểm tra tổng quát",
+    "cost": 500000,
+    "startDate": "2026-09-25",
+    "endDate": "2026-09-25",
+    "status": "scheduled",
+    "note": "Kiểm tra trước chuyến đi dài"
+  },
+  {
+    "id": 704,
+    "carId": 5,
+    "carName": "Hyundai Grand i10",
+    "type": "Bảo dưỡng 20.000km",
+    "cost": 1650000,
+    "startDate": "2026-10-02",
+    "endDate": "2026-10-03",
+    "status": "scheduled",
+    "note": "Thay dầu máy, lọc dầu, lọc gió"
+  }
+]

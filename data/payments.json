@@ -1,0 +1,52 @@
+[
+  {
+    "id": 9001,
+    "bookingId": 10002,
+    "customerName": "Trần Hoàng Nam",
+    "amount": 1900000,
+    "method": "Chuyển khoản",
+    "status": "paid",
+    "paidAt": "2026-09-18 14:22",
+    "txnCode": "TXN-20260918-1A2B"
+  },
+  {
+    "id": 9002,
+    "bookingId": 10003,
+    "customerName": "Lê Thu Hà",
+    "amount": 650000,
+    "method": "Thẻ tín dụng",
+    "status": "refunded",
+    "paidAt": "2026-09-15 09:11",
+    "txnCode": "TXN-20260915-3C4D"
+  },
+  {
+    "id": 9003,
+    "bookingId": 10001,
+    "customerName": "Nguyễn Minh Anh",
+    "amount": 1700000,
+    "method": "COD",
+    "status": "pending",
+    "paidAt": "",
+    "txnCode": "TXN-20260917-5E6F"
+  },
+  {
+    "id": 9004,
+    "bookingId": 0,
+    "customerName": "Phạm Quốc Bảo",
+    "amount": 5400000,
+    "method": "Ví MoMo",
+    "status": "paid",
+    "paidAt": "2026-09-10 16:45",
+    "txnCode": "TXN-20260910-7G8H"
+  },
+  {
+    "id": 9005,
+    "bookingId": 0,
+    "customerName": "Nguyễn Văn Khánh",
+    "amount": 2550000,
+    "method": "Chuyển khoản",
+    "status": "paid",
+    "paidAt": "2026-09-05 10:02",
+    "txnCode": "TXN-20260905-9I0J"
+  }
+]
