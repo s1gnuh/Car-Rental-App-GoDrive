@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GoRide Admin Dashboard</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="car-rental-app-admin.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+</head>
+
+<body>
+    <div id="toast"></div>
+
+    <aside class="sidebar">
+        <div class="admin-brand">
+            <span class="logo">G</span>
+            <span>Go<span>Ride</span></span>
+        </div>
+
+        <div class="admin-profile">
+            <div class="profile-avatar">AD</div>
+            <div>
+                <strong>Admin GoRide</strong>
+                <small>Quản trị viên</small>
+            </div>
+        </div>
+
+        <nav class="side-nav">
+            <button class="side-link active" data-page="dashboard">
+                <span>▦</span> Tổng quan
+            </button>
+            <button class="side-link" data-page="bookings">
+                <span>▤</span> Quản lý đơn
+            </button>
+            <button class="side-link" data-page="fleet">
+                <span>▱</span> Đội xe
+            </button>
+            <button class="side-link" data-page="customers">
+                <span>♙</span> Khách hàng
+            </button>
+            <button class="side-link" data-page="payments">
+                <span>₫</span> Thanh toán
+            </button>
+            <button class="side-link" data-page="maintenance">
+                <span>⚙</span> Bảo trì
+            </button>
+        </nav>
+
+        <div class="sidebar-bottom">
+            <a href="index.html" class="back-site">← Về trang khách hàng</a>
+            <button class="logout-btn" id="logoutBtn">⇥ Đăng xuất</button>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div>
+                <button class="mobile-menu" id="mobileMenu">☰</button>
+                <h1 id="pageTitle">Tổng quan</h1>
+                <p id="pageSubtitle">Theo dõi hoạt động kinh doanh của bạn</p>
+            </div>
+
+            <div class="topbar-actions">
+                <div class="live-status">
+                    <span class="live-dot"></span>
+                    <span id="connectionText">Đang đồng bộ</span>
+                </div>
+                <button class="icon-btn" id="notificationBtn">♧<span class="notification-count">3</span></button>
+                <div class="top-avatar">AD</div>
+            </div>
+        </header>
+
+        <section class="page page-active" id="dashboardPage">
+            <div class="page-toolbar">
+                <div>
+                    <span class="last-update">Cập nhật lần cuối: <strong id="lastUpdated">vừa xong</strong></span>
+                </div>
+                <button class="btn btn-primary" id="refreshBtn">↻ Làm mới</button>
+            </div>
+
+            <div class="stat-grid">
+                <div class="stat-card purple-card">
+                    <div class="stat-icon">₫</div>
+                    <span>Doanh thu tháng</span>
+                    <strong id="revenueStat">0 ₫</strong>
+                    <small class="positive">↑ 12.5% so với tháng trước</small>
+                    <div class="stat-spark purple-spark"></div>
+                </div>
+
+                <div class="stat-card blue-card">
+                    <div class="stat-icon">▤</div>
+                    <span>Tổng đơn đặt xe</span>
+                    <strong id="bookingStat">0</strong>
+                    <small class="positive">↑ 8.4% so với tháng trước</small>
+                    <div class="stat-spark blue-spark"></div>
+                </div>
+
+                <div class="stat-card orange-card">
+                    <div class="stat-icon">▱</div>
+                    <span>Xe đang cho thuê</span>
+                    <strong id="rentedStat">0</strong>
+                    <small id="fleetDetail">Trên tổng số 0 xe</small>
+                    <div class="stat-spark orange-spark"></div>
+                </div>
+
+                <div class="stat-card green-card">
+                    <div class="stat-icon">♙</div>
+                    <span>Khách hàng mới</span>
+                    <strong id="customerStat">128</strong>
+                    <small class="positive">↑ 8.2% so với tháng trước</small>
+                    <div class="stat-spark green-spark"></div>
+                </div>
+            </div>
+
+            <div class="chart-grid">
+                <div class="panel revenue-panel">
+                    <div class="panel-header">
+                        <div>
+                            <h2>Doanh thu</h2>
+                            <p>Thống kê doanh thu trong 7 ngày gần nhất</p>
+                        </div>
+                        <select id="revenueRange">
+                            <option value="7">7 ngày qua</option>
+                            <option value="30">30 ngày qua</option>
+                        </select>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="panel status-panel">
+                    <div class="panel-header">
+                        <div>
+                            <h2>Trạng thái đơn</h2>
+                            <p>Cập nhật theo thời gian thực</p>
+                        </div>
+                    </div>
+                    <div class="donut-wrapper">
+                        <canvas id="bookingStatusChart"></canvas>
+                        <div class="donut-center">
+                            <strong id="totalBookingCenter">0</strong>
+                            <span>Tổng đơn</span>
+                        </div>
+                    </div>
+                    <div class="legend" id="bookingLegend"></div>
+                </div>
+            </div>
+
+            <div class="bottom-grid">
+                <div class="panel">
+                    <div class="panel-header">
+                        <div>
+                            <h2>Đơn đặt xe gần đây</h2>
+                            <p>Các đơn mới nhất trong hệ thống</p>
+                        </div>
+                        <button class="text-btn" data-go="bookings">Xem tất cả →</button>
+                    </div>
+                    <div class="table-scroll">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Mã đơn</th>
+                                    <th>Khách hàng</th>
+                                    <th>Xe</th>
+                                    <th>Ngày thuê</th>
+                                    <th>Tổng tiền</th>
+                                    <th>Trạng thái</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentBookings"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <div>
+                            <h2>Tình trạng đội xe</h2>
+                            <p>Cập nhật trực tiếp</p>
+                        </div>
+                        <button class="text-btn" data-go="fleet">Quản lý →</button>
+                    </div>
+                    <div class="fleet-summary">
+                        <div class="fleet-circle">
+                            <span id="availablePercent">0%</span>
+                            <small>xe sẵn sàng</small>
+                        </div>
+                        <div class="fleet-list">
+                            <div><i class="dot available-dot"></i><span>Đang rảnh</span><strong
+                                    id="availableCount">0</strong></div>
+                            <div><i class="dot rented-dot"></i><span>Đang thuê</span><strong id="rentedCount">0</strong>
+                            </div>
+                            <div><i class="dot maintenance-dot"></i><span>Bảo trì</span><strong
+                                    id="maintenanceCount">0</strong></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="page" id="bookingsPage">
+            <div class="page-toolbar">
+                <div class="filter-group">
+                    <input type="search" id="bookingSearch" placeholder="Tìm theo mã đơn, khách hàng..." />
+                    <select id="bookingStatusFilter">
+                        <option value="all">Tất cả trạng thái</option>
+                        <option value="pending">Chờ duyệt</option>
+                        <option value="confirmed">Đã xác nhận</option>
+                        <option value="cancelled">Đã hủy</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" id="exportBookings">↓ Xuất báo cáo</button>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <div>
+                        <h2>Tất cả đơn đặt xe</h2>
+                        <p id="bookingResultCount">0 đơn</p>
+                    </div>
+                    <span class="realtime-label"><span class="live-dot"></span> Live</span>
+                </div>
+                <div class="table-scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Mã đơn</th>
+                                <th>Khách hàng</th>
+                                <th>Xe</th>
+                                <th>Thời gian</th>
+                                <th>Tổng tiền</th>
+                                <th>Trạng thái</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="allBookings"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section class="page" id="fleetPage">
+            <div class="page-toolbar">
+                <div class="filter-group">
+                    <input type="search" id="fleetSearch" placeholder="Tìm xe..." />
+                    <select id="fleetStatusFilter">
+                        <option value="all">Tất cả trạng thái</option>
+                        <option value="available">Rảnh</option>
+                        <option value="rented">Đã thuê</option>
+                        <option value="maintenance">Bảo trì</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" id="addCarBtn">+ Thêm xe</button>
+            </div>
+
+            <div class="fleet-card-grid" id="fleetCards"></div>
+        </section>
+
+        <section class="page" id="customersPage">
+            <div class="panel empty-panel">
+                <div class="empty-icon">♙</div>
+                <h2>Quản lý khách hàng</h2>
+                <p>Danh sách khách hàng sẽ được tải từ API MySQL.</p>
+            </div>
+        </section>
+
+        <section class="page" id="paymentsPage">
+            <div class="panel empty-panel">
+                <div class="empty-icon">₫</div>
+                <h2>Quản lý thanh toán</h2>
+                <p>Dữ liệu thanh toán sẽ được đồng bộ từ bảng payments.</p>
+            </div>
+        </section>
+
+        <section class="page" id="maintenancePage">
+            <div class="panel empty-panel">
+                <div class="empty-icon">⚙</div>
+                <h2>Quản lý bảo trì</h2>
+                <p>Dữ liệu bảo trì sẽ được đồng bộ từ bảng maintenance.</p>
+            </div>
+        </section>
+    </main>
+
+    <div class="modal hidden" id="carModal">
+        <div class="modal-box">
+            <button class="modal-close" data-close="carModal">×</button>
+            <h2 id="carModalTitle">Thêm xe mới</h2>
+
+            <form id="carForm">
+                <input type="hidden" id="carId" />
+
+                <label>Tên xe
+                    <input id="carName" required placeholder="Toyota Camry" />
+                </label>
+
+                <label>Hãng xe
+                    <input id="carBrand" required placeholder="Toyota" />
+                </label>
+
+                <label>Loại xe
+                    <select id="carType">
+                        <option value="Sedan">Sedan</option>
+                        <option value="SUV">SUV</option>
+                        <option value="Hatchback">Hatchback</option>
+                    </select>
+                </label>
+
+                <label>Số chỗ
+                    <input id="carSeats" required type="number" min="2" value="5" />
+                </label>
+
+                <label>Giá thuê/ngày
+                    <input id="carPrice" required type="number" min="0" />
+                </label>
+
+                <label>Địa điểm
+                    <input id="carLocation" required value="Hà Nội" />
+                </label>
+
+                <button class="btn btn-primary full" type="submit">Lưu thông tin</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="car-rental-app-admin.js"></script>
+</body>
+
+</html>

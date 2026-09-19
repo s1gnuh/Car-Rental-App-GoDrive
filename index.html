@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GoDriver - Đặt xe dễ dàng</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="car-rental-app.css" />
+</head>
+
+<body>
+  <div id="toast"></div>
+
+  <header class="navbar">
+    <div class="container nav-inner">
+      <a href="#home" class="brand">
+        <span class="brand-icon">G</span>
+        <span>Go<span>Ride</span></span>
+      </a>
+
+      <nav class="nav-links">
+        <a href="#home">Trang chủ</a>
+        <a href="#cars">Tìm xe</a>
+        <a href="#about">Về chúng tôi</a>
+        <a href="#contact">Liên hệ</a>
+      </nav>
+
+      <div class="nav-actions">
+        <button class="btn btn-light" id="loginBtn">Đăng nhập</button>
+        <button class="btn btn-primary" id="registerBtn">Đăng ký</button>
+        <div class="user-menu hidden" id="userMenu">
+          <span id="userName"></span>
+          <button class="btn btn-light" id="myBookingsBtn">Đơn của tôi</button>
+          <button class="btn btn-outline hidden" id="adminDashboardBtn">Dashboard</button>
+          <button class="btn btn-outline" id="logoutBtn">Đăng xuất</button>
+        </div>
+      </div>
+
+      <button class="menu-toggle" id="menuToggle">☰</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" id="home">
+      <div class="container hero-grid">
+        <div class="hero-content">
+          <span class="eyebrow">THUÊ XE DỄ DÀNG · DI CHUYỂN TỰ DO</span>
+          <h1>Khám phá hành trình<br><span>theo cách của bạn</span></h1>
+          <p>Đặt chiếc xe phù hợp trong vài phút. Nhanh chóng, minh bạch và luôn sẵn sàng đồng hành cùng bạn.</p>
+          <div class="hero-buttons">
+            <a href="#cars" class="btn btn-primary btn-large">Tìm xe ngay <span>→</span></a>
+            <a href="#about" class="btn btn-white btn-large">Tìm hiểu thêm</a>
+          </div>
+        </div>
+
+        <div class="hero-visual">
+          <div class="hero-circle"></div>
+          <div class="floating-card floating-top">
+            <span class="float-icon green">✓</span>
+            <div><strong>Đặt xe thành công</strong><small>Vừa xong</small></div>
+          </div>
+          <div class="car-illustration">
+            <div class="car-shadow"></div>
+            <div class="car-body">
+              <div class="car-window window-left"></div>
+              <div class="car-window window-right"></div>
+              <div class="car-wheel wheel-left"></div>
+              <div class="car-wheel wheel-right"></div>
+              <div class="car-light"></div>
+            </div>
+          </div>
+          <div class="floating-card floating-bottom">
+            <span class="float-icon orange">★</span>
+            <div><strong>4.9/5</strong><small>Đánh giá trung bình</small></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="search-section" id="search">
+      <div class="container">
+        <div class="search-box">
+          <div class="search-heading">
+            <span class="search-icon">⌕</span>
+            <div>
+              <h3>Tìm chiếc xe phù hợp</h3>
+              <p>Chọn thông tin chuyến đi của bạn</p>
+            </div>
+          </div>
+
+          <div class="search-fields">
+            <label>
+              <span>Địa điểm nhận xe</span>
+              <select id="locationFilter">
+                <option value="">Tất cả địa điểm</option>
+                <option value="Hà Nội">Hà Nội</option>
+                <option value="TP. Hồ Chí Minh">TP. Hồ Chí Minh</option>
+                <option value="Đà Nẵng">Đà Nẵng</option>
+              </select>
+            </label>
+            <label>
+              <span>Ngày nhận xe</span>
+              <input type="date" id="startDate">
+            </label>
+            <label>
+              <span>Ngày trả xe</span>
+              <input type="date" id="endDate">
+            </label>
+            <button class="btn btn-primary search-button" id="searchBtn">Tìm xe <span>→</span></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="cars">
+      <div class="container">
+        <div class="section-heading">
+          <div><span class="eyebrow">LỰA CHỌN HÀNG ĐẦU</span>
+            <h2>Xe được yêu thích</h2>
+          </div>
+          <a href="#cars" class="view-all">Xem tất cả <span>→</span></a>
+        </div>
+
+        <div class="filter-row">
+          <button class="filter-chip active" data-filter="all">Tất cả</button>
+          <button class="filter-chip" data-filter="Sedan">Sedan</button>
+          <button class="filter-chip" data-filter="SUV">SUV</button>
+          <button class="filter-chip" data-filter="Hatchback">Hatchback</button>
+          <select class="sort-select" id="sortCars">
+            <option value="featured">Nổi bật nhất</option>
+            <option value="low">Giá thấp đến cao</option>
+            <option value="high">Giá cao đến thấp</option>
+          </select>
+        </div>
+
+        <div class="car-grid" id="carGrid"></div>
+        <div class="empty-state hidden" id="emptyCars">Không tìm thấy xe phù hợp.</div>
+      </div>
+    </section>
+
+    <section class="features-section" id="about">
+      <div class="container">
+        <div class="center-heading"><span class="eyebrow">VÌ SAO CHỌN GoDrive?</span>
+          <h2>Trải nghiệm thuê xe<br><span>khác biệt</span></h2>
+        </div>
+        <div class="feature-grid">
+          <article class="feature-card">
+            <div class="feature-icon purple">⌁</div>
+            <h3>Đặt xe nhanh chóng</h3>
+            <p>Chỉ vài thao tác đơn giản, bạn đã có ngay chiếc xe cho hành trình của mình.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon orange">▣</div>
+            <h3>Giá cả minh bạch</h3>
+            <p>Không phí ẩn. Biết chính xác bạn sẽ trả bao nhiêu trước khi xác nhận.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon green">♧</div>
+            <h3>Hỗ trợ tận tâm</h3>
+            <p>Đội ngũ GoDrive luôn sẵn sàng hỗ trợ bạn 24/7 trong suốt chuyến đi.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta-section" id="contact">
+      <div class="container cta-box">
+        <div><span class="eyebrow light">SẴN SÀNG CHO HÀNH TRÌNH?</span>
+          <h2>Bắt đầu chuyến đi<br>của bạn hôm nay</h2>
+        </div>
+        <a href="#cars" class="btn btn-white btn-large">Tìm xe ngay <span>→</span></a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-grid">
+      <div><a href="#home" class="brand"><span class="brand-icon">G</span><span>Go<span>Ride</span></span></a>
+        <p>Đồng hành cùng bạn trên mọi hành trình.</p>
+      </div>
+      <div>
+        <h4>Khám phá</h4><a href="#cars">Tìm xe</a><a href="#about">Về chúng tôi</a>
+      </div>
+      <div>
+        <h4>Hỗ trợ</h4><a href="#contact">Trung tâm trợ giúp</a><a href="#contact">Liên hệ</a>
+      </div>
+      <div>
+        <h4>Liên hệ</h4>
+        <p>support@goride.vn</p>
+        <p>1900 1234</p>
+      </div>
+    </div>
+    <div class="copyright">© 2024 GoRide. Bản quyền thuộc về GoRide.</div>
+  </footer>
+
+  <div class="modal hidden" id="authModal">
+    <div class="modal-box">
+      <button class="modal-close" data-close="authModal">×</button>
+      <div class="modal-logo"><span class="brand-icon">G</span>
+        <h2 id="authTitle">Chào mừng trở lại</h2>
+        <p id="authSubtitle">Đăng nhập để tiếp tục</p>
+      </div>
+      <form id="authForm">
+        <label>Họ và tên<input type="text" id="authName" placeholder="Nguyễn Văn A"></label>
+        <label>Email<input type="email" id="authEmail" placeholder="email@example.com" required></label>
+        <label>Mật khẩu<input type="password" id="authPassword" placeholder="••••••••" required></label>
+        <button class="btn btn-primary full" type="submit" id="authSubmit">Đăng nhập</button>
+      </form>
+      <p class="switch-auth" id="switchAuth">Chưa có tài khoản? <button type="button">Đăng ký ngay</button></p>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="bookingModal">
+    <div class="modal-box booking-modal">
+      <button class="modal-close" data-close="bookingModal">×</button>
+      <div id="bookingContent"></div>
+    </div>
+  </div>
+
+  <div class="modal hidden" id="myBookingsModal">
+    <div class="modal-box wide">
+      <button class="modal-close" data-close="myBookingsModal">×</button>
+      <h2>Đơn đặt xe của tôi</h2>
+      <div id="myBookingsList"></div>
+    </div>
+  </div>
+
+  <script src="car-rental-app.js"></script>
+</body>
+
+</html>
