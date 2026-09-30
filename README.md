@@ -1,77 +1,63 @@
-# GoRide — Ứng dụng thuê xe
+# 🚗 GoDrive — Ứng dụng thuê xe
 
-Website thuê xe GoRide: trang khách đặt xe không cần tài khoản, kèm bảng điều khiển admin.
+GoRide là website thuê xe gồm **trang khách** (đặt xe không cần tài khoản) và **bảng điều khiển admin** để quản lý toàn bộ hoạt động. Dự án viết bằng HTML, CSS, JavaScript thuần và PHP, lưu dữ liệu vào file JSON nên không cần database hay Node.js. Có thể chạy trên hosting miễn phí như InfinityFree.
 
-## Tính năng
+## ✨ Tính năng
 
-- **Khách hàng:** xem xe, lọc/sắp xếp, đặt xe, tra cứu đơn theo email/SĐT
-- **Admin:** đăng nhập, quản lý đơn/xe/khách hàng/thanh toán/bảo trì, đổi mật khẩu, tạo admin
-- **Ảnh xe:** gắn bằng URL ảnh (không upload file)
+**Khách hàng**
+- Xem danh sách xe, lọc theo loại (Sedan / SUV / Hatchback) và địa điểm, sắp xếp theo giá hoặc độ nổi bật
+- Đặt xe chỉ với họ tên, số điện thoại và email; tự tính tổng tiền theo số ngày
+- Tự động chặn đặt trùng lịch trên cùng một xe
+- Tra cứu trạng thái đơn bằng email hoặc số điện thoại
 
-## Cấu trúc (InfinityFree)
+**Admin** (`/admin`)
+- Đăng nhập bằng token, đổi mật khẩu, tạo/xóa tài khoản admin
+- Dashboard thống kê với biểu đồ doanh thu và trạng thái đơn
+- Quản lý đơn đặt xe (duyệt / hủy), đội xe (thêm / sửa / xóa, ảnh xe bằng URL), khách hàng, thanh toán (xuất CSV) và lịch bảo trì
+- Trạng thái xe tự cập nhật theo đơn và lịch bảo trì (`available` → `rented` / `maintenance`)
+
+## 🗂️ Cấu trúc
 
 ```
-├── index.html          # Trang khách
-├── admin.html          # Trang admin (/admin)
-├── .htaccess
-├── router.php          # Chỉ dùng khi chạy local bằng PHP built-in server
-├── css/
-│   ├── style.css
-│   └── admin.css
-├── js/
-│   ├── app.js
-│   └── admin.js
-├── api/
-│   ├── login.php       # Đăng nhập / admin
-│   ├── products.php    # Xe
-│   ├── orders.php      # Đơn đặt xe
-│   └── users.php       # Khách hàng, thanh toán, bảo trì
-└── data/               # JSON lưu dữ liệu
+├── index.html / admin.html   # Trang khách / trang admin
+├── css/  js/                 # Giao diện và logic phía client
+├── api/                      # login, products, orders, users (PHP)
+├── data/                     # Dữ liệu JSON (bị chặn truy cập trực tiếp qua .htaccess)
+├── .htaccess                 # Rewrite /admin, chặn thư mục data
+└── router.php                # Chỉ dùng khi chạy local
 ```
 
-## Chạy local
+## 🚀 Chạy local
 
-Cần [PHP 8+](https://www.php.net/downloads).
+Yêu cầu [PHP 8+](https://www.php.net/downloads).
 
 ```bash
 php -S localhost:8080 router.php
 ```
 
-- Trang chủ: http://localhost:8080/
+- Trang khách: http://localhost:8080/
 - Admin: http://localhost:8080/admin
 
-**Tài khoản admin mặc định:** `admin` / `admin123` — hãy đổi mật khẩu sau khi chạy.
+Tài khoản mặc định: `admin` / `admin123`. **Hãy đổi mật khẩu ngay sau lần đăng nhập đầu tiên.**
 
-> Không dùng Live Server / mở file HTML trực tiếp: API PHP sẽ không hoạt động.
+> Không mở file HTML trực tiếp hoặc dùng Live Server vì API PHP sẽ không hoạt động.
 
-## Deploy InfinityFree
 
-1. Tạo hosting + subdomain trên [InfinityFree](https://www.infinityfree.com)
-2. Upload toàn bộ project vào thư mục **`htdocs`** (có thể bỏ `router.php`)
-3. Xóa file mặc định trong `htdocs` nếu có
-4. Cấp quyền ghi cho thư mục **`data/`** (755 hoặc 777)
-5. Truy cập:
-   - `https://ten-mien.infinityfreeapp.com/`
-   - `https://ten-mien.infinityfreeapp.com/admin`
+## 🔐 Lưu ý bảo mật trước khi đưa lên production
 
-### Checklist sau khi upload
+- Đổi `JWT_SECRET` trong `api/_helpers.php` và không commit secret thật lên GitHub.
+- Đổi mật khẩu admin mặc định và không để hash mật khẩu thật trong repo công khai.
+- Kiểm tra `data/.htaccess` đã hoạt động (truy cập `/data/admins.json` phải bị từ chối)
 
-- [ ] Có `.htaccess`, `index.html`, `admin.html`, `api/`, `css/`, `js/`, `data/`
-- [ ] Trang chủ hiện danh sách xe
-- [ ] Đăng nhập `/admin` thành công
-- [ ] Đổi mật khẩu admin
+## 🔌 API tóm tắt
 
-## API (tóm tắt)
-
-| File | Vai trò |
-|------|---------|
-| `api/login.php` | Login, me, đổi mật khẩu, quản lý admin |
+| Endpoint | Chức năng |
+|---|---|
+| `api/login.php` | Đăng nhập, thông tin admin, đổi mật khẩu, quản lý admin |
 | `api/products.php` | CRUD xe (GET công khai) |
-| `api/orders.php` | Đặt xe, tra cứu, duyệt đơn |
-| `api/users.php` | Khách hàng, payments, bảo trì |
+| `api/orders.php` | Đặt xe, tra cứu, duyệt/hủy đơn |
+| `api/users.php` | Khách hàng, thanh toán, bảo trì |
 
-Dữ liệu lưu trong `data/*.json`. Thư mục `data/` bị chặn truy cập trực tiếp qua web (`.htaccess`).
+## 🛠️ Công nghệ
 
-## Công nghệ
-
-HTML · CSS · JavaScript · PHP (JSON file storage) — phù hợp hosting InfinityFree, không cần Node.js hay database.
+HTML · CSS · JavaScript · PHP (lưu trữ JSON)
