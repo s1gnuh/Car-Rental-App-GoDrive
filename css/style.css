@@ -3637,3 +3637,20 @@ footer .brand:hover {
     width: 94%;
   }
 }
+
+/* Tình trạng thanh toán trong kết quả tra cứu */
+.pay-line b {
+  font-weight: 600;
+}
+
+.pay-line.pay-paid b {
+  color: var(--green);
+}
+
+.pay-line.pay-pending b {
+  color: var(--pending-text);
+}
+
+.pay-line.pay-refunded b {
+  color: var(--muted);
+}

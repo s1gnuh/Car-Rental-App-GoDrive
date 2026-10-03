@@ -8,28 +8,40 @@ $method = method();
 $action = action();
 
 if ($method === "GET" && $action === "lookup") {
-    // Khách không có tài khoản nên phải khớp CẢ email lẫn số điện thoại của cùng một đơn,
-    // tránh việc chỉ cần biết một thông tin là xem được đơn của người khác.
-    $email = clean_str($_GET["email"] ?? "", 150);
-    $phone = clean_str($_GET["phone"] ?? "", 20);
-    if ($email === "" || $phone === "") fail("Cần nhập cả email và số điện thoại đã dùng khi đặt");
+    // Tra cứu theo email đã dùng khi đặt (không phân biệt hoa thường)
+    $email = strtolower(clean_str($_GET["email"] ?? "", 150));
+    if ($email === "") fail("Vui lòng nhập email đã dùng khi đặt");
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) fail("Email không hợp lệ");
 
-    $phoneNorm = preg_replace("/[\s.()-]+/", "", $phone);
     $bookings = read_json($bookingsFile);
-    $result = array_values(array_filter($bookings, function ($b) use ($email, $phoneNorm) {
-        $matchEmail = isset($b["customerEmail"])
-            && strtolower($b["customerEmail"]) === strtolower($email);
-        $matchPhone = isset($b["customerPhone"])
-            && preg_replace("/[\s.()-]+/", "", $b["customerPhone"]) === $phoneNorm;
-        return $matchEmail && $matchPhone;
-    }));
+    $result = array_values(array_filter($bookings, fn($b) =>
+        isset($b["customerEmail"]) && strtolower(trim($b["customerEmail"])) === $email));
     usort($result, fn($a, $b) => (int)$b["id"] - (int)$a["id"]);
+
+    // Gắn tình trạng thanh toán (đã đồng bộ với đơn) để khách biết đơn đã trả tiền hay chưa.
+    // Chỉ tính trong bộ nhớ, không ghi file vì đây là yêu cầu công khai.
+    if ($result) {
+        [$synced] = sync_payments(read_json("payments.json"), $bookings);
+        $payOf = [];
+        foreach ($synced as $p) {
+            $key = (string)($p["bookingId"] ?? "");
+            // Ưu tiên giao dịch còn hiệu lực (chờ thu / đã thu) hơn giao dịch đã hoàn tiền
+            if (!isset($payOf[$key]) || ($payOf[$key]["status"] ?? "") === "refunded") $payOf[$key] = $p;
+        }
+        foreach ($result as &$r) {
+            $p = $payOf[(string)$r["id"]] ?? null;
+            $st = $r["status"] ?? "";
+            if ($st === "pending" || ($p && $st === "cancelled" && ($p["status"] ?? "") !== "refunded")) $p = null;
+            $r["payment"] = $p ? ["method" => $p["method"] ?? "", "status" => $p["status"] ?? "", "amount" => (int)($p["amount"] ?? 0)] : null;
+        }
+        unset($r);
+    }
 
     // Thông tin hạng thành viên: chỉ trả về khi email + số điện thoại đã khớp ít nhất một đơn
     $member = null;
     if ($result) {
         $ranked = customers_with_rank(read_json($customersFile));
-        $idx = find_customer_index($ranked, $email, $phone);
+        $idx = find_customer_index($ranked, $email, "");
         if ($idx >= 0) {
             $c = $ranked[$idx];
             $member = [
@@ -198,6 +210,7 @@ if ($method === "PATCH") {
         ];
         if ($pi >= 0) {
             $payments[$pi] = array_merge($payments[$pi], $record);
+            unset($payments[$pi]["amountEdited"]);
             $payment = $payments[$pi];
         } else {
             $payment = array_merge(["id" => next_id($payments), "txnCode" => txn_code()], $record);

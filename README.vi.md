@@ -78,7 +78,7 @@ Dữ liệu lưu trong file JSON nên không cần database. Chạy được tr�
 - Tra cứu đơn để xem **hạng thành viên** (Đồng → Kim cương) và tổng tiền đã thuê
 - Đặt xe **không cần tạo tài khoản**, tổng tiền tự tính theo số ngày thuê
 - Tự động **chặn đặt trùng lịch** trên cùng một xe
-- Tra cứu trạng thái đơn bằng **email và số điện thoại** đã dùng khi đặt
+- Tra cứu đơn chỉ cần **email (Gmail)** đã dùng khi đặt, xem được cả tình trạng thanh toán
 - Ghi nhớ thông tin liên hệ cho lần đặt sau
 - **Song ngữ Việt - Anh** và **chế độ sáng/tối** (lần đầu tự theo cài đặt của máy)
 
@@ -161,7 +161,7 @@ Mở trình duyệt:
 ### Tra cứu đơn đã đặt
 
 1. Bấm **Tra cứu đơn** trên thanh menu, hoặc ở chân trang.
-2. Nhập **đúng email và số điện thoại** đã dùng khi đặt. Cần cả hai thông tin để bảo vệ đơn của bạn.
+2. Nhập **email (Gmail)** đã dùng khi đặt xe.
 3. Bấm **Xem đơn của tôi** để xem danh sách đơn, ngày thuê, tổng tiền và trạng thái: *Chờ xác nhận*, *Đã xác nhận* hoặc *Đã hủy*.
 
 ### Đổi ngôn ngữ và giao diện
@@ -213,7 +213,7 @@ Khách hàng được tự động thêm vào danh sách khi đặt xe lần đ�
 
 ### Thanh toán
 
-Số liệu thanh toán **bắt đầu từ lúc duyệt đơn**: admin chọn hình thức thanh toán và cho biết đã thu tiền hay chưa. Trang hiển thị tổng đã thu, chờ thanh toán, đã hoàn tiền, cơ cấu theo hình thức thanh toán và lịch sử giao dịch. Khách trả tiền sau thì bấm **Xác nhận đã thu**. Hủy đơn đã thu tiền thì giao dịch tự chuyển sang hoàn tiền. Phiên bản hiện tại chưa tích hợp cổng thanh toán online.
+Số liệu thanh toán **bắt đầu từ lúc duyệt đơn**: admin chọn hình thức thanh toán và cho biết đã thu tiền hay chưa. Trang hiển thị tổng đã thu, chờ thanh toán, đã hoàn tiền, cơ cấu theo hình thức thanh toán và lịch sử giao dịch. Khách trả tiền sau thì bấm **Xác nhận đã thu**, hoặc bấm **Sửa** để đổi hình thức, trạng thái, số tiền, thời điểm thu và ghi chú. Tên khách, tên xe và số tiền tự đồng bộ theo đơn (trừ khi số tiền đã được sửa tay); đơn đã duyệt từ trước sẽ có giao dịch chờ bổ sung hình thức. Hủy đơn đã thu tiền thì giao dịch tự chuyển sang hoàn tiền. Phiên bản hiện tại chưa tích hợp cổng thanh toán online.
 
 ### Bảo trì
 
@@ -301,7 +301,7 @@ Số liệu thanh toán **bắt đầu từ lúc duyệt đơn**: admin chọn h
 | `api/products.php` | GET | Danh sách xe | Không |
 | `api/products.php` | POST / PUT / PATCH / DELETE | Thêm, sửa, đổi trạng thái, xóa xe | Có |
 | `api/orders.php` | POST | Khách đặt xe | Không |
-| `api/orders.php?action=lookup` | GET | Tra cứu đơn (cần cả email và số điện thoại) | Không |
+| `api/orders.php?action=lookup` | GET | Tra cứu đơn theo email | Không |
 | `api/orders.php` | GET / PATCH | Xem tất cả đơn, duyệt/hủy/bàn giao | Có |
 | `api/login.php` | POST | Đăng nhập, nhận token | Không |
 | `api/login.php?action=...` | GET / POST / DELETE | Thông tin admin, đổi mật khẩu, quản lý admin | Có |

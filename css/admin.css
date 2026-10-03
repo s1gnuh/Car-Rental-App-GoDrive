@@ -2957,3 +2957,106 @@ tbody tr.clickable {
     text-align: left;
   }
 }
+
+/* ---------- Sửa giao dịch / đồng bộ với đơn ---------- */
+.seg.seg-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.seg-btn[data-pay-status="refunded"].active {
+  color: var(--violet);
+}
+
+.link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--primary);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.link-btn:hover {
+  text-decoration: underline;
+}
+
+.link-btn .i {
+  width: 14px;
+  height: 14px;
+}
+
+.approve-who .link-btn {
+  margin-top: 4px;
+}
+
+.detail-row .link-btn {
+  margin-left: 6px;
+}
+
+.method-chip.warn {
+  color: var(--orange);
+  font-weight: 600;
+}
+
+.method-chip.warn .i {
+  color: var(--orange);
+}
+
+.page-note.warn {
+  color: var(--orange);
+  background: var(--orange-50);
+  border-color: rgba(217, 122, 11, .25);
+}
+
+.page-note.warn .i {
+  color: var(--orange);
+}
+
+.cell-sub.edited {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-decoration: line-through;
+}
+
+.cell-sub.edited .i {
+  width: 12px;
+  height: 12px;
+}
+
+#paymentAmountHint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: -4px 0 12px;
+  font-size: 12.5px;
+  color: var(--green);
+}
+
+#paymentAmountHint.warn {
+  color: var(--orange);
+}
+
+#paymentAmountHint .i {
+  width: 14px;
+  height: 14px;
+}
+
+#paymentPaidAt:disabled {
+  opacity: .5;
+}
+
+.link-btn.cell-sub {
+  display: flex;
+  margin-top: 2px;
+}
+
+.method-ico.warn {
+  color: var(--orange);
+  background: var(--orange-50);
+}

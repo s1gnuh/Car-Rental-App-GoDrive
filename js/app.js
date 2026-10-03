@@ -102,7 +102,7 @@ const EN_STATIC = {
     "faq.q2": "When will my booking be confirmed?",
     "faq.a2": "New bookings are \"Pending\". A GoDrive staff member will call the phone number you entered to confirm.",
     "faq.q3": "How can I view my booking?",
-    "faq.a3": "Click \"Track booking\" and enter the email and phone number you used. Both are required to protect your booking.",
+    "faq.a3": "Click \"Track booking\" and enter the email (Gmail) you used when booking.",
     "faq.q4": "How is the price calculated?",
     "faq.a4": "Total = daily rate × number of rental days. The amount is shown clearly before you confirm.",
     "cta.eyebrow": "Ready to go?",
@@ -120,7 +120,7 @@ const EN_STATIC = {
     "close": "Close",
     "booking.aria": "Book a car",
     "lookup.title": "Track your booking",
-    "lookup.desc": "Enter both the email and phone number you used",
+    "lookup.desc": "Enter the email (Gmail) you used when booking",
     "form.phone": "Phone number",
     "lookup.btn": "View my bookings",
     "help.open": "How to use",
@@ -193,7 +193,7 @@ const STR = {
     trackBooking: ["Tra cứu đơn", "Track booking"],
     done: ["Xong", "Done"],
     bookedToast: ["Đặt xe thành công! Mã đơn #{id}", "Booking successful! Code #{id}"],
-    lookupNeedBoth: ["Vui lòng nhập cả Email và Số điện thoại", "Please enter both email and phone number"],
+    lookupNeedEmail: ["Vui lòng nhập email đã dùng khi đặt", "Please enter the email you used to book"],
     lookupNone: ["Không tìm thấy đơn đặt xe nào khớp với thông tin này.", "No bookings match this information."],
     lookupFound: ["Tìm thấy {n} đơn", "Found {n} booking(s)"],
     errorPrefix: ["Lỗi: ", "Error: "],
@@ -215,7 +215,7 @@ const STR = {
     h3t: ["Chờ GoDrive xác nhận", "Wait for confirmation"],
     h3d: ["Nhân viên sẽ gọi điện xác nhận đơn. Bạn chưa phải thanh toán khi đặt.", "Our staff will call you to confirm. No payment is needed when booking."],
     h4t: ["Tra cứu đơn bất cứ lúc nào", "Track your booking anytime"],
-    h4d: ["Bấm \"Tra cứu đơn\" và nhập đúng email cùng số điện thoại đã dùng khi đặt.", "Click \"Track booking\" and enter the email and phone number you used."],
+    h4d: ["Bấm \"Tra cứu đơn\" và nhập email (Gmail) đã dùng khi đặt.", "Click \"Track booking\" and enter the email (Gmail) you used to book."],
     tipLang: ["Nút 🌐 đổi ngôn ngữ Việt/Anh, nút ☀/🌙 đổi giao diện sáng/tối.", "Use 🌐 to switch Vietnamese/English and ☀/🌙 for light/dark mode."],
     tipRefresh: ["Trang hiển thị lạ sau khi website cập nhật?", "Page looks odd after a website update?"],
     tipHotline: ["Cần hỗ trợ? Gọi", "Need help? Call"],
@@ -242,8 +242,16 @@ const STR = {
     inc4: ["Hỗ trợ 24/7 qua hotline 0365 551 920", "24/7 support via hotline 0365 551 920"],
     estTotal: ["Tạm tính {n} ngày", "Estimate for {n} day(s)"],
     bookThis: ["Đặt xe này", "Book this car"],
-    similar: ["Xe tương tự", "Similar cars"]
+    similar: ["Xe tương tự", "Similar cars"],
+    payLabel: ["Thanh toán", "Payment"],
+    payMethodTbd: ["GoDrive sẽ liên hệ", "To be arranged"],
+    pay_pending: ["Chưa thanh toán", "Not paid yet"],
+    pay_paid: ["Đã thanh toán", "Paid"],
+    pay_refunded: ["Đã hoàn tiền", "Refunded"]
 };
+
+const PAY_METHOD_EN = { "Tiền mặt": "Cash", "Chuyển khoản": "Bank transfer", "Thẻ tín dụng": "Credit card", "Ví MoMo": "MoMo e-wallet", "COD": "Cash on delivery", "VNPay": "VNPay QR" };
+const payMethod = (m) => (lang === "en" && PAY_METHOD_EN[m]) || m;
 
 // Dịch thông báo lỗi trả về từ API (server luôn trả tiếng Việt)
 const SERVER_ERRORS_EN = {
@@ -259,7 +267,7 @@ const SERVER_ERRORS_EN = {
     "Không tìm thấy xe": "Car not found",
     "Xe không khả dụng": "This car is not available",
     "Xe đã có đơn trong khoảng thời gian này": "This car is already booked for these dates",
-    "Cần nhập cả email và số điện thoại đã dùng khi đặt": "Please enter both the email and phone number used for booking",
+    "Vui lòng nhập email đã dùng khi đặt": "Please enter the email you used to book",
     "Không ghi được dữ liệu": "Couldn't save data. Please try again."
 };
 
@@ -369,8 +377,8 @@ const API = {
             body: JSON.stringify(data)
         });
     },
-    lookupBookings({ email, phone }) {
-        const qs = new URLSearchParams({ action: "lookup", email, phone });
+    lookupBookings({ email }) {
+        const qs = new URLSearchParams({ action: "lookup", email });
         return this.request(`/api/orders.php?${qs.toString()}`);
     }
 };
@@ -998,9 +1006,8 @@ function openLookup(autoSubmit = false) {
     lastLookup = null;
     const saved = getContact();
     if (saved.email) $("#lookupEmail").value = saved.email;
-    if (saved.phone) $("#lookupPhone").value = cleanPhone(saved.phone);
     openModal("lookupModal");
-    if (autoSubmit && saved.email && saved.phone) $("#lookupForm").requestSubmit();
+    if (autoSubmit && saved.email) $("#lookupForm").requestSubmit();
 }
 
 /* Hạng thành viên: giống CUSTOMER_TIERS trong api/_helpers.php (cao nhất là trên 1 tỷ) */
@@ -1084,31 +1091,30 @@ function renderLookup(data) {
             </div>
             <small>${icon("calendar")} ${esc(fmtDate(b.startDate))} → ${esc(fmtDate(b.endDate))}</small>
             <small>${icon("pin")} ${esc(city(b.location))}</small>
+            ${b.payment ? `<small class="pay-line pay-${esc(b.payment.status)}">${icon("tag")} ${esc(t("payLabel"))}: ${esc(b.payment.method ? payMethod(b.payment.method) : t("payMethodTbd"))} · <b>${esc(t("pay_" + b.payment.status))}</b></small>` : ""}
             <div class="booking-row-total"><span>${esc(t("total"))}</span><strong>${esc(money(b.total))}</strong></div>
         </div>`).join("");
 }
 
 async function submitLookup(event) {
     event.preventDefault();
-    const emailEl = $("#lookupEmail"), phoneEl = $("#lookupPhone");
+    const emailEl = $("#lookupEmail");
     const email = emailEl.value.trim();
-    const phone = phoneEl.value.trim();
-    [emailEl, phoneEl].forEach(clearError);
-    if (!email || !phone) {
-        if (!email) setError(emailEl, t("lookupNeedBoth"));
-        if (!phone) setError(phoneEl, t("lookupNeedBoth"));
-        (email ? phoneEl : emailEl).focus();
+    clearError(emailEl);
+    if (!email) {
+        setError(emailEl, t("lookupNeedEmail"));
+        emailEl.focus();
         return;
     }
-    if (!PHONE_RE.test(phone)) {
-        setError(phoneEl, t("errPhone"));
-        phoneEl.focus();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        setError(emailEl, t("errEmail"));
+        emailEl.focus();
         return;
     }
     const btn = $("#lookupSubmit");
     btn.classList.add("loading");
     try {
-        lastLookup = await API.lookupBookings({ email, phone });
+        lastLookup = await API.lookupBookings({ email });
         renderLookup(lastLookup);
     } catch (err) {
         $("#lookupResults").innerHTML = `<div class="inline-message error">${icon("alert")} ${esc(err.message)}</div>`;
@@ -1305,7 +1311,6 @@ function bindEvents() {
     $("#footerLookupBtn").onclick = e => { e.preventDefault(); openLookup(); };
     $("#lookupForm").addEventListener("submit", submitLookup);
     $("#lookupEmail").addEventListener("input", e => clearError(e.target));
-    restrictInput($("#lookupPhone"), cleanPhone, "errPhoneChars");
 
     $("#langToggle").onclick = () => setLang(lang === "en" ? "vi" : "en");
     $("#themeToggle").onclick = () => {

@@ -11,8 +11,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <meta name="app-version" content="2026.10.03-1537" />
-  <link rel="stylesheet" href="/css/style.css?v=2026.10.03-1537" />
+  <meta name="app-version" content="2026.10.03-1550" />
+  <link rel="stylesheet" href="/css/style.css?v=2026.10.03-1550" />
   <script>
     // Áp dụng chế độ sáng/tối trước khi trang hiển thị để tránh nháy màu
     (function () {
@@ -329,7 +329,7 @@
           </details>
           <details class="faq-item">
             <summary data-i18n="faq.q3">Làm sao để xem lại đơn đã đặt?</summary>
-            <p data-i18n="faq.a3">Bấm "Tra cứu đơn" và nhập đúng email cùng số điện thoại đã dùng khi đặt. Cần cả hai thông tin để bảo vệ đơn của bạn.</p>
+            <p data-i18n="faq.a3">Bấm "Tra cứu đơn" và nhập email (Gmail) đã dùng khi đặt xe.</p>
           </details>
           <details class="faq-item">
             <summary data-i18n="faq.q4">Giá thuê được tính như thế nào?</summary>
@@ -425,16 +425,12 @@
       <div class="modal-logo">
         <span class="modal-icon"><svg class="i"><use href="#i-file" /></svg></span>
         <h2 id="lookupTitle" data-i18n="lookup.title">Tra cứu đơn đặt xe</h2>
-        <p data-i18n="lookup.desc">Nhập cả Email và Số điện thoại đã dùng khi đặt</p>
+        <p data-i18n="lookup.desc">Nhập email (Gmail) đã dùng khi đặt xe</p>
       </div>
       <form id="lookupForm" novalidate>
         <label class="field">
           <span class="field-label">Email</span>
-          <input type="email" id="lookupEmail" placeholder="email@example.com" required autocomplete="email">
-        </label>
-        <label class="field">
-          <span class="field-label" data-i18n="form.phone">Số điện thoại</span>
-          <input type="tel" id="lookupPhone" placeholder="0912345678" required autocomplete="tel" inputmode="numeric" maxlength="10">
+          <input type="email" id="lookupEmail" placeholder="ten@gmail.com" required autocomplete="email" inputmode="email">
         </label>
         <button class="btn btn-primary full btn-large" type="submit" id="lookupSubmit">
           <svg class="i"><use href="#i-search" /></svg> <span data-i18n="lookup.btn">Xem đơn của tôi</span>
@@ -444,8 +440,8 @@
     </div>
   </div>
 
-  <script src="/js/car-art.js?v=2026.10.03-1537"></script>
-  <script src="/js/app.js?v=2026.10.03-1537"></script>
+  <script src="/js/car-art.js?v=2026.10.03-1550"></script>
+  <script src="/js/app.js?v=2026.10.03-1550"></script>
 </body>
 
 </html>

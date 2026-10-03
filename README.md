@@ -78,7 +78,7 @@ Data is stored in JSON files, so no database is required. Runs on free PHP hosti
 - Look up a booking to see your **membership tier** (Bronze → Diamond) and total rented
 - Book **without creating an account**; the total is calculated automatically from the rental days
 - **Double bookings are blocked** for the same car
-- Track a booking with the **email and phone number** used when booking
+- Track a booking with just the **email (Gmail)** used when booking, including its payment status
 - Contact details are remembered for the next booking
 - **Vietnamese & English** and **light/dark mode** (follows the device setting on first visit)
 
@@ -161,7 +161,7 @@ Open your browser:
 ### Tracking a booking
 
 1. Click **Track booking** in the navigation bar or the footer.
-2. Enter **both the email and the phone number** you used when booking. Both are required to protect your booking.
+2. Enter the **email (Gmail)** you used when booking.
 3. Click **View my bookings** to see your bookings, rental dates, totals and status: *Pending*, *Confirmed* or *Cancelled*.
 
 ### Changing language and theme
@@ -213,7 +213,7 @@ Customers are added automatically on their first booking. Total spent only count
 
 ### Payments
 
-Payments start **when a booking is approved**: the admin picks the payment method and whether it was collected. The page shows the amount collected, awaiting payment and refunded, a breakdown by payment method and the transaction history. Use **Mark as paid** when a customer pays later. Cancelling a paid booking marks its transaction as refunded. Online payment gateways are not integrated yet.
+Payments start **when a booking is approved**: the admin picks the payment method and whether it was collected. The page shows the amount collected, awaiting payment and refunded, a breakdown by payment method and the transaction history. Use **Mark as paid** when a customer pays later, or **Edit** to change the method, status, amount, collection time and note. Customer, car and amount stay in sync with the booking (unless the amount was edited manually); bookings approved before this feature get a transaction waiting for its method. Cancelling a paid booking marks its transaction as refunded. Online payment gateways are not integrated yet.
 
 ### Maintenance
 
@@ -301,7 +301,7 @@ Payments start **when a booking is approved**: the admin picks the payment metho
 | `api/products.php` | GET | List cars | No |
 | `api/products.php` | POST / PUT / PATCH / DELETE | Add, edit, change status, delete cars | Yes |
 | `api/orders.php` | POST | Customer booking | No |
-| `api/orders.php?action=lookup` | GET | Look up bookings (email and phone required) | No |
+| `api/orders.php?action=lookup` | GET | Look up bookings by email | No |
 | `api/orders.php` | GET / PATCH | List all bookings, approve/cancel/hand over | Yes |
 | `api/login.php` | POST | Sign in, get a token | No |
 | `api/login.php?action=...` | GET / POST / DELETE | Admin profile, change password, manage admins | Yes |

@@ -74,6 +74,9 @@ const EN_STATIC = {
     "approve.note": "Note / reference code (optional)",
     "approve.hint": "The transaction is recorded under Payments as soon as you approve. You can mark it as collected later.",
     "approve.submit": "Approve & record payment",
+    "pay.status": "Transaction status",
+    "pay.amount": "Amount (₫)",
+    "pay.paidAt": "Collected at",
     "car.name": "Car name *",
     "car.brand": "Brand",
     "car.type": "Type",
@@ -192,6 +195,17 @@ const STR = {
     payByMethod: ["Theo hình thức thanh toán", "By payment method"],
     paySince: ["Số liệu tính từ lúc admin duyệt đơn. Hình thức thanh toán do admin chọn khi duyệt.", "Figures start when a booking is approved. The payment method is chosen by the admin at approval."],
     paymentCol: ["Thanh toán", "Payment"],
+    editPayment: ["Sửa giao dịch {code}", "Edit transaction {code}"],
+    editPaymentBtn: ["Sửa thanh toán", "Edit payment"],
+    paymentSaved: ["Đã cập nhật giao dịch {code}", "Transaction {code} updated"],
+    methodNone: ["Chưa chọn hình thức", "Method not set"],
+    needMethodNote: ["{n} giao dịch của đơn đã duyệt trước đây chưa có hình thức thanh toán. Bấm Sửa để bổ sung.", "{n} transaction(s) from earlier approved bookings have no payment method. Click Edit to set it."],
+    bookingTotalHint: ["Tổng tiền đơn: {total}", "Booking total: {total}"],
+    amountDiffHint: ["Số tiền đang khác tổng tiền đơn ({total}).", "Amount differs from the booking total ({total})."],
+    syncAmount: ["Lấy theo tổng tiền đơn", "Use booking total"],
+    syncedNote: ["Tên khách, tên xe và số tiền tự đồng bộ theo đơn đặt xe.", "Customer, car and amount stay in sync with the booking."],
+    amountInvalid: ["Số tiền không hợp lệ", "Invalid amount"],
+    notRecorded: ["Chưa ghi nhận", "Not recorded"],
     note: ["Ghi chú", "Note"],
     approvedBy: ["Duyệt bởi {name}", "Approved by {name}"],
     colorAuto: ["Tự động", "Auto"],
@@ -336,6 +350,9 @@ const SERVER_ERRORS_EN = {
     "Trạng thái thanh toán không hợp lệ": "Invalid payment status",
     "Không tìm thấy giao dịch": "Transaction not found",
     "Màu xe không hợp lệ": "Invalid car color",
+    "Số tiền không hợp lệ": "Invalid amount",
+    "Thời điểm thanh toán không hợp lệ": "Invalid payment time",
+    "Cần chọn hình thức thanh toán trước": "Please choose a payment method first",
     "Không thể xóa chính mình": "You can't delete yourself",
     "Không tìm thấy": "Not found",
     "Không tìm thấy xe": "Car not found",
@@ -564,6 +581,12 @@ function emptyState(iconName, title, hint = "") {
 
 function statusBadge(s) {
     return `<span class="status ${esc(s)}">${esc(statusLabel(s))}</span>`;
+}
+
+// Giao dịch của một đơn: ưu tiên giao dịch còn hiệu lực (chờ thu / đã thu) hơn giao dịch đã hoàn tiền
+function paymentOf(b) {
+    const list = payments.filter(p => String(p.bookingId) === String(b.id));
+    return list.find(p => p.status !== "refunded") || list[0] || null;
 }
 
 // Nhãn trạng thái giao dịch ("pending" ở đây là chờ thanh toán, không phải chờ duyệt)
@@ -946,8 +969,13 @@ function renderBookings() {
         <div class="panel">
             <div class="table-scroll">
                 ${rows.length ? `<table>
-                    <thead><tr><th>${esc(t("code"))}</th><th>${esc(t("customer"))}</th><th>${esc(t("car"))}</th><th>${esc(t("dates"))}</th><th>${esc(t("total"))}</th><th>${esc(t("status"))}</th><th>${esc(t("actions"))}</th></tr></thead>
-                    <tbody>${rows.map(b => `
+                    <thead><tr><th>${esc(t("code"))}</th><th>${esc(t("customer"))}</th><th>${esc(t("car"))}</th><th>${esc(t("dates"))}</th><th>${esc(t("total"))}</th><th>${esc(t("status"))}</th><th>${esc(t("paymentCol"))}</th><th>${esc(t("actions"))}</th></tr></thead>
+                    <tbody>${rows.map(b => {
+                        const pay = paymentOf(b);
+                        const payCell = b.status === "pending" ? `<span class="cell-sub">—</span>`
+                            : pay ? `${payBadge(pay.status)}<span class="cell-sub">${esc(pay.method ? methodLabel(pay.method) : t("methodNone"))}</span>`
+                            : `<span class="cell-sub">${esc(t("notRecorded"))}</span>`;
+                        return `
                         <tr class="clickable" data-detail="${Number(b.id)}">
                             <td><span class="code">#${esc(String(b.id).slice(-5))}</span><span class="cell-sub">${esc(fmtDate(b.createdAt))}</span></td>
                             <td><span class="cell-main">${esc(b.customerName)}</span><span class="cell-sub">${esc(b.customerPhone || "")}</span></td>
@@ -955,8 +983,10 @@ function renderBookings() {
                             <td>${esc(fmtDate(b.startDate))} → ${esc(fmtDate(b.endDate))}<span class="cell-sub">${esc(t("nDays", { n: nightCount(b.startDate, b.endDate) }))}</span></td>
                             <td class="money">${esc(money(b.total))}</td>
                             <td>${statusBadge(b.status)}</td>
+                            <td>${payCell}</td>
                             <td><div class="actions">${bookingActions(b)}</div></td>
-                        </tr>`).join("")}</tbody>
+                        </tr>`;
+                    }).join("")}</tbody>
                 </table>` : emptyState("clipboard", t("noBookings"), t("noBookingsHint"))}
             </div>
         </div>`;
@@ -970,10 +1000,10 @@ function renderBookings() {
 function openBookingDetail(id) {
     const b = bookings.find(x => Number(x.id) === Number(id));
     if (!b) return;
+    if (!$("#paymentModal").classList.contains("hidden")) closeModal("paymentModal");
     $("#bookingModalTitle").textContent = t("bookingDetail", { id: String(b.id).slice(-5) });
     const phoneHref = String(b.customerPhone || "").replace(/[^\d+]/g, "");
-    const ofBooking = payments.filter(p => String(p.bookingId) === String(b.id));
-    const pay = ofBooking.find(p => p.status !== "refunded") || ofBooking[0];
+    const pay = paymentOf(b);
     $("#bookingDetail").innerHTML = `
         <div style="margin-bottom:10px">${statusBadge(b.status)}</div>
         <div class="detail-list">
@@ -984,7 +1014,7 @@ function openBookingDetail(id) {
             <div class="detail-row"><span>${esc(t("pickup"))}</span><strong>${esc(fmtDate(b.startDate))}</strong></div>
             <div class="detail-row"><span>${esc(t("return"))}</span><strong>${esc(fmtDate(b.endDate))} · ${esc(t("nDays", { n: nightCount(b.startDate, b.endDate) }))}</strong></div>
             <div class="detail-row"><span>${esc(t("location"))}</span><strong>${esc(city(b.location))}</strong></div>
-            ${pay ? `<div class="detail-row"><span>${esc(t("paymentCol"))}</span><strong><span class="method-chip">${icon(methodIcon(pay.method))}${esc(methodLabel(pay.method))}</span> ${payBadge(pay.status)}</strong></div>` : ""}
+            ${pay ? `<div class="detail-row"><span>${esc(t("paymentCol"))}</span><strong><span class="method-chip">${icon(methodIcon(pay.method))}${esc(pay.method ? methodLabel(pay.method) : t("methodNone"))}</span> ${payBadge(pay.status)} <button class="link-btn" data-pay-edit="${Number(pay.id)}">${icon("edit")} ${esc(t("editPaymentBtn"))}</button></strong></div>` : ""}
             <div class="detail-row"><span>${esc(t("createdAt"))}</span><strong>${esc(fmtDateTime(b.createdAt))}</strong></div>
         </div>
         <div class="detail-total"><span>${esc(t("total"))}</span><strong>${esc(money(b.total))}</strong></div>
@@ -1069,6 +1099,110 @@ async function submitApprove(e) {
         await reloadMoneyData();
         showToast(t("approvedPay", { id: String(b.id).slice(-5), method: methodLabel(approveState.method) }), "success");
         closeModal("approveModal");
+        renderEverything();
+    } catch (err) {
+        showToast(err.message, "error");
+    } finally {
+        setLoading(btn, false);
+    }
+}
+
+/* ---------- Sửa giao dịch ---------- */
+
+const payEdit = { id: null, method: "", status: "pending", sync: false };
+
+const bookingTotalOf = (p) => Number(bookings.find(b => String(b.id) === String(p.bookingId))?.total) || 0;
+
+function openPaymentModal(id) {
+    const p = payments.find(x => Number(x.id) === Number(id));
+    if (!p) return;
+    if (!$("#bookingModal").classList.contains("hidden")) closeModal("bookingModal");
+    const b = bookings.find(x => String(x.id) === String(p.bookingId));
+    payEdit.id = p.id;
+    payEdit.method = p.method || "";
+    payEdit.status = p.status || "pending";
+    payEdit.sync = false;
+    $("#paymentTitle").textContent = t("editPayment", { code: p.txnCode });
+    $("#paymentSummary").innerHTML = `
+        <div class="approve-card">
+            <div class="approve-who">
+                <strong>${esc(p.customerName)}</strong>
+                <span>${esc(p.carName || "")}${b ? ` · ${esc(fmtDate(b.startDate))} → ${esc(fmtDate(b.endDate))}` : ""}</span>
+                ${b ? `<button type="button" class="link-btn" data-detail="${esc(b.id)}">${icon("eye")} ${esc(t("orderRef", { id: String(b.id).slice(-5) }))} · ${esc(statusLabel(b.status))}</button>` : ""}
+            </div>
+            <div class="approve-amount"><small>${esc(t("total"))}</small><strong>${esc(money(bookingTotalOf(p)))}</strong></div>
+        </div>`;
+    $("#paymentAmount").value = Number(p.amount) || 0;
+    $("#paymentPaidAt").value = String(p.paidAt || "").replace(" ", "T").slice(0, 16);
+    $("#paymentNote").value = p.note || "";
+    renderPaymentControls();
+    updateAmountHint();
+    openModal("paymentModal");
+}
+
+function renderPaymentControls() {
+    const p = payments.find(x => Number(x.id) === Number(payEdit.id));
+    const methods = [...PAY_METHODS];
+    // Giữ hình thức cũ (ví dụ COD) nếu dữ liệu đang dùng
+    if (p?.method && !methods.some(m => m[0] === p.method)) methods.push([p.method, "wallet"]);
+    $("#paymentMethods").innerHTML = methods.map(([m, ic]) => {
+        const on = m === payEdit.method;
+        return `<button type="button" class="pay-method ${on ? "active" : ""}" role="radio" aria-checked="${on}" data-pay-method="${esc(m)}">${icon(ic)}<span>${esc(methodLabel(m))}</span></button>`;
+    }).join("");
+    $("#paymentStatus").innerHTML = [["pending", t("pendingPay"), "clock"], ["paid", t("paid"), "check"], ["refunded", t("refunded"), "refresh"]].map(([v, label, ic]) => {
+        const on = v === payEdit.status;
+        return `<button type="button" class="seg-btn ${on ? "active" : ""}" role="radio" aria-checked="${on}" data-pay-status="${v}">${icon(ic)} ${esc(label)}</button>`;
+    }).join("");
+    const paidAt = $("#paymentPaidAt");
+    paidAt.disabled = payEdit.status === "pending";
+    if (payEdit.status === "pending") paidAt.value = "";
+    else if (!paidAt.value) {
+        // Chuyển sang đã thu / hoàn tiền mà chưa có thời điểm thì điền sẵn thời gian hiện tại
+        const d = new Date();
+        paidAt.value = new Date(d - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    }
+}
+
+function updateAmountHint() {
+    const p = payments.find(x => Number(x.id) === Number(payEdit.id));
+    if (!p) return;
+    const total = bookingTotalOf(p);
+    const diff = Number($("#paymentAmount").value) !== total;
+    $("#paymentAmountHint").innerHTML = diff
+        ? `${icon("alert")} ${esc(t("amountDiffHint", { total: money(total) }))} <button type="button" class="link-btn" id="syncAmountBtn">${esc(t("syncAmount"))}</button>`
+        : `${icon("check")} ${esc(t("bookingTotalHint", { total: money(total) }))}`;
+    $("#paymentAmountHint").classList.toggle("warn", diff);
+}
+
+async function savePayment(e) {
+    e.preventDefault();
+    const p = payments.find(x => Number(x.id) === Number(payEdit.id));
+    if (!p) return;
+    if (!payEdit.method) {
+        showToast(t("payMethodRequired"), "error");
+        const box = $("#paymentMethods");
+        box.classList.remove("shake");
+        void box.offsetWidth;
+        box.classList.add("shake");
+        return;
+    }
+    const amount = Number($("#paymentAmount").value);
+    if (!payEdit.sync && (!Number.isFinite(amount) || amount < 0)) {
+        $("#paymentAmount").focus();
+        return showToast(t("amountInvalid"), "error");
+    }
+    const body = { method: payEdit.method, status: payEdit.status, note: $("#paymentNote").value.trim() };
+    if (payEdit.status !== "pending") body.paidAt = $("#paymentPaidAt").value;
+    if (payEdit.sync) body.syncAmount = true;
+    else body.amount = Math.round(amount);
+    const btn = $("#paymentSave");
+    setLoading(btn, true);
+    try {
+        const updated = await api(`/api/users.php?action=payments&id=${Number(p.id)}`, { method: "PATCH", body: JSON.stringify(body) });
+        const idx = payments.findIndex(x => Number(x.id) === Number(p.id));
+        if (idx >= 0) payments[idx] = updated;
+        showToast(t("paymentSaved", { code: updated.txnCode }), "success");
+        closeModal("paymentModal");
         renderEverything();
     } catch (err) {
         showToast(err.message, "error");
@@ -1426,6 +1560,7 @@ function renderPayments() {
             <div class="stat-value">${esc(value)}</div><div class="stat-foot">${esc(foot)}</div>
         </div>`;
 
+    const needMethod = payments.filter(p => !p.method).length;
     // Cơ cấu theo hình thức thanh toán (không tính giao dịch đã hoàn tiền)
     const active = payments.filter(p => p.status !== "refunded");
     const activeTotal = active.reduce((a, p) => a + (Number(p.amount) || 0), 0);
@@ -1438,7 +1573,8 @@ function renderPayments() {
     }, new Map()).entries()].sort((a, b) => b[1].amount - a[1].amount);
 
     host.innerHTML = `
-        <p class="page-note">${icon("shield")}<span>${esc(t("paySince"))}</span></p>
+        <p class="page-note">${icon("shield")}<span>${esc(t("paySince"))} ${esc(t("syncedNote"))}</span></p>
+        ${needMethod ? `<p class="page-note warn">${icon("alert")}<span>${esc(t("needMethodNote", { n: needMethod }))}</span></p>` : ""}
         <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
             ${card(0, "green", "wallet", t("paidTotal"), money(sum("paid")), t("transactions", { n: cnt("paid") }))}
             ${card(1, "orange", "clock", t("pendingPay"), money(sum("pending")), t("transactions", { n: cnt("pending") }))}
@@ -1452,9 +1588,9 @@ function renderPayments() {
                     const pct = activeTotal ? Math.round((v.amount / activeTotal) * 100) : 0;
                     return `
                     <div class="method-row">
-                        <span class="method-ico">${icon(methodIcon(m))}</span>
+                        <span class="method-ico ${m === "—" ? "warn" : ""}">${icon(m === "—" ? "alert" : methodIcon(m))}</span>
                         <div class="method-main">
-                            <div class="method-top"><strong>${esc(methodLabel(m))}</strong><span>${esc(money(v.amount))} · ${pct}%</span></div>
+                            <div class="method-top"><strong>${esc(m === "—" ? t("methodNone") : methodLabel(m))}</strong><span>${esc(money(v.amount))} · ${pct}%</span></div>
                             <div class="method-bar"><span style="width:${pct}%"></span></div>
                             <small>${esc(t("transactions", { n: v.n }))}</small>
                         </div>
@@ -1475,13 +1611,13 @@ function renderPayments() {
                     <thead><tr><th>${esc(t("txn"))}</th><th>${esc(t("customer"))}</th><th>${esc(t("method"))}</th><th>${esc(t("amount"))}</th><th>${esc(t("time"))}</th><th>${esc(t("status"))}</th><th></th></tr></thead>
                     <tbody>${list.map(p => `
                         <tr>
-                            <td><span class="code">${esc(p.txnCode)}</span><span class="cell-sub">${p.bookingId ? esc(t("orderRef", { id: String(p.bookingId).slice(-5) })) : "—"}</span></td>
+                            <td><span class="code">${esc(p.txnCode)}</span>${p.bookingId ? `<button class="link-btn cell-sub" data-detail="${esc(p.bookingId)}">${esc(t("orderRef", { id: String(p.bookingId).slice(-5) }))}</button>` : `<span class="cell-sub">—</span>`}</td>
                             <td><span class="cell-main">${esc(p.customerName)}</span><span class="cell-sub">${esc(p.carName || "")}${p.approvedBy ? " · " + esc(t("approvedBy", { name: p.approvedBy })) : ""}</span></td>
-                            <td><span class="method-chip">${icon(methodIcon(p.method))}${esc(methodLabel(p.method))}</span>${p.note ? `<span class="cell-sub">${esc(p.note)}</span>` : ""}</td>
-                            <td class="money">${esc(money(p.amount))}</td>
+                            <td>${p.method ? `<span class="method-chip">${icon(methodIcon(p.method))}${esc(methodLabel(p.method))}</span>` : `<span class="method-chip warn">${icon("alert")}${esc(t("methodNone"))}</span>`}${p.note ? `<span class="cell-sub">${esc(p.note)}</span>` : ""}</td>
+                            <td class="money">${esc(money(p.amount))}${p.amountEdited ? `<span class="cell-sub edited" title="${esc(t("amountDiffHint", { total: money(bookingTotalOf(p)) }))}">${icon("edit")} ${esc(money(bookingTotalOf(p)))}</span>` : ""}</td>
                             <td>${esc(fmtDateTime(p.paidAt || p.createdAt || ""))}<span class="cell-sub">${esc(p.paidAt ? t("paidTotal") : t("approve"))}</span></td>
                             <td>${payBadge(p.status)}</td>
-                            <td class="row-actions">${p.status === "pending" ? `<button class="act ok" data-pay-paid="${Number(p.id)}">${icon("check")} ${esc(t("markPaid"))}</button>` : ""}</td>
+                            <td class="row-actions"><div class="actions">${p.status === "pending" && p.method ? `<button class="act ok" data-pay-paid="${Number(p.id)}">${icon("check")} ${esc(t("markPaid"))}</button>` : ""}<button class="act icon-only" data-pay-edit="${Number(p.id)}" title="${esc(t("edit"))}" aria-label="${esc(t("edit"))}">${icon("edit")}</button></div></td>
                         </tr>`).join("")}</tbody>
                 </table>` : emptyState("wallet", t("noPayments"))}
             </div>
@@ -1841,6 +1977,29 @@ function bindEvents() {
         renderApproveControls();
     });
     $("#approveForm").addEventListener("submit", submitApprove);
+
+    // Sửa giao dịch
+    $("#paymentMethods").addEventListener("click", e => {
+        const btn = e.target.closest("[data-pay-method]");
+        if (!btn) return;
+        payEdit.method = btn.dataset.payMethod;
+        renderPaymentControls();
+    });
+    $("#paymentStatus").addEventListener("click", e => {
+        const btn = e.target.closest("[data-pay-status]");
+        if (!btn) return;
+        payEdit.status = btn.dataset.payStatus;
+        renderPaymentControls();
+    });
+    $("#paymentAmount").addEventListener("input", () => { payEdit.sync = false; updateAmountHint(); });
+    $("#paymentAmountHint").addEventListener("click", e => {
+        if (!e.target.closest("#syncAmountBtn")) return;
+        const p = payments.find(x => Number(x.id) === Number(payEdit.id));
+        $("#paymentAmount").value = p ? bookingTotalOf(p) : 0;
+        payEdit.sync = true;
+        updateAmountHint();
+    });
+    $("#paymentForm").addEventListener("submit", savePayment);
     $("#maintForm").addEventListener("submit", saveMaint);
     $("#m_start").addEventListener("change", () => {
         $("#m_end").min = $("#m_start").value;
@@ -1862,7 +2021,7 @@ function bindEvents() {
 
     // Ủy quyền sự kiện cho nội dung render động
     document.addEventListener("click", e => {
-        const el = e.target.closest("[data-go], [data-act], [data-detail], .tab, [data-car-edit], [data-car-delete], [data-maint], [data-maint-delete], [data-admin-delete], [data-pay-paid], #addCarBtn, #addMaintBtn, #exportBookings, #exportPayments, #exportCustomers");
+        const el = e.target.closest("[data-go], [data-act], [data-detail], .tab, [data-car-edit], [data-car-delete], [data-maint], [data-maint-delete], [data-admin-delete], [data-pay-paid], [data-pay-edit], #addCarBtn, #addMaintBtn, #exportBookings, #exportPayments, #exportCustomers");
         if (!el) return;
 
         if (el.matches(".tab")) {
@@ -1890,6 +2049,7 @@ function bindEvents() {
         if (el.dataset.maintDelete) { deleteMaint(Number(el.dataset.maintDelete)); return; }
         if (el.dataset.adminDelete) { deleteAdmin(Number(el.dataset.adminDelete)); return; }
         if (el.dataset.payPaid) { markPaymentPaid(Number(el.dataset.payPaid)); return; }
+        if (el.dataset.payEdit) { openPaymentModal(Number(el.dataset.payEdit)); return; }
         if (el.id === "addCarBtn") return openCarModal();
         if (el.id === "addMaintBtn") return openMaintModal();
         if (el.id === "exportBookings") {
@@ -2022,7 +2182,7 @@ const ADMIN_HELP = {
             <ol class="help-list">
                 <li>Đơn mới có trạng thái <b>Chờ duyệt</b>. Bấm vào dòng để xem số điện thoại, gọi cho khách rồi bấm <b>Duyệt</b>.</li>
                 <li>Khi duyệt, <b>bắt buộc chọn hình thức thanh toán</b> (tiền mặt, chuyển khoản, thẻ, MoMo, ZaloPay, VNPay) và cho biết đã thu tiền hay chưa. Giao dịch được ghi vào mục <b>Thanh toán</b> từ lúc này.</li>
-                <li>Khách trả tiền sau: vào <b>Thanh toán</b> → bấm <b>Xác nhận đã thu</b>. Hủy đơn đã thu tiền thì giao dịch tự chuyển sang <b>Đã hoàn tiền</b>.</li>
+                <li>Khách trả tiền sau: vào <b>Thanh toán</b> → bấm <b>Xác nhận đã thu</b>, hoặc bấm ✎ để sửa hình thức, trạng thái, số tiền, thời điểm thu. Hủy đơn đã thu tiền thì giao dịch tự chuyển sang <b>Đã hoàn tiền</b>.</li>
                 <li>Khi giao xe cho khách, bấm <b>Bàn giao</b>: xe chuyển sang <b>Đang thuê</b>.</li>
                 <li>Khi khách trả xe, vào <b>Đội xe</b> và đổi trạng thái xe về <b>Sẵn sàng</b>.</li>
                 <li>Bấm <b>✕</b> để hủy đơn. Xe đang thuê sẽ tự trở về Sẵn sàng.</li>
@@ -2057,7 +2217,7 @@ const ADMIN_HELP = {
             <ol class="help-list">
                 <li>New bookings are <b>Pending</b>. Click a row to see the phone number, call the customer, then click <b>Approve</b>.</li>
                 <li>When approving, you <b>must choose the payment method</b> (cash, bank transfer, card, MoMo, ZaloPay, VNPay) and whether it has been collected. The transaction is recorded under <b>Payments</b> from that moment.</li>
-                <li>Paid later? Go to <b>Payments</b> → <b>Mark as paid</b>. Cancelling a paid booking automatically marks the transaction as <b>Refunded</b>.</li>
+                <li>Paid later? Go to <b>Payments</b> → <b>Mark as paid</b>, or click ✎ to edit the method, status, amount and collection time. Cancelling a paid booking automatically marks the transaction as <b>Refunded</b>.</li>
                 <li>When handing the car over, click <b>Hand over</b>: the car becomes <b>On rent</b>.</li>
                 <li>When the customer returns the car, go to <b>Fleet</b> and set the car back to <b>Available</b>.</li>
                 <li>Click <b>✕</b> to cancel a booking. A car on rent goes back to Available automatically.</li>

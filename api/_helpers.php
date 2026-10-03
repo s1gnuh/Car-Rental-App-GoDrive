@@ -188,6 +188,72 @@ function txn_code() {
     return "TXN-" . date("Ymd") . "-" . strtoupper(bin2hex(random_bytes(2)));
 }
 
+// Đồng bộ giao dịch với đơn đặt xe, trả về [danh sách mới, có thay đổi hay không]:
+// - tên khách, tên xe luôn lấy theo đơn; số tiền lấy theo tổng tiền đơn trừ khi admin đã tự sửa
+// - đơn đã hủy thì bỏ giao dịch chưa thu
+// - đơn đã duyệt nhưng chưa có giao dịch (duyệt trước khi có tính năng thanh toán) thì tạo
+//   giao dịch "chờ thanh toán" với hình thức để trống, chờ admin chọn
+function sync_payments($payments, $bookings) {
+    $byId = [];
+    foreach ($bookings as $b) $byId[(string)$b["id"]] = $b;
+    $changed = false;
+    $out = [];
+    $hasPayment = [];
+    foreach ($payments as $p) {
+        $key = (string)($p["bookingId"] ?? "");
+        $b = $byId[$key] ?? null;
+        if ($b) {
+            if (($b["status"] ?? "") === "cancelled" && ($p["status"] ?? "") === "pending") { $changed = true; continue; }
+            foreach (["customerName", "carName"] as $k) {
+                $v = (string)($b[$k] ?? "");
+                if (($p[$k] ?? null) !== $v) { $p[$k] = $v; $changed = true; }
+            }
+            $total = (int)($b["total"] ?? 0);
+            if (empty($p["amountEdited"]) && (int)($p["amount"] ?? 0) !== $total) { $p["amount"] = $total; $changed = true; }
+            $hasPayment[$key] = true;
+        }
+        $out[] = $p;
+    }
+    foreach ($bookings as $b) {
+        $key = (string)$b["id"];
+        if (($b["status"] ?? "") !== "confirmed" || isset($hasPayment[$key])) continue;
+        $approved = !empty($b["approvedAt"]) ? strtotime($b["approvedAt"]) : false;
+        $out[] = [
+            "id" => next_id($out),
+            "txnCode" => txn_code(),
+            "bookingId" => $b["id"],
+            "customerName" => (string)($b["customerName"] ?? ""),
+            "carName" => (string)($b["carName"] ?? ""),
+            "amount" => (int)($b["total"] ?? 0),
+            "method" => "",
+            "status" => "pending",
+            "createdAt" => date("Y-m-d H:i", $approved ?: time()),
+            "paidAt" => "",
+            "note" => "",
+            "approvedBy" => ""
+        ];
+        $changed = true;
+    }
+    return [$out, $changed];
+}
+
+// Đọc giao dịch đã đồng bộ với đơn đặt xe, ghi lại nếu có thay đổi
+function load_synced_payments() {
+    acquire_write_lock();
+    [$list, $changed] = sync_payments(read_json("payments.json"), read_json("bookings.json"));
+    if ($changed) write_json("payments.json", $list);
+    return $list;
+}
+
+// Thời điểm thanh toán admin nhập: "Y-m-d H:i" hoặc "Y-m-d\TH:i" (ô datetime-local)
+function clean_datetime($value) {
+    $value = str_replace("T", " ", trim((string)$value));
+    if ($value === "") return "";
+    $d = DateTime::createFromFormat("Y-m-d H:i", substr($value, 0, 16));
+    if (!$d) fail("Thời điểm thanh toán không hợp lệ");
+    return $d->format("Y-m-d H:i");
+}
+
 // Số liệu thanh toán chỉ tính từ lúc đơn được duyệt: bỏ các giao dịch không gắn với đơn,
 // hoặc gắn với đơn chưa duyệt (dữ liệu cũ). Đơn đã hủy chỉ giữ giao dịch đã hoàn tiền.
 function payments_visible($payments, $bookings) {

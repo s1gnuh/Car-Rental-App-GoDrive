@@ -11,8 +11,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <meta name="app-version" content="2026.10.03-1537" />
-    <link rel="stylesheet" href="/css/admin.css?v=2026.10.03-1537" />
+    <meta name="app-version" content="2026.10.03-1550" />
+    <link rel="stylesheet" href="/css/admin.css?v=2026.10.03-1550" />
     <script>
         // Áp dụng chế độ sáng/tối trước khi trang hiển thị để tránh nháy màu
         (function () {
@@ -314,6 +314,32 @@
         </div>
     </div>
 
+    <div class="modal hidden" id="paymentModal" role="dialog" aria-modal="true" aria-labelledby="paymentTitle">
+        <div class="modal-box">
+            <div class="modal-head">
+                <h2 id="paymentTitle"></h2>
+                <button class="icon-btn ghost" data-close="paymentModal" data-i18n-aria="action.close" aria-label="Đóng"><svg class="i"><use href="#i-x" /></svg></button>
+            </div>
+            <form id="paymentForm" novalidate>
+                <div id="paymentSummary"></div>
+                <p class="form-section-title" data-i18n="approve.method">Hình thức thanh toán *</p>
+                <div class="pay-methods" id="paymentMethods" role="radiogroup"></div>
+                <p class="form-section-title" data-i18n="pay.status">Trạng thái giao dịch</p>
+                <div class="seg seg-3" id="paymentStatus" role="radiogroup"></div>
+                <div class="form-grid">
+                    <label class="field"><span class="field-label" data-i18n="pay.amount">Số tiền (₫)</span><input id="paymentAmount" type="number" min="0" step="1000" /></label>
+                    <label class="field"><span class="field-label" data-i18n="pay.paidAt">Thời điểm thu tiền</span><input id="paymentPaidAt" type="datetime-local" /></label>
+                </div>
+                <p class="field-hint" id="paymentAmountHint"></p>
+                <label class="field"><span class="field-label" data-i18n="approve.note">Ghi chú / mã tham chiếu (không bắt buộc)</span><input id="paymentNote" maxlength="120" /></label>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-ghost" data-close="paymentModal" data-i18n="action.cancel">Hủy</button>
+                    <button class="btn btn-primary" type="submit" id="paymentSave"><span data-i18n="action.save">Lưu thông tin</span></button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div class="modal hidden" id="changePwdModal" role="dialog" aria-modal="true" aria-labelledby="pwdTitle">
         <div class="modal-box">
             <div class="modal-head">
@@ -378,8 +404,8 @@
         </div>
     </div>
 
-    <script src="/js/car-art.js?v=2026.10.03-1537"></script>
-    <script src="/js/admin.js?v=2026.10.03-1537"></script>
+    <script src="/js/car-art.js?v=2026.10.03-1550"></script>
+    <script src="/js/admin.js?v=2026.10.03-1550"></script>
 </body>
 
 </html>
