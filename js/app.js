@@ -184,6 +184,15 @@ const STR = {
     bookingNote: ["Bạn chưa phải thanh toán ngay. GoDrive sẽ gọi điện xác nhận đơn.", "No payment now. GoDrive will call you to confirm the booking."],
     demoNote: ["Bản demo học tập: đơn đặt xe không có giá trị và không phát sinh thanh toán. Vui lòng dùng thông tin giả.", "Learning demo: bookings have no value and no payment is taken. Please use made-up details."],
     demoMore: ["Xem tuyên bố miễn trừ", "Read the disclaimer"],
+    discTitle: ["Trước khi bạn tiếp tục", "Before you continue"],
+    discSub: ["GoDrive là dự án học tập, vui lòng đọc kỹ các lưu ý sau", "GoDrive is a learning project, please read the notes below"],
+    disc1: ["<b>Dự án học tập, phi thương mại.</b> Đây không phải doanh nghiệp và không cung cấp dịch vụ cho thuê xe thật.", "<b>Non-commercial learning project.</b> This is not a business and does not provide a real car rental service."],
+    disc2: ["<b>Không nhận thanh toán.</b> Đơn đặt xe chỉ để thử nghiệm, không có giá trị và không có xe nào được giao.", "<b>No payments are accepted.</b> Bookings are for testing only, have no value and no car is delivered."],
+    disc3: ["<b>Không nhập thông tin cá nhân thật</b> (họ tên, số điện thoại, email). Dữ liệu demo có thể bị xóa bất cứ lúc nào.", "<b>Do not enter real personal information</b> (name, phone, email). Demo data may be deleted at any time."],
+    disc4: ["Xe, giá, đánh giá và số liệu là <b>dữ liệu mẫu</b>. Tên các hãng xe chỉ dùng để minh họa.", "Cars, prices, ratings and figures are <b>sample data</b>. Car brand names are used for illustration only."],
+    discAgree: ["Tôi hiểu đây là dự án học tập, không phải dịch vụ thật", "I understand this is a learning project, not a real service"],
+    discOk: ["Đã hiểu, vào trang", "I understand, continue"],
+    discLang: ["English", "Tiếng Việt"],
     errName: ["Vui lòng nhập họ tên", "Please enter your name"],
     errNameChars: ["Họ tên chỉ được chứa chữ cái", "Name can only contain letters"],
     errPhone: ["Số điện thoại phải gồm 9–10 chữ số", "Phone number must have 9–10 digits"],
@@ -340,6 +349,10 @@ function setLang(next) {
     if ($("#lookupResults").innerHTML && lastLookup) renderLookup(lastLookup);
     if (!$("#helpModal").classList.contains("hidden")) renderHelp();
     if (!$("#carModal").classList.contains("hidden") && detailCarId != null) openCarDetail(detailCarId, true);
+    if (!$("#disclaimerModal").classList.contains("hidden")) {
+        renderDisclaimer();
+        $("#discLang")?.focus({ preventScroll: true });
+    }
 }
 
 /* ================== Chế độ sáng / tối ================== */
@@ -458,7 +471,49 @@ function closeModal(id) {
 }
 
 function closeAllModals() {
-    $$(".modal:not(.hidden)").forEach(m => closeModal(m.id));
+    // Popup tuyên bố chỉ đóng khi người xem xác nhận đã hiểu
+    $$(".modal:not(.hidden):not(#disclaimerModal)").forEach(m => closeModal(m.id));
+}
+
+/* ================== Popup tuyên bố dự án học tập ================== */
+
+const DISCLAIMER_KEY = "godrive_disclaimer_ack";
+
+// Hiện mỗi lần vào web (mỗi phiên trình duyệt); tải lại trang trong cùng phiên thì không hiện lại
+function disclaimerAcked() {
+    try { return sessionStorage.getItem(DISCLAIMER_KEY) === "1"; } catch (_) { return false; }
+}
+
+function renderDisclaimer() {
+    const checked = $("#discAgree")?.checked || false;
+    $("#disclaimerContent").innerHTML = `
+        <div class="modal-logo">
+            <span class="modal-icon disc-icon" aria-hidden="true">🎓</span>
+            <h2 id="discTitle">${esc(t("discTitle"))}</h2>
+            <p>${esc(t("discSub"))}</p>
+        </div>
+        <ul class="disc-list" id="discBody">
+            ${[["disc1", "zap"], ["disc2", "tag"], ["disc3", "shield"], ["disc4", "car"]].map(([k, ic]) => `<li>${icon(ic)}<span>${t(k)}</span></li>`).join("")}
+        </ul>
+        <label class="disc-check"><input type="checkbox" id="discAgree" ${checked ? "checked" : ""}><span>${esc(t("discAgree"))}</span></label>
+        <button class="btn btn-primary full btn-large" id="discOk" ${checked ? "" : "disabled"}>${esc(t("discOk"))} ${icon("arrow")}</button>
+        <div class="disc-foot">
+            <a href="/disclaimer.html">${esc(t("demoMore"))}</a>
+            <span aria-hidden="true">·</span>
+            <button type="button" class="text-link" id="discLang">${icon("globe")} ${esc(t("discLang"))}</button>
+        </div>`;
+    $("#discAgree").onchange = e => { $("#discOk").disabled = !e.target.checked; };
+    $("#discOk").onclick = () => {
+        try { sessionStorage.setItem(DISCLAIMER_KEY, "1"); } catch (_) { }
+        closeModal("disclaimerModal");
+    };
+    $("#discLang").onclick = () => setLang(lang === "en" ? "vi" : "en");
+}
+
+function initDisclaimer() {
+    if (disclaimerAcked()) return;
+    renderDisclaimer();
+    openModal("disclaimerModal");
 }
 
 /* ================== Danh sách xe ================== */
@@ -1305,7 +1360,7 @@ function bindEvents() {
     });
     $$(".modal").forEach(modal => {
         modal.addEventListener("mousedown", e => {
-            if (e.target === modal) closeModal(modal.id);
+            if (e.target === modal && modal.id !== "disclaimerModal") closeModal(modal.id);
         });
     });
     document.addEventListener("keydown", e => {
@@ -1441,3 +1496,4 @@ initSpotlight();
 initReveal();
 loadCars();
 checkForUpdate();
+initDisclaimer();

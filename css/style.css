@@ -3727,3 +3727,106 @@ footer .brand:hover {
     text-align: left;
   }
 }
+
+/* ---------- Popup tuyên bố dự án học tập ---------- */
+#disclaimerModal {
+  z-index: 70;
+}
+
+.disclaimer-modal {
+  width: min(500px, 100%);
+}
+
+.disc-icon {
+  font-size: 28px;
+  background: var(--orange-50);
+}
+
+.disc-list {
+  display: grid;
+  gap: 10px;
+  margin: 4px 0 18px;
+}
+
+.disc-list li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-2);
+  background: var(--bg-tint);
+  border: 1px solid var(--line);
+}
+
+.disc-list li > .i {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  padding: 8px;
+  border-radius: 10px;
+  color: var(--primary);
+  background: var(--primary-50);
+}
+
+.disc-list b {
+  color: var(--text);
+}
+
+.disc-check {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px dashed var(--primary-100);
+}
+
+.disc-check input {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  box-shadow: none;
+  appearance: auto;
+  margin-top: 2px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.disc-check:has(input:checked) {
+  border-style: solid;
+  border-color: var(--primary);
+  background: var(--primary-50);
+}
+
+.disc-foot {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.disc-foot a {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.disc-foot .text-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
