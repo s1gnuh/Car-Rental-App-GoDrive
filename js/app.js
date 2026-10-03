@@ -66,6 +66,8 @@ const EN_STATIC = {
     "cars.eyebrow": "Our fleet",
     "cars.title": "Choose the right car",
     "cars.filterAria": "Filter by car type",
+    "cars.brand": "Brand",
+    "cars.brandAria": "Filter by brand",
     "cars.all": "All",
     "cars.sort": "Sort",
     "cars.sortFeatured": "Most popular",
@@ -129,6 +131,7 @@ const STR = {
     metaDesc: ["GoDrive - thuê xe tự lái nhanh chóng, giá minh bạch, không cần tài khoản. Có xe tại Hà Nội, TP. Hồ Chí Minh và Đà Nẵng.", "GoDrive - fast self-drive car rental with transparent pricing and no account required. Available in Hanoi, Ho Chi Minh City and Da Nang."],
     loadingCars: ["Đang tải danh sách xe...", "Loading cars..."],
     loadFail: ["Không tải được danh sách xe. Vui lòng thử lại.", "Couldn't load cars. Please try again."],
+    allBrands: ["Tất cả hãng", "All brands"],
     carCount: ["Hiển thị {n} xe · {a} xe sẵn sàng", "Showing {n} cars · {a} available"],
     days: ["{n} ngày", "{n} day(s)"],
     hint: ["Thuê <strong>{n} ngày</strong> · Bạn có thể đổi ngày khi đặt xe", "Renting for <strong>{n} day(s)</strong> · You can change dates when booking"],
@@ -310,6 +313,7 @@ const API = {
 let cars = [];
 let loadFailed = false;
 let activeFilter = "all";
+let activeBrand = "all"; // khóa hãng xe (viết thường), "all" = mọi hãng
 let bookingCarId = null;
 let lastLookup = null;
 let lastFocused = null;
@@ -416,6 +420,33 @@ function carImageBlock(car, extraClass = "") {
     return `<div class="car-image ${esc(type)} ${extraClass}">${tag}${status}</div>`;
 }
 
+const brandKey = (car) => String(car.brand || "").trim().toLowerCase();
+
+function renderBrandChips(base) {
+    const box = $("#brandChips");
+    if (!box) return;
+    // Gom theo hãng không phân biệt hoa thường, giữ cách viết của xe đầu tiên
+    const brands = new Map();
+    base.forEach(car => {
+        const key = brandKey(car);
+        if (!key) return;
+        if (!brands.has(key)) brands.set(key, { name: String(car.brand).trim(), count: 0 });
+        brands.get(key).count++;
+    });
+    // Hãng đang chọn luôn được giữ lại dù bộ lọc khác khiến nó hết xe
+    if (activeBrand !== "all" && !brands.has(activeBrand)) {
+        const known = cars.find(c => brandKey(c) === activeBrand);
+        brands.set(activeBrand, { name: known ? String(known.brand).trim() : activeBrand, count: 0 });
+    }
+    const list = [...brands.entries()].sort((a, b) => a[1].name.localeCompare(b[1].name));
+    const chip = (key, label, count) => `
+        <button class="filter-chip brand-chip ${key === activeBrand ? "active" : ""}" data-brand="${esc(key)}" aria-pressed="${key === activeBrand}">
+            ${esc(label)}<span class="chip-count">${count}</span>
+        </button>`;
+    box.parentElement.classList.toggle("hidden", list.length < 2 && activeBrand === "all");
+    box.innerHTML = chip("all", t("allBrands"), base.length) + list.map(([key, b]) => chip(key, b.name, b.count)).join("");
+}
+
 function renderCars() {
     const location = $("#locationFilter").value;
     const sort = $("#sortCars").value;
@@ -424,6 +455,10 @@ function renderCars() {
     let result = visible;
     if (activeFilter !== "all") result = result.filter(car => car.type === activeFilter);
     if (location) result = result.filter(car => car.location === location);
+
+    // Danh sách hãng lấy từ chính dữ liệu xe, số xe mỗi hãng tính theo loại xe và địa điểm đang chọn
+    renderBrandChips(result);
+    if (activeBrand !== "all") result = result.filter(car => brandKey(car) === activeBrand);
 
     result = [...result];
     if (sort === "low") result.sort((a, b) => a.price - b.price);
@@ -845,8 +880,16 @@ function bindEvents() {
         };
     });
 
+    $("#brandChips").addEventListener("click", e => {
+        const btn = e.target.closest("[data-brand]");
+        if (!btn) return;
+        activeBrand = btn.dataset.brand;
+        renderCars();
+    });
+
     $("#resetFilters").onclick = () => {
         activeFilter = "all";
+        activeBrand = "all";
         $("#locationFilter").value = "";
         $$(".filter-chip").forEach(c => {
             c.classList.toggle("active", c.dataset.filter === "all");

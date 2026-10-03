@@ -1020,8 +1020,7 @@ input.invalid:focus {
 }
 
 .car-card.unavailable .car-bottom .btn {
-  padding: 8px 12px;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .car-image {
@@ -1214,12 +1213,12 @@ input.invalid:focus {
   color: var(--muted);
 }
 
+/* Quy chuẩn chân thẻ xe: giá một dòng riêng, nút đặt xe dài hết chiều ngang bên dưới */
 .car-bottom {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
   margin-top: auto;
   padding-top: 14px;
   border-top: 1px dashed var(--line);
@@ -1242,8 +1241,9 @@ input.invalid:focus {
 }
 
 .car-bottom .btn {
-  min-height: 40px;
-  padding: 8px 16px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 16px;
 }
 
 /* Skeleton khi đang tải */
@@ -2522,4 +2522,60 @@ footer .brand:hover {
 .booking-head .car-tag,
 .booking-head .car-status {
   display: none;
+}
+
+/* ===================== Bộ lọc theo hãng xe ===================== */
+.brand-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: -8px 0 26px;
+}
+
+.brand-label {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.brand-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 6px 14px;
+  font-size: 13.5px;
+}
+
+.chip-count {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+  color: var(--muted);
+  background: var(--bg-tint);
+}
+
+.brand-chip.active .chip-count {
+  color: var(--primary-700, #3d24a6);
+  background: rgba(255, 255, 255, .92);
+}
+
+@media (max-width: 600px) {
+  .brand-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: -14px;
+  }
+
+  .brand-row .chips {
+    width: 100%;
+  }
 }
