@@ -68,7 +68,7 @@
         "seats": 5,
         "price": 780000,
         "location": "Đà Nẵng",
-        "status": "rented",
+        "status": "available",
         "rating": 4.8,
         "featured": true
     },
