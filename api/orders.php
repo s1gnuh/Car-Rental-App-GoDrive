@@ -24,7 +24,25 @@ if ($method === "GET" && $action === "lookup") {
         return $matchEmail && $matchPhone;
     }));
     usort($result, fn($a, $b) => (int)$b["id"] - (int)$a["id"]);
-    respond($result);
+
+    // Thông tin hạng thành viên: chỉ trả về khi email + số điện thoại đã khớp ít nhất một đơn
+    $member = null;
+    if ($result) {
+        $ranked = customers_with_rank(read_json($customersFile));
+        $idx = find_customer_index($ranked, $email, $phone);
+        if ($idx >= 0) {
+            $c = $ranked[$idx];
+            $member = [
+                "name" => $c["name"] ?? "",
+                "totalSpent" => $c["totalSpent"],
+                "totalBookings" => (int)($c["totalBookings"] ?? 0),
+                "tier" => $c["tier"],
+                "rank" => $c["rank"],
+                "totalCustomers" => count($ranked)
+            ];
+        }
+    }
+    respond(["bookings" => $result, "member" => $member]);
 }
 
 if ($method === "GET") {
@@ -93,21 +111,12 @@ if ($method === "POST" && $action === "") {
     $bookings[] = $newBooking;
     write_json($bookingsFile, $bookings);
 
+    // Đếm số đơn ngay khi đặt; tiền thuê chỉ được cộng khi admin xác nhận đơn (xem phần PATCH)
     $customers = read_json($customersFile);
-    $found = false;
-    foreach ($customers as &$customer) {
-        if (
-            strtolower($customer["email"] ?? "") === strtolower($customerEmail)
-            || ($customer["phone"] ?? "") === $customerPhone
-        ) {
-            $customer["totalBookings"] = ((int)($customer["totalBookings"] ?? 0)) + 1;
-            $customer["totalSpent"] = ((int)($customer["totalSpent"] ?? 0)) + $total;
-            $found = true;
-            break;
-        }
-    }
-    unset($customer);
-    if (!$found) {
+    $ci = find_customer_index($customers, $customerEmail, $customerPhone);
+    if ($ci >= 0) {
+        $customers[$ci]["totalBookings"] = ((int)($customers[$ci]["totalBookings"] ?? 0)) + 1;
+    } else {
         $customers[] = [
             "id" => next_id($customers),
             "name" => $customerName,
@@ -115,8 +124,8 @@ if ($method === "POST" && $action === "") {
             "phone" => $customerPhone,
             "joinedAt" => date("Y-m-d"),
             "totalBookings" => 1,
-            "totalSpent" => $total,
-            "tier" => "bronze"
+            "totalSpent" => 0,
+            "tier" => customer_tier(0)
         ];
     }
     write_json($customersFile, $customers);
@@ -152,8 +161,24 @@ if ($method === "PATCH") {
     $status = $data["status"] ?? "";
     if ($status === "") fail("Thiếu trạng thái");
     require_enum($status, BOOKING_STATUSES, "Trạng thái");
+    $oldStatus = $bookings[$idx]["status"] ?? "";
     $bookings[$idx]["status"] = $status;
     write_json($bookingsFile, $bookings);
+
+    // Cập nhật tổng tiền thuê và hạng của khách: cộng khi đơn được xác nhận, trừ lại nếu đơn đã xác nhận bị hủy
+    $delta = 0;
+    if ($oldStatus !== "confirmed" && $status === "confirmed") $delta = (int)($bookings[$idx]["total"] ?? 0);
+    if ($oldStatus === "confirmed" && $status !== "confirmed") $delta = -(int)($bookings[$idx]["total"] ?? 0);
+    if ($delta !== 0) {
+        $customers = read_json($customersFile);
+        $ci = find_customer_index($customers, $bookings[$idx]["customerEmail"] ?? "", $bookings[$idx]["customerPhone"] ?? "");
+        if ($ci >= 0) {
+            $spent = max(0, (int)($customers[$ci]["totalSpent"] ?? 0) + $delta);
+            $customers[$ci]["totalSpent"] = $spent;
+            $customers[$ci]["tier"] = customer_tier($spent);
+            write_json($customersFile, $customers);
+        }
+    }
 
     if ($status === "cancelled") {
         $cars = read_json($carsFile);

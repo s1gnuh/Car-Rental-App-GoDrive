@@ -109,7 +109,8 @@ if ($action === "maintenance") {
 
 if ($method === "GET") {
     require_auth();
-    respond(read_json("customers.json"));
+    // Hạng được tính lại từ tổng tiền thuê, kèm thứ hạng theo mức chi tiêu
+    respond(customers_with_rank(read_json("customers.json")));
 }
 
 fail("Không hỗ trợ yêu cầu này", 405);

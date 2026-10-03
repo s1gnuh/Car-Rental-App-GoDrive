@@ -218,3 +218,53 @@ function require_enum($value, $allowed, $label) {
     if (!in_array($value, $allowed, true)) fail("$label không hợp lệ");
     return $value;
 }
+
+// ===== Hạng khách hàng =====
+// Xếp theo tổng tiền thuê của các đơn ĐÃ XÁC NHẬN. Mức cao nhất là trên 1 tỷ đồng,
+// các mức dưới 1 tỷ được xếp tự động theo mốc tiền bên dưới (sửa mốc tại đây và trong js/app.js, js/admin.js).
+const CUSTOMER_TIERS = [
+    // [mã hạng, số tiền tối thiểu, true = phải VƯỢT QUA mốc (>) thay vì chỉ đạt (>=)]
+    ["diamond", 1000000000, true],
+    ["platinum", 500000000, false],
+    ["gold", 200000000, false],
+    ["silver", 50000000, false],
+    ["bronze", 0, false]
+];
+
+function customer_tier($spent) {
+    $spent = (int)$spent;
+    foreach (CUSTOMER_TIERS as [$code, $min, $strict]) {
+        if ($strict ? $spent > $min : $spent >= $min) return $code;
+    }
+    return "bronze";
+}
+
+function phone_norm($phone) {
+    return preg_replace('/\D+/', "", (string)$phone);
+}
+
+// Tìm khách theo email hoặc số điện thoại (so sánh không phân biệt hoa thường / khoảng trắng)
+function find_customer_index($customers, $email, $phone) {
+    $email = strtolower(trim((string)$email));
+    $phone = phone_norm($phone);
+    foreach ($customers as $i => $c) {
+        if ($email !== "" && strtolower($c["email"] ?? "") === $email) return $i;
+    }
+    foreach ($customers as $i => $c) {
+        if ($phone !== "" && phone_norm($c["phone"] ?? "") === $phone) return $i;
+    }
+    return -1;
+}
+
+// Thêm hạng tính tự động và thứ hạng (#1 = chi tiêu nhiều nhất) cho danh sách khách hàng
+function customers_with_rank($customers) {
+    foreach ($customers as &$c) {
+        $c["totalSpent"] = max(0, (int)($c["totalSpent"] ?? 0));
+        $c["tier"] = customer_tier($c["totalSpent"]);
+    }
+    unset($c);
+    usort($customers, fn($a, $b) => $b["totalSpent"] <=> $a["totalSpent"] ?: strcmp($a["joinedAt"] ?? "", $b["joinedAt"] ?? ""));
+    foreach ($customers as $i => &$c) $c["rank"] = $i + 1;
+    unset($c);
+    return $customers;
+}

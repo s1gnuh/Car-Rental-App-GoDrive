@@ -91,7 +91,10 @@ const EN_STATIC = {
     "admins.name": "Display name *",
     "admins.username": "Username *",
     "admins.password": "Password * (≥ 6 characters)",
-    "admins.submit": "Create account"
+    "admins.submit": "Create account",
+    "nav.help": "User guide",
+    "nav.hardRefresh": "Load latest version",
+    "help.title": "User guide"
 };
 
 // Chuỗi dùng trong JS: [tiếng Việt, tiếng Anh]
@@ -266,9 +269,26 @@ const STR = {
     in_progress: ["Đang thực hiện", "In progress"],
     completed: ["Hoàn thành", "Completed"],
     bronze: ["Đồng", "Bronze"],
+    diamond: ["Kim cương", "Diamond"],
+    rankCol: ["Thứ hạng", "Rank"],
+    tierOver: ["Trên", "Over"],
+    tierFrom: ["Từ", "From"],
+    tierUnder: ["Dưới {v}", "Under {v}"],
+    tierCustomers: ["khách", "customers"],
+    clearTier: ["Bỏ lọc hạng", "Clear tier filter"],
+    tierRule: ["Hạng tự động theo tổng tiền thuê của các đơn đã xác nhận. Cao nhất là Kim cương (trên 1 tỷ). Bấm vào một hạng để lọc.", "Tiers are assigned automatically from the total of confirmed bookings. The top tier is Diamond (over 1 billion ₫). Click a tier to filter."],
     silver: ["Bạc", "Silver"],
     gold: ["Vàng", "Gold"],
-    platinum: ["Bạch kim", "Platinum"]
+    platinum: ["Bạch kim", "Platinum"],
+
+    refreshing: ["Đang tải bản mới nhất...", "Loading the latest version..."],
+    versionUsing: ["Bạn đang dùng", "You are using"],
+    versionServer: ["Trên server", "On the server"],
+    versionChecking: ["Đang kiểm tra...", "Checking..."],
+    versionSame: ["Bạn đang dùng bản mới nhất.", "You're on the latest version."],
+    versionNew: ["Server đã có bản mới. Bấm \"Tải lại bản mới nhất\" để cập nhật.", "A newer version is on the server. Click \"Load latest version\" to update."],
+    versionMissing: ["Không đọc được version.json trên server. Hãy chắc chắn đã upload đủ gói deploy.", "Couldn't read version.json on the server. Make sure the full deploy package was uploaded."],
+    loadLatest: ["Tải lại bản mới nhất", "Load latest version"]
 };
 
 const SERVER_ERRORS_EN = {
@@ -385,6 +405,7 @@ function setLang(next) {
         renderEverything();
         updateSyncLabel();
     }
+    if (!$("#helpModal").classList.contains("hidden")) renderHelp();
 }
 
 /* ================== Chế độ sáng / tối ================== */
@@ -424,9 +445,11 @@ const ui = {
     fleetSearch: "",
     fleetStatus: "all",
     customerSearch: "",
+    customerTier: "all",
     paymentTab: "all",
     paymentSearch: "",
-    maintTab: "all"
+    maintTab: "all",
+    helpTab: "start"
 };
 
 /* ================== Tiện ích UI ================== */
@@ -1123,35 +1146,92 @@ async function deleteCar(id) {
 
 /* ================== Khách hàng ================== */
 
+/* Hạng khách hàng: giống CUSTOMER_TIERS trong api/_helpers.php (cao nhất là trên 1 tỷ) */
+const TIERS = [
+    { code: "diamond", min: 1000000000, strict: true },
+    { code: "platinum", min: 500000000 },
+    { code: "gold", min: 200000000 },
+    { code: "silver", min: 50000000 },
+    { code: "bronze", min: 0 }
+];
+
+function tierOf(spent) {
+    const s = Number(spent) || 0;
+    return (TIERS.find(x => (x.strict ? s > x.min : s >= x.min)) || TIERS[TIERS.length - 1]).code;
+}
+
+function tierMinLabel(tier) {
+    if (tier.min === 0) return t("tierUnder", { v: shortMoney(TIERS[TIERS.length - 2].min) });
+    return (tier.strict ? t("tierOver") : t("tierFrom")) + " " + shortMoney(tier.min);
+}
+
+// Tiến độ (%) từ mốc hạng hiện tại tới mốc hạng kế tiếp
+function tierProgress(spent) {
+    const code = tierOf(spent);
+    const i = TIERS.findIndex(x => x.code === code);
+    if (i === 0) return 100;
+    const next = TIERS[i - 1], cur = TIERS[i];
+    const target = next.strict ? next.min + 1 : next.min;
+    return Math.max(2, Math.min(100, Math.round(((Number(spent) || 0) - cur.min) / (target - cur.min) * 100)));
+}
+
+// Xếp hạng theo tổng tiền thuê (server đã tính sẵn; tự tính lại nếu thiếu)
+function rankedCustomers() {
+    const list = customers.map(c => ({ ...c, totalSpent: Number(c.totalSpent) || 0, tier: c.tier && TIERS.some(x => x.code === c.tier) && c.rank ? c.tier : tierOf(c.totalSpent) }));
+    list.sort((a, b) => b.totalSpent - a.totalSpent || String(a.joinedAt).localeCompare(String(b.joinedAt)));
+    list.forEach((c, i) => { c.rank = i + 1; });
+    return list;
+}
+
+function rankBadge(rank) {
+    const medal = rank === 1 ? "gold" : rank === 2 ? "silver" : rank === 3 ? "bronze" : "";
+    return `<span class="rank-badge ${medal}">#${rank}</span>`;
+}
+
 function renderCustomers() {
     const host = $("#customersPage");
     const q = ui.customerSearch.toLowerCase();
-    const list = customers.filter(c => !q
+    const all = rankedCustomers();
+    const list = all.filter(c => (ui.customerTier === "all" || c.tier === ui.customerTier) && (!q
         || (c.name || "").toLowerCase().includes(q)
         || (c.email || "").toLowerCase().includes(q)
-        || (c.phone || "").replace(/\s/g, "").includes(q.replace(/\s/g, ""))
-    ).sort((a, b) => (Number(b.totalSpent) || 0) - (Number(a.totalSpent) || 0));
+        || (c.phone || "").replace(/\s/g, "").includes(q.replace(/\s/g, ""))));
     const focused = document.activeElement?.id === "customerSearch";
 
+    const tierCards = TIERS.map((tier, i) => {
+        const members = all.filter(c => c.tier === tier.code);
+        const spent = members.reduce((s, c) => s + c.totalSpent, 0);
+        return `
+            <button class="tier-card tier-${tier.code} ${ui.customerTier === tier.code ? "active" : ""}" data-tier="${tier.code}" style="--i:${i}" aria-pressed="${ui.customerTier === tier.code}">
+                <span class="tier-card-top"><span class="tier ${tier.code}">${icon("star")} ${esc(statusLabel(tier.code))}</span><small>${esc(tierMinLabel(tier))}</small></span>
+                <strong>${members.length}</strong>
+                <small>${esc(t("tierCustomers"))} · ${esc(shortMoney(spent))} ₫</small>
+            </button>`;
+    }).join("");
+
     host.innerHTML = `
+        <div class="tier-overview">${tierCards}</div>
+        <p class="tier-rule">${icon("alert")} ${esc(t("tierRule"))}</p>
         <div class="toolbar">
             <div class="toolbar-left">
                 <label class="search-input">${icon("search")}<input type="search" id="customerSearch" placeholder="${esc(t("searchCustomers"))}" value="${esc(ui.customerSearch)}" /><kbd>/</kbd></label>
                 <span class="muted">${esc(t("customersCount", { n: list.length }))}</span>
+                ${ui.customerTier !== "all" ? `<button class="act" data-tier="all">${icon("x")} ${esc(t("clearTier"))}</button>` : ""}
             </div>
             <button class="btn btn-outline" id="exportCustomers">${icon("download")} ${esc(t("exportCsv"))}</button>
         </div>
         <div class="panel">
             <div class="table-scroll">
                 ${list.length ? `<table>
-                    <thead><tr><th>${esc(t("customer"))}</th><th>${esc(t("phone"))}</th><th>${esc(t("joined"))}</th><th>${esc(t("bookingsCount"))}</th><th>${esc(t("spent"))}</th><th>${esc(t("tier"))}</th></tr></thead>
+                    <thead><tr><th>${esc(t("rankCol"))}</th><th>${esc(t("customer"))}</th><th>${esc(t("phone"))}</th><th>${esc(t("joined"))}</th><th>${esc(t("bookingsCount"))}</th><th>${esc(t("spent"))}</th><th>${esc(t("tier"))}</th></tr></thead>
                     <tbody>${list.map(c => `
                         <tr>
+                            <td>${rankBadge(c.rank)}</td>
                             <td><div class="cell-user"><span class="avatar round">${esc(initials(c.name))}</span><div><span class="cell-main">${esc(c.name)}</span><span class="cell-sub">${esc(c.email)}</span></div></div></td>
                             <td>${esc(c.phone || "—")}</td>
                             <td>${esc(fmtDate(c.joinedAt))}</td>
                             <td><strong>${Number(c.totalBookings) || 0}</strong></td>
-                            <td class="money">${esc(money(c.totalSpent || 0))}</td>
+                            <td><span class="money">${esc(money(c.totalSpent))}</span><span class="spend-bar tier-${esc(c.tier)}"><span style="width:${tierProgress(c.totalSpent)}%"></span></span></td>
                             <td><span class="tier ${esc(c.tier)}">${icon("star")} ${esc(statusLabel(c.tier))}</span></td>
                         </tr>`).join("")}</tbody>
                 </table>` : emptyState("users", t("noCustomers"))}
@@ -1510,6 +1590,21 @@ function bindEvents() {
             showToast(t("refreshed"), "success");
         }
     };
+    document.addEventListener("click", e => {
+        const btn = e.target.closest("[data-tier]");
+        if (!btn) return;
+        ui.customerTier = ui.customerTier === btn.dataset.tier ? "all" : btn.dataset.tier;
+        renderCustomers();
+    });
+    $("#helpBtn").onclick = () => openHelp();
+    $("#helpSideBtn").onclick = () => { if (isMobile()) closeSidebar(); openHelp(); };
+    document.addEventListener("click", e => {
+        const btn = e.target.closest("[data-hard-refresh]");
+        if (!btn) return;
+        e.preventDefault();
+        showToast(t("refreshing"));
+        hardRefresh();
+    });
     $("#changePwdSideBtn").onclick = () => {
         $("#changePwdForm").reset();
         $("#pwdMeter span").style.width = "0";
@@ -1561,6 +1656,7 @@ function bindEvents() {
             else if (group === "fleetStatus") renderFleet();
             else if (group === "paymentTab") renderPayments();
             else if (group === "maintTab") renderMaintenance();
+            else if (group === "helpTab") renderHelp();
             return;
         }
         if (el.dataset.go) {
@@ -1591,8 +1687,8 @@ function bindEvents() {
         }
         if (el.id === "exportCustomers") {
             return downloadCsv("godrive-customers.csv", [
-                [t("customer"), "Email", t("phone"), t("joined"), t("bookingsCount"), t("spent"), t("tier")],
-                ...customers.map(c => [c.name, c.email, c.phone || "", c.joinedAt, c.totalBookings || 0, c.totalSpent || 0, statusLabel(c.tier)])
+                [t("rankCol"), t("customer"), "Email", t("phone"), t("joined"), t("bookingsCount"), t("spent"), t("tier")],
+                ...rankedCustomers().map(c => [c.rank, c.name, c.email, c.phone || "", c.joinedAt, c.totalBookings || 0, c.totalSpent, statusLabel(c.tier)])
             ]);
         }
     });
@@ -1640,6 +1736,160 @@ function bindEvents() {
     }, 15000);
 }
 
+/* ================== Phiên bản & làm mới bộ nhớ đệm ================== */
+
+const APP_VERSION = $('meta[name="app-version"]')?.content || "";
+
+async function fetchServerVersion() {
+    try {
+        const res = await fetch(`/version.json?t=${Date.now()}`, { cache: "no-store" });
+        if (!res.ok) return null;
+        const data = await res.json();
+        return typeof data.version === "string" ? data.version : null;
+    } catch (_) {
+        return null;
+    }
+}
+
+// Xóa bộ nhớ đệm của trang rồi tải lại, dùng khi vừa upload bản mới lên hosting
+async function hardRefresh() {
+    try {
+        if ("caches" in window) for (const key of await caches.keys()) await caches.delete(key);
+    } catch (_) { }
+    try {
+        (await navigator.serviceWorker?.getRegistrations?.())?.forEach(r => r.unregister());
+    } catch (_) { }
+    const urls = new Set(["/", "/index.html", "/admin", "/admin.html", "/css/style.css", "/css/admin.css", "/js/app.js", "/js/admin.js",
+        ...$$('link[rel="stylesheet"][href^="/"], script[src^="/"]').map(el => el.getAttribute("href") || el.getAttribute("src"))]);
+    await Promise.allSettled([...urls].map(u => fetch(u, { cache: "reload", credentials: "same-origin" })));
+    const url = new URL(location.href);
+    url.searchParams.set("_r", Date.now().toString(36));
+    location.replace(url.toString());
+}
+
+function stripRefreshParam() {
+    const url = new URL(location.href);
+    if (!url.searchParams.has("_r")) return;
+    url.searchParams.delete("_r");
+    history.replaceState(null, "", url.pathname + url.search + url.hash);
+}
+
+// Nếu server đã có bản mới mà trình duyệt vẫn giữ bản cũ thì tự tải lại một lần
+async function checkForUpdate() {
+    const server = await fetchServerVersion();
+    if (!server || !APP_VERSION || server === APP_VERSION) return;
+    const key = "godrive_reloaded_for";
+    let done = null;
+    try { done = sessionStorage.getItem(key); } catch (_) { }
+    if (done === server) return;
+    try { sessionStorage.setItem(key, server); } catch (_) { }
+    hardRefresh();
+}
+
+/* ================== Hướng dẫn ================== */
+
+// Nội dung hướng dẫn (HTML tĩnh do mình viết, không chứa dữ liệu người dùng)
+const ADMIN_HELP = {
+    vi: [
+        ["start", "Bắt đầu", `
+            <ol class="help-list">
+                <li><b>Đổi mật khẩu ngay</b> nếu vẫn dùng <code>admin123</code>: thanh bên trái → <em>Đổi mật khẩu</em>.</li>
+                <li><b>Tổng quan</b> cho biết doanh thu, đơn chờ duyệt và việc cần làm. Bấm thẻ <em>Đơn chờ duyệt</em> để xử lý ngay.</li>
+                <li>Dữ liệu tự làm mới mỗi phút. Bấm <b>↻</b> trên thanh trên cùng để làm mới ngay.</li>
+                <li>Nút 🌐 đổi ngôn ngữ Việt/Anh, nút ☀/🌙 đổi giao diện sáng/tối.</li>
+                <li>Phím tắt: <kbd>/</kbd> nhảy tới ô tìm kiếm, <kbd>Esc</kbd> đóng hộp thoại.</li>
+            </ol>`],
+        ["bookings", "Đơn đặt xe", `
+            <ol class="help-list">
+                <li>Đơn mới có trạng thái <b>Chờ duyệt</b>. Bấm vào dòng để xem số điện thoại, gọi cho khách rồi bấm <b>Duyệt</b>.</li>
+                <li>Khi giao xe cho khách, bấm <b>Bàn giao</b>: xe chuyển sang <b>Đang thuê</b>.</li>
+                <li>Khi khách trả xe, vào <b>Đội xe</b> và đổi trạng thái xe về <b>Sẵn sàng</b>.</li>
+                <li>Bấm <b>✕</b> để hủy đơn. Xe đang thuê sẽ tự trở về Sẵn sàng.</li>
+                <li><b>Xuất CSV</b> để mở danh sách đơn bằng Excel.</li>
+            </ol>`],
+        ["fleet", "Đội xe & bảo trì", `
+            <ol class="help-list">
+                <li><b>+ Thêm xe</b>: nhập tên, hãng, loại, số chỗ, giá/ngày, địa điểm. Ảnh xe là link bắt đầu bằng <code>https://</code>.</li>
+                <li>Tên <b>hãng</b> được dùng cho bộ lọc hãng xe trên trang khách, hãy viết thống nhất (ví dụ luôn là "Toyota").</li>
+                <li>Tích <b>xe nổi bật</b> để xe có nhãn "Được yêu thích" và hiện trước trên trang khách.</li>
+                <li><b>Bảo trì</b>: Lên lịch → <b>Bắt đầu</b> (xe tạm ẩn khỏi trang khách) → <b>Hoàn thành</b> (xe sẵn sàng trở lại).</li>
+            </ol>`],
+        ["update", "Cập nhật website", `
+            <ol class="help-list">
+                <li>Tạo gói <code>godrive-deploy.zip</code> mới bằng cách chạy <code>build-deploy.ps1</code> trong thư mục dự án. Gói này <b>không chứa thư mục data/</b>.</li>
+                <li>InfinityFree → <b>File Manager</b> → mở <code>htdocs</code> → <b>Upload</b> file zip.</li>
+                <li>Chọn file zip → <b>Extract</b> vào <code>htdocs</code> → cho phép <b>Overwrite</b> → xóa file zip.</li>
+                <li><b>Không bao giờ upload thư mục data/</b>: sẽ ghi đè và mất toàn bộ đơn đặt xe thật.</li>
+                <li>Bấm <b>Tải lại bản mới nhất</b> bên dưới để trình duyệt bỏ bản cũ trong bộ nhớ đệm.</li>
+            </ol>`]
+    ],
+    en: [
+        ["start", "Getting started", `
+            <ol class="help-list">
+                <li><b>Change the password now</b> if you still use <code>admin123</code>: left sidebar → <em>Change password</em>.</li>
+                <li>The <b>Dashboard</b> shows revenue, pending bookings and your to-do list. Click the <em>Pending bookings</em> card to handle them.</li>
+                <li>Data refreshes every minute. Click <b>↻</b> in the top bar to refresh immediately.</li>
+                <li>Use 🌐 to switch Vietnamese/English and ☀/🌙 for light/dark mode.</li>
+                <li>Shortcuts: <kbd>/</kbd> jumps to the search box, <kbd>Esc</kbd> closes dialogs.</li>
+            </ol>`],
+        ["bookings", "Bookings", `
+            <ol class="help-list">
+                <li>New bookings are <b>Pending</b>. Click a row to see the phone number, call the customer, then click <b>Approve</b>.</li>
+                <li>When handing the car over, click <b>Hand over</b>: the car becomes <b>On rent</b>.</li>
+                <li>When the customer returns the car, go to <b>Fleet</b> and set the car back to <b>Available</b>.</li>
+                <li>Click <b>✕</b> to cancel a booking. A car on rent goes back to Available automatically.</li>
+                <li><b>Export CSV</b> to open the booking list in Excel.</li>
+            </ol>`],
+        ["fleet", "Fleet & maintenance", `
+            <ol class="help-list">
+                <li><b>+ Add car</b>: enter the name, brand, type, seats, daily rate and location. The photo is a URL starting with <code>https://</code>.</li>
+                <li>The <b>brand</b> name powers the brand filter on the customer site, so keep it consistent (e.g. always "Toyota").</li>
+                <li>Tick <b>featured</b> to give a car the "Popular" badge and show it first on the customer site.</li>
+                <li><b>Maintenance</b>: Schedule → <b>Start</b> (car hidden from the customer site) → <b>Complete</b> (car available again).</li>
+            </ol>`],
+        ["update", "Updating the website", `
+            <ol class="help-list">
+                <li>Build a new <code>godrive-deploy.zip</code> by running <code>build-deploy.ps1</code> in the project folder. The package <b>does not include the data/ folder</b>.</li>
+                <li>InfinityFree → <b>File Manager</b> → open <code>htdocs</code> → <b>Upload</b> the zip.</li>
+                <li>Select the zip → <b>Extract</b> into <code>htdocs</code> → allow <b>Overwrite</b> → delete the zip.</li>
+                <li><b>Never upload the data/ folder</b>: it would overwrite and erase all real bookings.</li>
+                <li>Click <b>Load latest version</b> below so the browser drops the old cached files.</li>
+            </ol>`]
+    ]
+};
+
+function renderHelp() {
+    const sections = ADMIN_HELP[lang === "en" ? "en" : "vi"];
+    const current = sections.find(s => s[0] === ui.helpTab) || sections[0];
+    $("#helpTabs").innerHTML = tabsHtml("helpTab", current[0], sections.map(([id, title]) => [id, title]));
+    let html = current[2];
+    if (current[0] === "update") {
+        html += `
+            <div class="version-box">
+                <div class="version-row"><span>${esc(t("versionUsing"))}</span><strong>${esc(APP_VERSION || "—")}</strong></div>
+                <div class="version-row"><span>${esc(t("versionServer"))}</span><strong id="serverVersion">${esc(t("versionChecking"))}</strong></div>
+                <p class="version-status" id="versionStatus"></p>
+                <button type="button" class="btn btn-primary full" data-hard-refresh>${icon("cloud")} ${esc(t("loadLatest"))}</button>
+            </div>`;
+    }
+    $("#helpBody").innerHTML = html;
+    if (current[0] === "update") {
+        fetchServerVersion().then(server => {
+            const sv = $("#serverVersion"), st = $("#versionStatus");
+            if (!sv || !st) return;
+            sv.textContent = server || "—";
+            st.className = "version-status " + (!server ? "warn" : server === APP_VERSION ? "ok" : "warn");
+            st.textContent = !server ? t("versionMissing") : server === APP_VERSION ? t("versionSame") : t("versionNew");
+        });
+    }
+}
+
+function openHelp(tab) {
+    if (tab) ui.helpTab = tab;
+    renderHelp();
+    openModal("helpModal");
+}
+
 /* ================== Khởi động ================== */
 
 async function startApp() {
@@ -1652,9 +1902,16 @@ async function startApp() {
         renderEverything();
         updateSyncLabel();
     }
+    // Lần đầu đăng nhập trên trình duyệt này: tự mở hướng dẫn
+    if (!store("godrive_admin_help_seen")) {
+        store("godrive_admin_help_seen", "1");
+        openHelp("start");
+    }
 }
 
 (async function boot() {
+    stripRefreshParam();
+    checkForUpdate();
     applyStaticTranslations();
     bindEvents();
     if (!getToken()) { showLogin(); return; }

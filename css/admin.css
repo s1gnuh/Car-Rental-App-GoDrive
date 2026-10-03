@@ -2298,3 +2298,278 @@ tbody tr.clickable {
     transition-duration: .01ms !important;
   }
 }
+
+/* ===================== Popup hướng dẫn ===================== */
+#helpTabs {
+  margin-bottom: 18px;
+}
+
+.help-body {
+  min-height: 260px;
+  animation: pageIn .25s var(--ease);
+}
+
+.help-list {
+  display: grid;
+  gap: 10px;
+  padding-left: 0;
+  counter-reset: help;
+  list-style: none;
+}
+
+.help-list li {
+  position: relative;
+  padding: 12px 14px 12px 50px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-2);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  counter-increment: help;
+}
+
+.help-list li::before {
+  content: counter(help);
+  position: absolute;
+  left: 14px;
+  top: 12px;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(135deg, #7a5cff, #3d24a6);
+}
+
+.help-list b {
+  color: var(--text);
+}
+
+.help-body code,
+.help-body kbd {
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  color: var(--primary-strong);
+  background: var(--primary-50);
+}
+
+.help-body kbd {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.version-box {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px dashed var(--line-strong);
+}
+
+.version-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.version-row span {
+  color: var(--muted);
+}
+
+.version-row strong {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+}
+
+.version-status {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13.5px;
+}
+
+.version-status:empty {
+  display: none;
+}
+
+.version-status.ok {
+  color: var(--green);
+  background: var(--green-50);
+}
+
+.version-status.warn {
+  color: var(--orange);
+  background: var(--orange-50);
+}
+
+/* ===================== Hạng & xếp hạng khách hàng ===================== */
+.tier.diamond {
+  color: #0e7490;
+  background: rgba(14, 116, 144, .12);
+}
+
+:root[data-theme="dark"] .tier.diamond {
+  color: #67e8f9;
+  background: rgba(103, 232, 249, .12);
+}
+
+.tier-overview {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.tier-card {
+  --tier-c: #b06a2c;
+  position: relative;
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  text-align: left;
+  background: var(--surface);
+  border: 1.5px solid var(--line);
+  box-shadow: var(--shadow-sm);
+  transition: transform .2s var(--ease), border-color .2s, box-shadow .2s;
+  animation: rise .4s var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 50ms);
+}
+
+.tier-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  border-radius: 16px 16px 0 0;
+  background: var(--tier-c);
+}
+
+.tier-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+.tier-card.active {
+  border-color: var(--tier-c);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tier-c) 22%, transparent);
+}
+
+.tier-card.tier-silver { --tier-c: #8a94a6; }
+.tier-card.tier-gold { --tier-c: #e6b400; }
+.tier-card.tier-platinum { --tier-c: #8b5cf6; }
+.tier-card.tier-diamond { --tier-c: #06b6d4; }
+
+.tier-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.tier-card-top small,
+.tier-card > small {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.tier-card strong {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.tier-rule {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.rank-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 38px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 9px;
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--text-2);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+
+.rank-badge.gold {
+  color: #8a6100;
+  background: linear-gradient(135deg, #ffe58a, #f2c94c);
+  border-color: transparent;
+}
+
+.rank-badge.silver {
+  color: #3f4756;
+  background: linear-gradient(135deg, #eef1f5, #c3cad6);
+  border-color: transparent;
+}
+
+.rank-badge.bronze {
+  color: #fff;
+  background: linear-gradient(135deg, #d99a5e, #b06a2c);
+  border-color: transparent;
+}
+
+.spend-bar {
+  display: block;
+  width: 120px;
+  height: 5px;
+  margin-top: 6px;
+  border-radius: 99px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.spend-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: #b06a2c;
+}
+
+.spend-bar.tier-silver > span { background: #8a94a6; }
+.spend-bar.tier-gold > span { background: #e6b400; }
+.spend-bar.tier-platinum > span { background: #8b5cf6; }
+.spend-bar.tier-diamond > span { background: #06b6d4; }
+
+@media (max-width: 1200px) {
+  .tier-overview {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .tier-overview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .tier-card {
+    padding: 12px;
+  }
+
+  .tier-card strong {
+    font-size: 20px;
+  }
+}

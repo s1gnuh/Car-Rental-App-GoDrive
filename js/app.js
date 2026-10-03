@@ -122,7 +122,10 @@ const EN_STATIC = {
     "lookup.title": "Track your booking",
     "lookup.desc": "Enter both the email and phone number you used",
     "form.phone": "Phone number",
-    "lookup.btn": "View my bookings"
+    "lookup.btn": "View my bookings",
+    "help.open": "How to use",
+    "help.footer": "User guide",
+    "refresh.link": "Load the latest version"
 };
 
 // Chuỗi dùng trong JS: [tiếng Việt, tiếng Anh]
@@ -132,6 +135,21 @@ const STR = {
     loadingCars: ["Đang tải danh sách xe...", "Loading cars..."],
     loadFail: ["Không tải được danh sách xe. Vui lòng thử lại.", "Couldn't load cars. Please try again."],
     allBrands: ["Tất cả hãng", "All brands"],
+    tier_diamond: ["Kim cương", "Diamond"],
+    tier_platinum: ["Bạch kim", "Platinum"],
+    tier_gold: ["Vàng", "Gold"],
+    tier_silver: ["Bạc", "Silver"],
+    tier_bronze: ["Đồng", "Bronze"],
+    tierOver: ["Trên", "Over"],
+    tierFrom: ["Từ", "From"],
+    tierFrom0: ["Mới tham gia", "Starting tier"],
+    tierTop: ["Bạn đang ở hạng cao nhất. Cảm ơn bạn đã đồng hành cùng GoDrive!", "You're at the highest tier. Thank you for riding with GoDrive!"],
+    tierNeed: ["Thuê thêm {amount} để lên hạng {tier}", "Rent {amount} more to reach {tier}"],
+    memberHello: ["Hạng thành viên của", "Membership of"],
+    memberSpent: ["Đã thuê", "Total rented"],
+    memberRank: ["Xếp hạng", "Ranking"],
+    memberBookings: ["Số đơn", "Bookings"],
+    memberNote: ["Số tiền chỉ tính các đơn đã được GoDrive xác nhận.", "Only bookings confirmed by GoDrive are counted."],
     carCount: ["Hiển thị {n} xe · {a} xe sẵn sàng", "Showing {n} cars · {a} available"],
     days: ["{n} ngày", "{n} day(s)"],
     hint: ["Thuê <strong>{n} ngày</strong> · Bạn có thể đổi ngày khi đặt xe", "Renting for <strong>{n} day(s)</strong> · You can change dates when booking"],
@@ -182,7 +200,25 @@ const STR = {
     themeLight: ["Đã bật chế độ sáng", "Light mode on"],
     openMenu: ["Mở menu", "Open menu"],
     closeMenu: ["Đóng menu", "Close menu"],
-    network: ["Không kết nối được máy chủ. Vui lòng thử lại.", "Couldn't reach the server. Please try again."]
+    network: ["Không kết nối được máy chủ. Vui lòng thử lại.", "Couldn't reach the server. Please try again."],
+    helpTitle: ["Hướng dẫn đặt xe", "How to book a car"],
+    helpSub: ["4 bước đơn giản, không cần tài khoản", "4 simple steps, no account needed"],
+    h1t: ["Tìm xe phù hợp", "Find the right car"],
+    h1d: ["Chọn địa điểm và ngày thuê, sau đó lọc theo loại xe hoặc hãng xe.", "Choose a location and dates, then filter by car type or brand."],
+    h2t: ["Đặt xe trong 30 giây", "Book in 30 seconds"],
+    h2d: ["Bấm \"Đặt xe\", nhập họ tên (chỉ chữ cái), số điện thoại (9–10 số) và email. Kiểm tra tổng tiền rồi xác nhận.", "Click \"Book\", enter your name (letters only), phone number (9–10 digits) and email. Check the total and confirm."],
+    h3t: ["Chờ GoDrive xác nhận", "Wait for confirmation"],
+    h3d: ["Nhân viên sẽ gọi điện xác nhận đơn. Bạn chưa phải thanh toán khi đặt.", "Our staff will call you to confirm. No payment is needed when booking."],
+    h4t: ["Tra cứu đơn bất cứ lúc nào", "Track your booking anytime"],
+    h4d: ["Bấm \"Tra cứu đơn\" và nhập đúng email cùng số điện thoại đã dùng khi đặt.", "Click \"Track booking\" and enter the email and phone number you used."],
+    tipLang: ["Nút 🌐 đổi ngôn ngữ Việt/Anh, nút ☀/🌙 đổi giao diện sáng/tối.", "Use 🌐 to switch Vietnamese/English and ☀/🌙 for light/dark mode."],
+    tipRefresh: ["Trang hiển thị lạ sau khi website cập nhật?", "Page looks odd after a website update?"],
+    tipHotline: ["Cần hỗ trợ? Gọi", "Need help? Call"],
+    refreshNow: ["Tải lại bản mới nhất", "Load the latest version"],
+    refreshing: ["Đang tải bản mới nhất...", "Loading the latest version..."],
+    gotIt: ["Đã hiểu", "Got it"],
+    findCarNow: ["Tìm xe ngay", "Find a car"],
+    versionLabel: ["Phiên bản", "Version"]
 };
 
 // Dịch thông báo lỗi trả về từ API (server luôn trả tiếng Việt)
@@ -260,6 +296,7 @@ function setLang(next) {
         if ($("#bookingForm")) openBooking(bookingCarId, true);
     }
     if ($("#lookupResults").innerHTML && lastLookup) renderLookup(lastLookup);
+    if (!$("#helpModal").classList.contains("hidden")) renderHelp();
 }
 
 /* ================== Chế độ sáng / tối ================== */
@@ -748,13 +785,80 @@ function openLookup(autoSubmit = false) {
     if (autoSubmit && saved.email && saved.phone) $("#lookupForm").requestSubmit();
 }
 
-function renderLookup(list) {
+/* Hạng thành viên: giống CUSTOMER_TIERS trong api/_helpers.php (cao nhất là trên 1 tỷ) */
+const TIERS = [
+    { code: "diamond", min: 1000000000, strict: true },
+    { code: "platinum", min: 500000000 },
+    { code: "gold", min: 200000000 },
+    { code: "silver", min: 50000000 },
+    { code: "bronze", min: 0 }
+];
+
+function tierIndex(code) {
+    const i = TIERS.findIndex(x => x.code === code);
+    return i < 0 ? TIERS.length - 1 : i;
+}
+
+function tierMinLabel(tier) {
+    if (tier.min === 0) return t("tierFrom0");
+    return (tier.strict ? t("tierOver") : t("tierFrom")) + " " + shortMoney(tier.min);
+}
+
+function shortMoney(v) {
+    if (v >= 1e9) return (v / 1e9).toLocaleString(locale(), { maximumFractionDigits: 1 }) + (lang === "en" ? "B ₫" : " tỷ");
+    if (v >= 1e6) return (v / 1e6).toLocaleString(locale(), { maximumFractionDigits: 0 }) + (lang === "en" ? "M ₫" : " triệu");
+    return money(v);
+}
+
+function renderMemberCard(m) {
+    if (!m) return "";
+    const idx = tierIndex(m.tier);
+    const current = TIERS[idx];
+    const next = idx > 0 ? TIERS[idx - 1] : null;
+    let progress = 100, nextText = t("tierTop");
+    if (next) {
+        const target = next.strict ? next.min + 1 : next.min;
+        const span = target - current.min;
+        progress = Math.max(4, Math.min(100, Math.round(((m.totalSpent - current.min) / span) * 100)));
+        nextText = t("tierNeed", { amount: money(Math.max(0, target - m.totalSpent)), tier: t("tier_" + next.code) });
+    }
+    return `
+        <div class="member-card tier-${esc(current.code)}">
+            <div class="member-top">
+                <div>
+                    <small>${esc(t("memberHello"))}</small>
+                    <strong>${esc(m.name)}</strong>
+                </div>
+                <span class="member-badge">${icon("star")} ${esc(t("tier_" + current.code))}</span>
+            </div>
+            <div class="member-stats">
+                <div><small>${esc(t("memberSpent"))}</small><strong>${esc(money(m.totalSpent))}</strong></div>
+                <div><small>${esc(t("memberRank"))}</small><strong>#${Number(m.rank)}<em> / ${Number(m.totalCustomers)}</em></strong></div>
+                <div><small>${esc(t("memberBookings"))}</small><strong>${Number(m.totalBookings)}</strong></div>
+            </div>
+            <div class="member-progress"><span style="width:${progress}%"></span></div>
+            <p class="member-next">${esc(nextText)}</p>
+            <ol class="tier-ladder">${[...TIERS].reverse().map(tier => `
+                <li class="${tier.code === current.code ? "current" : ""} ${tierIndex(tier.code) > idx ? "passed" : ""}">
+                    <span class="tier-dot tier-${tier.code}"></span>
+                    <b>${esc(t("tier_" + tier.code))}</b>
+                    <small>${esc(tierMinLabel(tier))}</small>
+                </li>`).join("")}
+            </ol>
+            <p class="member-note">${esc(t("memberNote"))}</p>
+        </div>`;
+}
+
+function renderLookup(data) {
     const box = $("#lookupResults");
+    // Hỗ trợ cả kiểu trả về cũ (mảng đơn) lẫn kiểu mới { bookings, member }
+    const list = Array.isArray(data) ? data : (data?.bookings || []);
+    const member = Array.isArray(data) ? null : data?.member;
     if (!list.length) {
         box.innerHTML = `<div class="inline-message">${icon("alert")} ${esc(t("lookupNone"))}</div>`;
         return;
     }
-    box.innerHTML = `<p class="form-section-title">${esc(t("lookupFound", { n: list.length }))}</p>` + list.map((b, i) => `
+    box.innerHTML = renderMemberCard(member) + `<p class="form-section-title">${esc(t("lookupFound", { n: list.length }))}</p>` + list.map((b, i) => `
         <div class="booking-row" style="animation-delay:${i * 60}ms">
             <div class="booking-row-top">
                 <strong>#${esc(String(b.id).slice(-5))} · ${esc(b.carName)}</strong>
@@ -919,6 +1023,15 @@ function bindEvents() {
     });
 
     $("#lookupBtn").onclick = () => openLookup();
+    $("#helpBtn").onclick = openHelp;
+    $("#footerHelpBtn").onclick = e => { e.preventDefault(); openHelp(); };
+    document.addEventListener("click", e => {
+        const btn = e.target.closest("[data-hard-refresh]");
+        if (!btn) return;
+        e.preventDefault();
+        showToast(t("refreshing"));
+        hardRefresh();
+    });
     $$("[data-open-lookup]").forEach(b => b.onclick = () => { setMenu(false); openLookup(); });
     $("#footerLookupBtn").onclick = e => { e.preventDefault(); openLookup(); };
     $("#lookupForm").addEventListener("submit", submitLookup);
@@ -937,9 +1050,98 @@ function bindEvents() {
     });
 }
 
+/* ================== Phiên bản & làm mới bộ nhớ đệm ================== */
+
+const APP_VERSION = $('meta[name="app-version"]')?.content || "";
+
+async function fetchServerVersion() {
+    try {
+        const res = await fetch(`/version.json?t=${Date.now()}`, { cache: "no-store" });
+        if (!res.ok) return null;
+        const data = await res.json();
+        return typeof data.version === "string" ? data.version : null;
+    } catch (_) {
+        return null;
+    }
+}
+
+// Xóa bộ nhớ đệm của trang rồi tải lại, dùng khi vừa upload bản mới lên hosting
+async function hardRefresh() {
+    try {
+        if ("caches" in window) for (const key of await caches.keys()) await caches.delete(key);
+    } catch (_) { }
+    try {
+        (await navigator.serviceWorker?.getRegistrations?.())?.forEach(r => r.unregister());
+    } catch (_) { }
+    const urls = new Set(["/", "/index.html", "/admin", "/admin.html", "/css/style.css", "/css/admin.css", "/js/app.js", "/js/admin.js",
+        ...$$('link[rel="stylesheet"][href^="/"], script[src^="/"]').map(el => el.getAttribute("href") || el.getAttribute("src"))]);
+    await Promise.allSettled([...urls].map(u => fetch(u, { cache: "reload", credentials: "same-origin" })));
+    const url = new URL(location.href);
+    url.searchParams.set("_r", Date.now().toString(36));
+    location.replace(url.toString());
+}
+
+function stripRefreshParam() {
+    const url = new URL(location.href);
+    if (!url.searchParams.has("_r")) return;
+    url.searchParams.delete("_r");
+    history.replaceState(null, "", url.pathname + url.search + url.hash);
+}
+
+// Nếu server đã có bản mới mà trình duyệt vẫn giữ bản cũ thì tự tải lại một lần
+async function checkForUpdate() {
+    const server = await fetchServerVersion();
+    if (!server || !APP_VERSION || server === APP_VERSION) return;
+    const key = "godrive_reloaded_for";
+    let done = null;
+    try { done = sessionStorage.getItem(key); } catch (_) { }
+    if (done === server) return;
+    try { sessionStorage.setItem(key, server); } catch (_) { }
+    hardRefresh();
+}
+
+/* ================== Hướng dẫn ================== */
+
+function renderHelp() {
+    const steps = [["h1t", "h1d"], ["h2t", "h2d"], ["h3t", "h3d"], ["h4t", "h4d"]];
+    $("#helpContent").innerHTML = `
+        <div class="modal-logo">
+            <span class="modal-icon">${icon("help")}</span>
+            <h2 id="helpTitle">${esc(t("helpTitle"))}</h2>
+            <p>${esc(t("helpSub"))}</p>
+        </div>
+        <ol class="help-steps">${steps.map(([title, desc], i) => `
+            <li><span class="help-num">${i + 1}</span><div><strong>${esc(t(title))}</strong><p>${esc(t(desc))}</p></div></li>`).join("")}
+        </ol>
+        <div class="help-tips">
+            <p>${icon("globe")}<span>${esc(t("tipLang"))}</span></p>
+            <p>${icon("refresh")}<span>${esc(t("tipRefresh"))} <button type="button" class="text-link" data-hard-refresh>${esc(t("refreshNow"))}</button></span></p>
+            <p>${icon("phone")}<span>${esc(t("tipHotline"))} <a href="tel:0365551920">0365 551 920</a></span></p>
+        </div>
+        <div class="help-actions">
+            <button type="button" class="btn btn-light btn-large" id="helpGotIt">${esc(t("gotIt"))}</button>
+            <button type="button" class="btn btn-primary btn-large" id="helpFindCar">${esc(t("findCarNow"))} ${icon("arrow")}</button>
+        </div>
+        <p class="help-version">${esc(t("versionLabel"))} ${esc(APP_VERSION || "—")}</p>`;
+    $("#helpGotIt").onclick = () => closeModal("helpModal");
+    $("#helpFindCar").onclick = () => {
+        closeModal("helpModal");
+        setTimeout(() => $("#cars").scrollIntoView({ behavior: "smooth" }), 200);
+    };
+}
+
+function openHelp() {
+    setMenu(false);
+    renderHelp();
+    openModal("helpModal");
+    setTimeout(() => $("#helpGotIt")?.focus({ preventScroll: true }), 90);
+}
+
+stripRefreshParam();
 applyStaticTranslations();
 syncDateInputs();
 bindEvents();
 initNavigation();
 initReveal();
 loadCars();
+checkForUpdate();

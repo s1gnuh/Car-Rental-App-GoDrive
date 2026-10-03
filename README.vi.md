@@ -236,6 +236,18 @@ Hiển thị tổng tiền đã thu, chờ thanh toán, đã hoàn tiền và l�
 
 > File `router.php` chỉ dùng khi chạy trên máy. Trên hosting Apache, các file `.htaccess` sẽ đảm nhận việc định tuyến và chặn truy cập thư mục `data/`.
 
+### Cập nhật website đang chạy
+
+1. Tạo gói deploy (PowerShell trên Windows, trong thư mục dự án):
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\build-deploy.ps1
+   ```
+   Script sẽ ghi số phiên bản mới vào `version.json` và các đường dẫn `?v=` trong HTML, rồi tạo `..\godrive-deploy.zip` **không chứa thư mục `data/`**.
+2. Trong File Manager, upload file zip vào `htdocs`, **Extract** với tùy chọn **Overwrite**, rồi xóa file zip.
+3. Mở trang admin → bấm **Tải lại bản mới nhất** (thanh bên trái). Tab **Hướng dẫn → Cập nhật website** cho biết phiên bản bạn đang dùng và phiên bản trên server.
+
+> Không bao giờ upload thư mục `data/` đè lên website đang chạy, vì sẽ mất đơn đặt xe thật. Trình duyệt của khách cũng tự nhận bản mới ở lần truy cập tiếp theo nhờ cơ chế kiểm tra phiên bản và header chống bộ nhớ đệm trong `.htaccess`.
+
 ---
 
 ## 🗂️ Cấu trúc thư mục

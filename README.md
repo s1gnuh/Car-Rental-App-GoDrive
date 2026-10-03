@@ -236,6 +236,18 @@ Shows the amount collected, pending and refunded, plus the transaction history, 
 
 > `router.php` is only used when running locally. On Apache hosting, the `.htaccess` files handle routing and block access to `data/`.
 
+### Updating the live site
+
+1. Build the deploy package (Windows PowerShell, in the project folder):
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\build-deploy.ps1
+   ```
+   This stamps a new version into `version.json` and the `?v=` links in the HTML, then creates `..\godrive-deploy.zip` **without the `data/` folder**.
+2. In the File Manager, upload the zip into `htdocs`, **Extract** it with **Overwrite**, then delete the zip.
+3. Open the admin dashboard → **Load latest version** (left sidebar). The **User guide → Updating the website** tab shows the version you are using and the version on the server.
+
+> Never upload the `data/` folder over the live site: it would erase real bookings. Browsers also pick up the new version automatically on their next visit thanks to the version check and the no-cache headers in `.htaccess`.
+
 ---
 
 ## 🗂️ Project structure
