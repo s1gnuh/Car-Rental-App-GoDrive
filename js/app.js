@@ -115,7 +115,10 @@ const EN_STATIC = {
     "footer.admin": "Admin portal",
     "footer.contact": "Contact",
     "footer.support247": "24/7 support",
-    "footer.copy": "© 2026 GoDrive. All rights reserved.",
+    "footer.copy": "© 2026 GoDrive · A non-commercial learning project, not a real car rental service.",
+    "footer.disclaimer": "Disclaimer",
+    "demo.text": "A non-commercial learning project, not a real car rental service. No real bookings or payments.",
+    "demo.more": "Read the disclaimer",
     "backTop": "Back to top",
     "close": "Close",
     "booking.aria": "Book a car",
@@ -179,6 +182,8 @@ const STR = {
     total: ["Tổng cộng", "Total"],
     confirmBooking: ["Xác nhận đặt xe", "Confirm booking"],
     bookingNote: ["Bạn chưa phải thanh toán ngay. GoDrive sẽ gọi điện xác nhận đơn.", "No payment now. GoDrive will call you to confirm the booking."],
+    demoNote: ["Bản demo học tập: đơn đặt xe không có giá trị và không phát sinh thanh toán. Vui lòng dùng thông tin giả.", "Learning demo: bookings have no value and no payment is taken. Please use made-up details."],
+    demoMore: ["Xem tuyên bố miễn trừ", "Read the disclaimer"],
     errName: ["Vui lòng nhập họ tên", "Please enter your name"],
     errNameChars: ["Họ tên chỉ được chứa chữ cái", "Name can only contain letters"],
     errPhone: ["Số điện thoại phải gồm 9–10 chữ số", "Phone number must have 9–10 digits"],
@@ -529,7 +534,8 @@ function countUp(el, to, duration = 900) {
     if (matchMedia("(prefers-reduced-motion: reduce)").matches || target <= 1) { el.textContent = target; return; }
     const start = performance.now();
     const step = now => {
-        const p = Math.min(1, (now - start) / duration);
+        // Mốc thời gian của khung hình có thể sớm hơn lúc bắt đầu, nên chặn dưới 0 để không ra số âm
+        const p = Math.min(1, Math.max(0, (now - start) / duration));
         el.textContent = Math.round(target * (1 - Math.pow(1 - p, 3)));
         if (p < 1) requestAnimationFrame(step);
     };
@@ -679,7 +685,11 @@ function renderCities(visible) {
     if (!grid) return;
     const names = [...DEFAULT_CITIES];
     visible.forEach(c => { if (c.location && !names.includes(c.location)) names.push(c.location); });
-    countUp($("#statCities"), names.length);
+    const citiesEl = $("#statCities");
+    if (citiesEl && citiesEl.dataset.value !== String(names.length)) {
+        citiesEl.dataset.value = names.length;
+        countUp(citiesEl, names.length);
+    }
     grid.innerHTML = names.map((name, i) => {
         const here = visible.filter(c => c.location === name);
         const ready = here.filter(c => c.status === "available");
@@ -840,6 +850,7 @@ function openBooking(carId, keepValues = false) {
         </div>
         <button class="btn btn-primary full btn-large" type="submit" id="b_submitBtn">${esc(t("confirmBooking"))} ${icon("arrow")}</button>
         <p class="form-note">${icon("shield")}<span>${esc(t("bookingNote"))}</span></p>
+        <p class="form-note demo-note">${icon("alert")}<span>${esc(t("demoNote"))} <a href="/disclaimer.html" target="_blank" rel="noopener">${esc(t("demoMore"))}</a></span></p>
     </form>`;
 
     if (!keepValues || $("#bookingModal").classList.contains("hidden")) openModal("bookingModal");
@@ -1179,6 +1190,14 @@ function initSpotlight() {
     }, { passive: true });
 }
 
+// Dải thông báo "dự án học tập": người xem có thể ẩn, lựa chọn được nhớ trên trình duyệt đó
+function initDemoBar() {
+    const bar = $("#demoBar");
+    if (!bar) return;
+    if (store("godrive_demo_hidden") === "1") bar.remove();
+    else $("#demoClose").onclick = () => { store("godrive_demo_hidden", "1"); bar.remove(); };
+}
+
 function initHeroCar() {
     $("#heroCar").innerHTML = CarArt.svg({ type: "Sedan", color: "purple", name: "GoDrive" }, { spin: true, road: true, className: "hero-svg" });
 }
@@ -1415,6 +1434,7 @@ stripRefreshParam();
 applyStaticTranslations();
 syncDateInputs();
 bindEvents();
+initDemoBar();
 initNavigation();
 initHeroCar();
 initSpotlight();

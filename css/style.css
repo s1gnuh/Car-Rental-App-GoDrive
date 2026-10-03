@@ -3654,3 +3654,76 @@ footer .brand:hover {
 .pay-line.pay-refunded b {
   color: var(--muted);
 }
+
+/* ---------- Dải thông báo dự án học tập ---------- */
+.demo-bar {
+  position: relative;
+  z-index: 41;
+  font-size: 13px;
+  color: #fff;
+  background: linear-gradient(90deg, #3d24a6, #5b3fd9 50%, #8a4fd8);
+}
+
+.demo-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 38px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  text-align: center;
+}
+
+.demo-bar p {
+  line-height: 1.45;
+}
+
+.demo-bar a {
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+}
+
+.demo-close {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: #fff;
+  opacity: .8;
+}
+
+.demo-close:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, .15);
+}
+
+.demo-note {
+  color: var(--orange);
+}
+
+.demo-note a {
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.copyright a {
+  display: inline;
+  margin: 0 0 0 6px;
+  color: #c9bcff;
+}
+
+@media (max-width: 600px) {
+  .demo-bar {
+    font-size: 12px;
+  }
+
+  .demo-inner {
+    justify-content: space-between;
+    text-align: left;
+  }
+}

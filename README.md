@@ -1,20 +1,56 @@
 <div align="center">
 
-# 🚗 GoDrive — Self-Drive Car Rental App
+# 🚗 GoDrive
+
+### Self-drive car rental platform: customer site + admin dashboard
 
 **Book in 30 seconds · No account needed · Transparent pricing**
 
-A car rental website with a **customer site** and an **admin dashboard**, built with plain HTML, CSS, JavaScript and PHP.
-Data is stored in JSON files, so no database is required. Runs on free PHP hosting such as InfinityFree.
+[![PHP](https://img.shields.io/badge/PHP-8%2B-777BB4?logo=php&logoColor=white)](https://www.php.net/)
+[![JavaScript](https://img.shields.io/badge/JavaScript-vanilla-F7DF1E?logo=javascript&logoColor=black)](#-tech-stack)
+[![Database](https://img.shields.io/badge/Database-none_(JSON_files)-0f9f8f)](#data-files)
+[![i18n](https://img.shields.io/badge/i18n-Vietnamese_%7C_English-5b3fd9)](#-features)
+[![Theme](https://img.shields.io/badge/Theme-Light_%7C_Dark-141a2e)](#-features)
+[![Project](https://img.shields.io/badge/Project-Learning_%2F_non--commercial-orange)](#%EF%B8%8F-disclaimer)
 
-![PHP](https://img.shields.io/badge/PHP-8%2B-777BB4?logo=php&logoColor=white)
-![JavaScript](https://img.shields.io/badge/JavaScript-vanilla-F7DF1E?logo=javascript&logoColor=black)
-![Languages](https://img.shields.io/badge/Languages-Vietnamese_%7C_English-5b3fd9)
-![Theme](https://img.shields.io/badge/Theme-Light_%7C_Dark-141a2e)
-
-**English** · [Tiếng Việt](README.vi.md)
+[**Live demo**](https://godrive.rf.gd) · [Admin](https://godrive.rf.gd/admin) · **English** · [Tiếng Việt](README.vi.md)
 
 </div>
+
+> [!IMPORTANT]
+> **GoDrive is a non-commercial learning project, not a real car rental service.** No real bookings are fulfilled and no payments are accepted; all cars, prices and figures are sample data. Please use made-up details when trying the booking form. See the [Disclaimer](#%EF%B8%8F-disclaimer) and [`/disclaimer.html`](disclaimer.html).
+
+---
+
+## 📑 Table of contents
+
+- [Overview](#-overview)
+- [Screenshots](#-screenshots)
+- [Features](#-features)
+- [How it works](#-how-it-works)
+- [Tech stack](#-tech-stack)
+- [Getting started](#-getting-started)
+- [Customer guide](#-customer-guide)
+- [Admin guide](#%EF%B8%8F-admin-guide)
+- [Deployment](#%EF%B8%8F-deployment)
+- [Project structure](#%EF%B8%8F-project-structure)
+- [API reference](#-api-reference)
+- [Security](#-security)
+- [Troubleshooting](#-troubleshooting)
+- [Roadmap](#%EF%B8%8F-roadmap)
+- [Disclaimer](#%EF%B8%8F-disclaimer)
+
+---
+
+## 🔎 Overview
+
+GoDrive simulates the complete workflow of a small car rental business:
+
+1. A customer browses the fleet, picks dates and books a car **without creating an account**.
+2. An admin reviews the booking and **approves it, choosing the payment method** at the same time.
+3. Once the payment is **confirmed as collected**, it counts toward revenue, and the customer's spending moves them up the **membership tiers**.
+
+Everything runs on **plain HTML, CSS, JavaScript and PHP**, with data stored in JSON files, so it works on free PHP hosting (e.g. InfinityFree) with no database or build step.
 
 ---
 
@@ -22,238 +58,235 @@ Data is stored in JSON files, so no database is required. Runs on free PHP hosti
 
 <table>
   <tr>
-    <td width="62%"><img src="docs/screenshots/01-trang-chu.png" alt="GoDrive home page" /></td>
+    <td width="62%"><img src="docs/screenshots/01-home.png" alt="Home page in dark mode" /></td>
     <td width="38%">
       <h3>🏠 Home page</h3>
-      <p>Service overview, the number of cars available right now, and a search box for pick-up location and rental dates.</p>
+      <p>Animated hero with live figures (cars available, lowest price, average rating) and a search box for pick-up location and rental dates.</p>
     </td>
   </tr>
   <tr>
     <td width="38%">
-      <h3>🌙 Dark mode & English</h3>
-      <p>Filter cars by type and sort by price or popularity. Switch Vietnamese ↔ English and light ↔ dark straight from the navigation bar.</p>
+      <h3>🚙 Fleet & filters</h3>
+      <p>Filter by body type and brand, sort by price or popularity. Each card shows the estimated total for the selected dates. Cars without a photo get a generated illustration.</p>
     </td>
-    <td width="62%"><img src="docs/screenshots/02-danh-sach-xe-dark-en.png" alt="Car list in dark mode, English" /></td>
+    <td width="62%"><img src="docs/screenshots/02-cars.png" alt="Car list with filters" /></td>
   </tr>
   <tr>
-    <td width="62%"><img src="docs/screenshots/03-dat-xe.png" alt="Booking form" /></td>
+    <td width="62%"><img src="docs/screenshots/03-car-details.png" alt="Car details popup" /></td>
     <td width="38%">
-      <h3>📝 Booking</h3>
-      <p>Only a name, phone number and email are needed. The total is calculated from the number of rental days, and mistakes are flagged right under each field.</p>
+      <h3>🔍 Car details</h3>
+      <p>Specs, what's included, price estimate and similar cars, with one click to book.</p>
     </td>
   </tr>
   <tr>
     <td width="38%">
       <h3>📊 Admin dashboard</h3>
-      <p>Real revenue for the last 7 or 30 days compared with the previous period, booking status, fleet status and a to-do list.</p>
+      <p>Collected revenue (paid transactions only) with 7/30-day charts and trends, amount awaiting payment, booking status, fleet status and a to-do list.</p>
     </td>
     <td width="62%"><img src="docs/screenshots/04-admin-dashboard.png" alt="Admin dashboard" /></td>
   </tr>
   <tr>
-    <td width="62%"><img src="docs/screenshots/05-admin-doi-xe-dark.png" alt="Fleet management in dark mode" /></td>
+    <td width="62%"><img src="docs/screenshots/05-admin-approve.png" alt="Approve booking with payment method" /></td>
     <td width="38%">
-      <h3>🚙 Fleet management</h3>
-      <p>Add, edit and delete cars, change a car's status right on its card, mark cars as featured and add photos by URL.</p>
+      <h3>✅ Approve & record payment</h3>
+      <p>Approving a booking requires choosing the payment method and whether the money was collected. The transaction is recorded immediately.</p>
     </td>
   </tr>
   <tr>
     <td width="38%">
-      <h3>📱 Mobile friendly</h3>
-      <p>Both the customer site and the admin dashboard work well on small screens, with a collapsible menu and bottom-sheet dialogs.</p>
+      <h3>💳 Payments</h3>
+      <p>Collected, awaiting and refunded totals, a breakdown by payment method, and a transaction history that stays in sync with bookings and can be edited.</p>
     </td>
-    <td width="62%"><img src="docs/screenshots/06-mobile.png" alt="Mobile layout" /></td>
+    <td width="62%"><img src="docs/screenshots/06-admin-payments.png" alt="Payments page" /></td>
   </tr>
 </table>
+
+<sub>All screenshots use dark mode and sample data.</sub>
 
 ---
 
 ## ✨ Features
 
-### For customers
+### Customer site
 
-- Browse cars, filter by type (Sedan / SUV / Hatchback), brand and location, sort by price or popularity
-- Cars without a photo get a **detailed illustration** matching their body type and paint color
-- **Car details popup** with specs, price estimate for the chosen dates and similar cars
-- Browse by **city** or by **brand** from the home page; each card shows the estimated total for the selected dates
-- Look up a booking to see your **membership tier** (Bronze → Diamond) and total rented
-- Book **without creating an account**; the total is calculated automatically from the rental days
-- **Double bookings are blocked** for the same car
-- Track a booking with just the **email (Gmail)** used when booking, including its payment status
-- Contact details are remembered for the next booking
-- **Vietnamese & English** and **light/dark mode** (follows the device setting on first visit)
+| Area | What you get |
+|---|---|
+| **Browse** | Filter by body type (Sedan / SUV / Hatchback), brand and city; sort by price or popularity; brand marquee and city cards as shortcuts |
+| **Car presentation** | Photos or generated SVG illustrations matching body type and paint colour; details popup with specs, inclusions and similar cars |
+| **Booking** | No account; live total (daily rate × days); input rules (name: letters only, phone: 9–10 digits); double bookings blocked; max 90 days |
+| **Tracking** | Look up bookings with just the email used to book; see booking and **payment status** plus **membership tier** and total rented |
+| **Experience** | Vietnamese ↔ English, light ↔ dark (follows the OS on first visit), mobile-first layout, user guide popup, one-click "load latest version" |
 
-### For administrators (`/admin`)
+### Admin dashboard (`/admin`)
 
-- Dashboard with real revenue, trends versus the previous period and a to-do list
-- Booking management: approve, hand over the car, cancel, view details, call or email the customer
-- **Approving a booking requires choosing the payment method** (cash, bank transfer, card, MoMo, ZaloPay, VNPay); the transaction is recorded under Payments from that moment
-- Customers ranked by spending with 5 automatic tiers (Diamond = over 1 billion VND)
-- Manage the fleet, customers, payments and maintenance schedules
-- Export bookings, customers and payments to CSV
-- Create/delete admin accounts, change password
-- Data auto-refreshes every minute; press `/` to jump to the search box
-- Same bilingual interface and light/dark mode as the customer site
+| Area | What you get |
+|---|---|
+| **Dashboard** | Collected revenue, trend vs. the previous 30 days, amount awaiting payment, 7/30-day revenue chart, booking & fleet status, to-do list |
+| **Bookings** | Tabs, search, details, call/email customer; **approve with payment method**, hand over car, cancel; payment column per booking |
+| **Payments** | Created at approval; mark as paid; **edit** method, status, amount, collection time and note; method breakdown; auto-sync with bookings |
+| **Fleet** | Add/edit/delete cars, photo URL or paint colour for the illustration, featured flag, status right on the card |
+| **Customers** | Automatic ranking by spending with 5 tiers (Diamond = over 1 billion VND), tier filters, progress to the next tier |
+| **Maintenance** | Schedule → start (car hidden from site) → complete (car available again) |
+| **System** | Multiple admin accounts, change password with strength meter, CSV exports, auto-refresh every minute, `/` search shortcut, built-in guide |
 
 ---
 
-## 🚀 Installation & running locally
+## 🔄 How it works
 
-### 1. Install PHP 8 or later
+### Booking lifecycle
 
-- **Windows:** open PowerShell and run
-  ```powershell
-  winget install PHP.PHP.8.4
-  ```
-  When it finishes, **reopen your terminal** so the `php` command is available.
-- **macOS:** `brew install php`
-- **Ubuntu/Debian:** `sudo apt install php-cli`
+```
+                ┌──────────── Approve + choose payment method ────────────┐
+                │                                                         ▼
+ Customer ──▶ Pending                                                 Confirmed ──[Hand over]──▶ Car "On rent"
+                │                                                         │
+                └──────────────[Cancel]──────────────┬──────────[Cancel]──┘
+                                                     ▼
+                                                 Cancelled  (car on rent returns to "Available")
+```
 
-Check with `php -v`.
+### Payments & revenue
 
-### 2. Get the source code
+| Event | Transaction | Revenue |
+|---|---|---|
+| Booking created | — | Not counted |
+| Booking approved, **not collected** | Created as *Awaiting payment* with the chosen method | **Not counted** (shown as "Awaiting") |
+| Payment **confirmed as collected** | *Paid*, with collection time | **Counted** on the collection date |
+| Approved booking cancelled | *Paid* → *Refunded*; *Awaiting* → removed | Removed from revenue |
+
+Transactions stay in sync with their booking: customer name, car and amount always follow the booking, unless an admin edited the amount manually (it can be reset to the booking total). Bookings approved before payments existed automatically get a transaction waiting for its method.
+
+### Membership tiers
+
+Tiers are recalculated automatically from the total of **approved** bookings:
+
+| Tier | Total rented |
+|---|---|
+| 💎 Diamond | **over** 1,000,000,000 ₫ |
+| Platinum | from 500,000,000 ₫ |
+| Gold | from 200,000,000 ₫ |
+| Silver | from 50,000,000 ₫ |
+| Bronze | below 50,000,000 ₫ |
+
+Thresholds live in `api/_helpers.php` (`CUSTOMER_TIERS`) and are mirrored in `js/app.js` and `js/admin.js`.
+
+---
+
+## 🧰 Tech stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | HTML5, CSS3 (custom properties, light/dark tokens), vanilla JavaScript (ES2020) |
+| Charts | [Chart.js 4](https://www.chartjs.org/) (admin only, via CDN) |
+| Backend | PHP 8 (no framework), JSON REST-style endpoints |
+| Storage | JSON files in `data/` with file locking |
+| Auth | HMAC-signed tokens, bcrypt password hashes |
+| Hosting | Any Apache + PHP host (`.htaccess`), or `php -S` locally |
+
+---
+
+## 🚀 Getting started
+
+### Requirements
+
+- **PHP 8.0+** (no extensions beyond the defaults; `mbstring` is not required)
+- A modern browser
+
+| OS | Install PHP |
+|---|---|
+| Windows | `winget install PHP.PHP.8.4` (then reopen the terminal) |
+| macOS | `brew install php` |
+| Ubuntu / Debian | `sudo apt install php-cli` |
+
+### Run locally
 
 ```bash
 git clone https://github.com/s1gnuh/Car-Rental-App-GoDrive.git
 cd Car-Rental-App-GoDrive
-```
-
-### 3. Run the app
-
-```bash
 php -S localhost:8080 router.php
 ```
-
-Open your browser:
 
 | Page | URL |
 |---|---|
 | Customer site | http://localhost:8080/ |
 | Admin dashboard | http://localhost:8080/admin |
+| Disclaimer | http://localhost:8080/disclaimer.html |
 
-**Default admin account:** `admin` / `admin123`. **Change the password** right after your first sign-in.
+**Default admin account:** `admin` / `admin123`. Change it right after your first sign-in.
 
-> ⚠️ Don't open `index.html` directly (double-click or Live Server). The PHP API won't run that way and the car list won't load.
+> [!WARNING]
+> Don't open `index.html` directly (double-click or Live Server). The PHP API won't run that way and the car list won't load.
 
 ---
 
 ## 📖 Customer guide
 
-### Finding a car
+### Find a car
 
-1. In the search box on the home page, choose the **Pick-up location**, **Pick-up date** and **Return date**, then click **Search**.
-2. In **Choose the right car**, click **Sedan**, **SUV** or **Hatchback** to filter by type.
-3. Use the sort menu on the right to order by **Most popular**, **Price: low to high** or **Price: high to low**.
-4. Cars labelled **Rented** or showing an **Unavailable** button can't be booked at the moment.
+1. Choose the **pick-up location** and **dates** in the search box, then click **Search**.
+2. Filter by **body type** or **brand**, or click a **city card** / **brand chip** on the home page.
+3. Sort by **Most popular**, **Price: low to high** or **Price: high to low**.
+4. Click a car's name or **View details** to see specs and similar cars.
 
-### Booking a car
+### Book
 
-1. Click **Book** on the car you want.
-2. Fill in your contact details:
-   - **Full name:** letters only (Vietnamese accents allowed) and spaces.
-   - **Phone number:** digits only, 9 to 10 digits.
-   - **Email:** used for updates and to look up your booking.
-3. Choose the pick-up location, pick-up date and return date. The maximum rental period is 90 days.
-4. Check the **Total** (daily rate × number of days) and click **Confirm booking**.
-5. The success screen shows your **booking code**. The booking stays **Pending** until GoDrive calls you to confirm.
+1. Click **Book** on a card (or **Book this car** in the details popup).
+2. Enter your name (letters only), phone (9–10 digits) and email.
+3. Pick the location and dates (up to 90 days), check the **Total**, then **Confirm booking**.
+4. Note the **booking code**. The booking stays **Pending** until it is approved.
 
-> No payment is taken when you book. If the car is already booked for the dates you picked, the system tells you and won't allow a double booking.
+### Track a booking
 
-### Tracking a booking
-
-1. Click **Track booking** in the navigation bar or the footer.
-2. Enter the **email (Gmail)** you used when booking.
-3. Click **View my bookings** to see your bookings, rental dates, totals and status: *Pending*, *Confirmed* or *Cancelled*.
-
-### Changing language and theme
-
-- Click **🌐 EN / VI** to switch between Vietnamese and English.
-- Click **☀ / 🌙** to switch between light and dark mode.
-- Your choice is remembered for future visits and shared with the admin dashboard.
+Click **Track booking**, enter the email you used, and you'll see each booking's status, payment status (method · paid / not paid / refunded), your membership tier and total rented.
 
 ---
 
 ## 🛠️ Admin guide
 
-### Signing in
-
-Go to `/admin` and enter your username (or email) and password. Click the 👁 icon to show or hide the password. A session lasts 7 days.
-
-### Dashboard
-
-- **4 stat cards:** collected revenue (only payments confirmed as collected; click to open Payments), pending bookings (click to open the pending list), cars on rent, and customers.
-- **Revenue chart:** choose **7 days** or **30 days**. Revenue is only recognised once a payment is **confirmed as collected**, grouped by collection date. Approved bookings that have not been paid are not counted yet.
-- **Booking status**, **fleet status** and a **to-do list**. You can approve bookings directly from the to-do list.
-
 ### Bookings
 
-How a booking moves through the system:
-
-```
-Pending ──[Approve + payment method]──▶ Confirmed ──[Hand over]──▶ Car becomes "On rent"
-   │                       │
-   └───────[Cancel]────────┴──▶ Cancelled (a car on rent goes back to "Available")
-```
-
-- Use the **All / Pending / Confirmed / Cancelled** tabs and the search box (booking code, customer name, phone, email or car).
-- Click a row to open the **booking details**, including a button to call the customer.
-- **Approve** opens a dialog where you must pick the payment method and whether the money has been collected. A transaction is created under **Payments** at that moment.
-- Cancelling always asks for confirmation to prevent accidental clicks. Cancelling an approved booking refunds a collected payment or drops an uncollected one.
-- Click **Export CSV** to download the booking list for Excel.
-
-### Fleet
-
-- **Add a car:** click **+ Add car** and enter the name, brand, type, seats, daily rate and location. The photo is a URL starting with `https://`. No photo? Pick a **car color** and the site draws an illustration of that body type.
-- Tick **Mark as featured on the customer site** to give the car a "Popular" badge and show it first on the customer site.
-- **Change status:** pick *Available / On rent / Maintenance* right on the car card. When a customer returns a car, set it back to **Available**.
-- Cars in **Maintenance** are hidden from the customer site.
-
-### Customers
-
-Customers are added automatically on their first booking. Total spent only counts **approved** bookings. Customers are ranked by spending into 5 tiers: Diamond (over 1 billion VND), Platinum (500M+), Gold (200M+), Silver (50M+) and Bronze. Click a tier card to filter; the list can be exported to CSV.
+- Use the tabs (**All / Pending / Confirmed / Cancelled**) and search (code, name, phone, email, car).
+- **Approve** opens a dialog: pick the **payment method** (cash, bank transfer, credit card, MoMo, ZaloPay, VNPay), choose **collected** or **not collected**, add an optional reference, then confirm.
+- **Hand over** marks the car as *On rent*; when it is returned, set the car back to *Available* in **Fleet**.
+- **Cancel** always asks for confirmation; cancelling an approved booking refunds or removes its transaction.
 
 ### Payments
 
-Payments start **when a booking is approved**: the admin picks the payment method and whether it was collected. The page shows the amount collected, awaiting payment and refunded, a breakdown by payment method and the transaction history. Use **Mark as paid** when a customer pays later, or **Edit** to change the method, status, amount, collection time and note. Customer, car and amount stay in sync with the booking (unless the amount was edited manually); bookings approved before this feature get a transaction waiting for its method. Cancelling a paid booking marks its transaction as refunded. Online payment gateways are not integrated yet.
+- **Mark as paid** when the customer pays later; revenue is recognised at that moment.
+- **Edit (✎)** to change the method, status (awaiting / paid / refunded), amount, collection time or note. Edits record who made them and when.
+- An orange banner lists transactions that still need a payment method.
 
-### Maintenance
+### Fleet, customers & maintenance
 
-1. Click **+ Schedule maintenance**, choose the car, service, start and end dates, cost and notes.
-2. Click **Start**: the car switches to **Maintenance** automatically.
-3. Click **Complete**: the car goes back to **Available** automatically.
+- **Fleet:** add a photo URL (`https://…`) or pick a **paint colour** for the generated illustration; keep brand names consistent for the brand filter.
+- **Customers:** click a tier card to filter; export to CSV.
+- **Maintenance:** schedule, **Start** (car hidden from the site), **Complete** (car available again).
 
-### Accounts & security
+### Shortcuts
 
-- **Admin accounts** (left sidebar): view the list, create new accounts and delete other accounts. You can't delete yourself, and at least one admin must remain.
-- **Change password:** enter your current password and a new one (at least 6 characters). The colour bar shows password strength.
-
-### Tips
-
-- Press `/` to jump to the search box on the current page.
-- Press `Esc` to close dialogs.
-- Data refreshes every minute; click ↻ to refresh immediately.
+`/` focuses search · `Esc` closes dialogs · ↻ refreshes data (also automatic every minute).
 
 ---
 
-## ☁️ Deploying (InfinityFree or any PHP host)
+## ☁️ Deployment
 
-1. Upload all the source files to your site's root folder (`htdocs` on InfinityFree).
-2. Make sure the `data/` folder is **writable** so bookings and the secret file can be saved.
-3. Visit `https://your-domain/data/admins.json`: it **must return 403 (Forbidden)**. If you can see the file contents, `.htaccess` isn't working.
-4. Sign in at `/admin` and **change the default password immediately**.
+### First deployment (InfinityFree or any Apache + PHP host)
 
-> `router.php` is only used when running locally. On Apache hosting, the `.htaccess` files handle routing and block access to `data/`.
+1. Upload the project files to the web root (`htdocs`), **including the hidden `.htaccess` files**.
+2. Make sure `data/` is writable.
+3. Open `https://your-domain/data/admins.json`: it **must return 403 Forbidden**.
+4. Sign in at `/admin` and change the default password.
 
 ### Updating the live site
 
-1. Build the deploy package (Windows PowerShell, in the project folder):
-   ```powershell
-   powershell -ExecutionPolicy Bypass -File .\build-deploy.ps1
-   ```
-   This stamps a new version into `version.json` and the `?v=` links in the HTML, then creates `..\godrive-deploy.zip` **without the `data/` folder**.
-2. In the File Manager, upload the zip into `htdocs`, **Extract** it with **Overwrite**, then delete the zip.
-3. Open the admin dashboard → **Load latest version** (left sidebar). The **User guide → Updating the website** tab shows the version you are using and the version on the server.
+```powershell
+powershell -ExecutionPolicy Bypass -File .\build-deploy.ps1
+```
 
-> Never upload the `data/` folder over the live site: it would erase real bookings. Browsers also pick up the new version automatically on their next visit thanks to the version check and the no-cache headers in `.htaccess`.
+The script stamps a new version into `version.json` and the HTML `?v=` links, then creates `..\godrive-deploy.zip` **without `data/`**. Upload the zip to `htdocs`, **Extract** with **Overwrite**, then click **Load latest version** (🔄) so browsers drop cached files.
+
+> [!CAUTION]
+> Never upload the `data/` folder over the live site. It would overwrite real bookings and accounts.
 
 ---
 
@@ -262,62 +295,74 @@ Payments start **when a booking is approved**: the admin picks the payment metho
 ```
 ├── index.html            # Customer site
 ├── admin.html            # Admin dashboard
+├── disclaimer.html       # Learning-project disclaimer (VI/EN)
 ├── css/
 │   ├── style.css         # Customer site styles (light/dark)
 │   └── admin.css         # Admin styles (light/dark)
 ├── js/
-│   ├── app.js            # Customer site logic + VI/EN translations
-│   └── admin.js          # Admin logic + VI/EN translations
-├── api/                  # PHP API
-│   ├── _helpers.php      # Shared helpers: JSON read/write, tokens, validation
-│   ├── login.php         # Sign-in, change password, admin accounts
-│   ├── products.php      # Car list and fleet management
-│   ├── orders.php        # Bookings, lookup, approve/cancel
+│   ├── app.js            # Customer site logic + translations
+│   ├── admin.js          # Admin logic + translations
+│   └── car-art.js        # SVG car illustrations shared by both sites
+├── api/
+│   ├── _helpers.php      # JSON storage, locking, tokens, validation, tiers, payment sync
+│   ├── login.php         # Sign-in, password, admin accounts
+│   ├── products.php      # Cars and fleet management
+│   ├── orders.php        # Bookings, lookup, approve/cancel/hand over
 │   └── users.php         # Customers, payments, maintenance
 ├── data/                 # JSON data (blocked from web access)
-├── docs/screenshots/     # Screenshots used in the README
-├── .htaccess             # Apache config: /admin route, block hidden files
-└── router.php            # Router for local runs with php -S
+├── docs/screenshots/     # README images
+├── build-deploy.ps1      # Builds godrive-deploy.zip
+├── version.json          # Current version (cache busting)
+├── .htaccess             # Routing, no-cache headers, blocks hidden files
+└── router.php            # Router for php -S (local only)
 ```
 
 ### Data files
 
 | File | Contents |
 |---|---|
-| `data/cars.json` | Cars |
-| `data/bookings.json` | Bookings |
-| `data/customers.json` | Customers (created automatically on booking) |
-| `data/payments.json` | Payment history |
+| `data/cars.json` | Cars (incl. optional `image` and `color`) |
+| `data/bookings.json` | Bookings (incl. `paymentMethod`, `approvedAt`) |
+| `data/payments.json` | Transactions (`method`, `status`, `amount`, `paidAt`, `approvedBy`, …) |
+| `data/customers.json` | Customers, total spent and tier |
 | `data/maintenance.json` | Maintenance schedule |
-| `data/admins.json` | Admin accounts (passwords hashed with bcrypt) |
-| `data/.jwt_secret` | Session signing key, **generated automatically** on first run, never committed |
+| `data/admins.json` | Admin accounts (bcrypt hashes) |
+| `data/.jwt_secret` | Token signing key, generated on first run, never committed |
 
 ---
 
-## 🔌 API
+## 🔌 API reference
 
-| Endpoint | Method | Purpose | Auth required |
+All endpoints return JSON. Protected endpoints read `Authorization: Bearer <token>`.
+
+| Endpoint | Method | Description | Auth |
 |---|---|---|---|
-| `api/products.php` | GET | List cars | No |
-| `api/products.php` | POST / PUT / PATCH / DELETE | Add, edit, change status, delete cars | Yes |
-| `api/orders.php` | POST | Customer booking | No |
-| `api/orders.php?action=lookup` | GET | Look up bookings by email | No |
-| `api/orders.php` | GET / PATCH | List all bookings, approve/cancel/hand over | Yes |
-| `api/login.php` | POST | Sign in, get a token | No |
-| `api/login.php?action=...` | GET / POST / DELETE | Admin profile, change password, manage admins | Yes |
-| `api/users.php?action=...` | GET / POST / PATCH / DELETE | Customers, payments, maintenance | Yes |
-
-The API reads the token from the `Authorization: Bearer <token>` header.
+| `api/products.php` | GET | List cars | — |
+| `api/products.php` | POST · PUT · DELETE | Add, edit, delete a car | ✔ |
+| `api/products.php?action=status&id=` | PATCH | Change car status | ✔ |
+| `api/orders.php` | POST | Create a booking | — |
+| `api/orders.php?action=lookup&email=` | GET | Bookings, payment status and tier for an email | — |
+| `api/orders.php` | GET | List all bookings | ✔ |
+| `api/orders.php?id=` | PATCH | Approve (`status`, `paymentMethod`, `paymentStatus`, `paymentNote`) or cancel | ✔ |
+| `api/orders.php?action=mark-rented&id=` | PATCH | Hand over the car | ✔ |
+| `api/users.php` | GET | Customers with tier and rank | ✔ |
+| `api/users.php?action=payments` | GET | Transactions (synced with bookings) | ✔ |
+| `api/users.php?action=payments&id=` | PATCH | Edit `method`, `status`, `amount` / `syncAmount`, `paidAt`, `note` | ✔ |
+| `api/users.php?action=maintenance` | GET · POST · PATCH · DELETE | Maintenance schedule | ✔ |
+| `api/login.php` | POST | Sign in, returns a token | — |
+| `api/login.php?action=…` | GET · POST · DELETE | Profile, change password, manage admins | ✔ |
 
 ---
 
 ## 🔐 Security
 
-- The token signing key is **randomly generated** and stored in `data/.jwt_secret` (already in `.gitignore`). You can pin it with the `GODRIVE_JWT_SECRET` environment variable (at least 16 characters). Deleting the file signs out every admin.
-- Admin passwords are hashed with **bcrypt**.
-- All customer input is **escaped when displayed** to prevent XSS. Photo links must be `http(s)`, and Excel formulas are neutralised in CSV exports.
-- Every write API **validates its input** and runs one at a time behind a file lock (`data/.write.lock`), so no data is lost when several people book at once.
-- The `data/` folder and hidden files are blocked from direct access, both on hosting (`.htaccess`) and locally (`router.php`).
+- **Tokens** are HMAC-signed with a random key in `data/.jwt_secret` (or the `GODRIVE_JWT_SECRET` env variable, ≥ 16 chars). Deleting the file signs everyone out.
+- **Passwords** are hashed with bcrypt.
+- **Input validation** on every write: whitelisted fields, enums, dates, amounts, name and phone rules.
+- **XSS protection:** all user content is escaped; image URLs must be `http(s)`; CSV exports neutralise spreadsheet formulas.
+- **Concurrency:** writes run one at a time behind a file lock (`data/.write.lock`).
+- **Data protection:** `data/` and dotfiles are blocked by `.htaccess` (hosting) and `router.php` (local).
+- **Privacy note:** booking lookup uses the email only, so anyone who knows an email can see its bookings. Add email verification before using this beyond a demo.
 
 ---
 
@@ -326,57 +371,67 @@ The API reads the token from the `Authorization: Bearer <token>` header.
 <details>
 <summary><b>The car list doesn't load / "Couldn't reach the server"</b></summary>
 
-You're opening the HTML file directly or PHP isn't running. Run `php -S localhost:8080 router.php` in the project folder and open http://localhost:8080.
+PHP isn't running or you opened the HTML file directly. Run `php -S localhost:8080 router.php` and open http://localhost:8080.
 </details>
 
 <details>
-<summary><b>The <code>php</code> command is not found</b></summary>
+<summary><b>The page looks outdated after an upload</b></summary>
 
-PHP isn't installed, or the terminal hasn't picked up the new path yet. Close the terminal, open it again and run `php -v`.
+Click 🔄 **Load latest version** (customer navbar or admin sidebar), or press **Ctrl + Shift + R**.
 </details>
 
 <details>
 <summary><b>Forgot the admin password</b></summary>
 
-Generate a new password hash:
-
 ```bash
 php -r "echo password_hash('newpassword', PASSWORD_BCRYPT);"
 ```
 
-Open `data/admins.json` and replace the account's `passwordHash` value with the generated string.
+Replace the account's `passwordHash` in `data/admins.json` with the output.
 </details>
 
 <details>
-<summary><b>On hosting, sign-in works but every action says "Not signed in"</b></summary>
+<summary><b>Sign-in works on hosting but every action says "Not signed in"</b></summary>
 
-Some hosts strip the `Authorization` header. The included `.htaccess` already forwards it, so make sure the `.htaccess` file (a hidden file) was uploaded too.
+The host stripped the `Authorization` header. Make sure the hidden `.htaccess` file was uploaded; it forwards the header.
 </details>
 
 <details>
-<summary><b>The UI doesn't update after changing the code</b></summary>
+<summary><b>FileZilla fails with "451" on large files</b></summary>
 
-Press **Ctrl + F5** (macOS: **Cmd + Shift + R**) to make the browser reload the new CSS and JS.
+Switch the transfer type to **Binary**, or upload the zip through the hosting File Manager and extract it there.
 </details>
 
 ---
 
 ## 🗺️ Roadmap
 
-- [ ] Online payments (VNPay / MoMo) and deposits
-- [ ] Email/SMS confirmation when booking and when a booking is approved
-- [ ] Let customers cancel their own pending bookings
-- [ ] Calendar showing the dates a car is already booked
-- [ ] Car detail page with multiple photos and reviews from past renters
-- [ ] Hand-over/return records: mileage, fuel level, condition photos
-- [ ] PDF invoices, admin roles, activity log
-- [ ] Move data from JSON to MySQL as bookings grow
+- [ ] Email verification code for booking lookup
+- [ ] Online payment sandbox (VNPay / MoMo) and deposits
+- [ ] Email notifications when a booking is approved
+- [ ] Availability calendar per car and a fleet timeline for admins
+- [ ] Return inspection: mileage, fuel, damage photos, extra charges
+- [ ] PDF invoices, admin roles and an activity log
+- [ ] Tier-based discounts and promo codes
+- [ ] Migrate from JSON files to MySQL as data grows
 
 ---
 
-## 📞 Contact
+## ⚖️ Disclaimer
 
-- Hotline: **0365 551 920**
-- Email: support@godrive.vn
+GoDrive is a **personal, non-commercial project built for learning** and portfolio purposes.
 
-<div align="center"><sub>© 2026 GoDrive. All rights reserved.</sub></div>
+- It is **not a business** and does **not** provide a real car rental service. Bookings have no value.
+- It **does not accept payments**. Payment methods, transactions and revenue in the admin dashboard are **simulations** and are not connected to any bank account or e-wallet.
+- Cars, prices, ratings and statistics are **sample data**. Please don't enter real personal information.
+- Car brands and model names belong to their respective owners and are used for illustration only; the project is not affiliated with or endorsed by them. "GoDrive" is a project name and is unrelated to any company with a similar name. Car photos (if any) come from Wikimedia Commons under their authors' licences.
+
+The full text is available on the site at [`/disclaimer.html`](https://godrive.rf.gd/disclaimer.html).
+
+---
+
+<div align="center">
+
+Made with ☕ as a learning project · [Report an issue](https://github.com/s1gnuh/Car-Rental-App-GoDrive/issues)
+
+</div>

@@ -19,7 +19,7 @@ $version = Get-Date -Format "yyyy.MM.dd-HHmm"
 
 # 1. Cập nhật số phiên bản
 [System.IO.File]::WriteAllText((Join-Path $root "version.json"), "{`"version`": `"$version`"}`n", $utf8)
-foreach ($page in @("index.html", "admin.html")) {
+foreach ($page in @("index.html", "admin.html", "disclaimer.html")) {
     $path = Join-Path $root $page
     $html = [System.IO.File]::ReadAllText($path, $utf8)
     $html = [regex]::Replace($html, '\?v=[0-9A-Za-z.\-]+', "?v=$version")
@@ -28,7 +28,7 @@ foreach ($page in @("index.html", "admin.html")) {
 }
 
 # 2. Nén các file cần upload (đường dẫn dùng dấu / cho server Linux)
-$items = @("index.html", "admin.html", ".htaccess", "version.json", "api", "css", "js")
+$items = @("index.html", "admin.html", "disclaimer.html", ".htaccess", "version.json", "api", "css", "js")
 if ([System.IO.File]::Exists($Out)) { [System.IO.File]::Delete($Out) }
 $zip = [System.IO.Compression.ZipFile]::Open($Out, "Create")
 try {

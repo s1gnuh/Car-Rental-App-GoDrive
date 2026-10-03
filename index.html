@@ -11,8 +11,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <meta name="app-version" content="2026.10.03-1606" />
-  <link rel="stylesheet" href="/css/style.css?v=2026.10.03-1606" />
+  <meta name="app-version" content="2026.10.03-1633" />
+  <link rel="stylesheet" href="/css/style.css?v=2026.10.03-1633" />
   <script>
     // Áp dụng chế độ sáng/tối trước khi trang hiển thị để tránh nháy màu
     (function () {
@@ -61,6 +61,13 @@
 
   <a class="skip-link" href="#cars" data-i18n="skip">Bỏ qua đến danh sách xe</a>
   <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
+
+  <div class="demo-bar" id="demoBar" role="note">
+    <div class="container demo-inner">
+      <p><span aria-hidden="true">🎓</span> <span data-i18n="demo.text">Dự án học tập phi thương mại, không phải dịch vụ cho thuê xe thật. Không nhận đặt xe và không thu tiền.</span> <a href="/disclaimer.html" data-i18n="demo.more">Xem tuyên bố miễn trừ</a></p>
+      <button class="demo-close" id="demoClose" data-i18n-aria="close" aria-label="Đóng"><svg class="i"><use href="#i-x" /></svg></button>
+    </div>
+  </div>
   <div id="toast" role="status" aria-live="polite"></div>
 
   <header class="navbar" id="navbar">
@@ -375,6 +382,7 @@
         <a href="#faq" data-i18n="faq.title">Câu hỏi thường gặp</a>
         <a href="#" data-hard-refresh data-i18n="refresh.link">Tải lại bản mới nhất</a>
         <a href="/admin" data-i18n="footer.admin">Dành cho quản trị</a>
+        <a href="/disclaimer.html" data-i18n="footer.disclaimer">Tuyên bố miễn trừ</a>
       </div>
       <div>
         <h4 data-i18n="footer.contact">Liên hệ</h4>
@@ -383,7 +391,7 @@
         <span class="footer-contact"><svg class="i"><use href="#i-clock" /></svg> <span data-i18n="footer.support247">Hỗ trợ 24/7</span></span>
       </div>
     </div>
-    <div class="copyright container" data-i18n="footer.copy">© 2026 GoDrive. Bản quyền thuộc về GoDrive.</div>
+    <div class="copyright container"><span data-i18n="footer.copy">© 2026 GoDrive · Dự án học tập phi thương mại, không phải dịch vụ cho thuê xe thật.</span> <a href="/disclaimer.html" data-i18n="footer.disclaimer">Tuyên bố miễn trừ</a></div>
   </footer>
 
   <button class="back-to-top" id="backToTop" data-i18n-aria="backTop" aria-label="Lên đầu trang">
@@ -440,8 +448,8 @@
     </div>
   </div>
 
-  <script src="/js/car-art.js?v=2026.10.03-1606"></script>
-  <script src="/js/app.js?v=2026.10.03-1606"></script>
+  <script src="/js/car-art.js?v=2026.10.03-1633"></script>
+  <script src="/js/app.js?v=2026.10.03-1633"></script>
 </body>
 
 </html>

@@ -1,382 +1,437 @@
 <div align="center">
 
-# 🚗 GoDrive — Ứng dụng thuê xe tự lái
+# 🚗 GoDrive
+
+### Nền tảng thuê xe tự lái: trang khách hàng + trang quản trị
 
 **Đặt xe trong 30 giây · Không cần tài khoản · Giá minh bạch**
 
-Website thuê xe gồm **trang khách hàng** và **bảng điều khiển quản trị**, viết bằng HTML, CSS, JavaScript thuần và PHP.
-Dữ liệu lưu trong file JSON nên không cần database. Chạy được trên hosting miễn phí như InfinityFree.
+[![PHP](https://img.shields.io/badge/PHP-8%2B-777BB4?logo=php&logoColor=white)](https://www.php.net/)
+[![JavaScript](https://img.shields.io/badge/JavaScript-thuần-F7DF1E?logo=javascript&logoColor=black)](#-công-nghệ)
+[![Database](https://img.shields.io/badge/CSDL-không_cần_(file_JSON)-0f9f8f)](#các-file-dữ-liệu)
+[![i18n](https://img.shields.io/badge/Ngôn_ngữ-Việt_%7C_Anh-5b3fd9)](#-tính-năng)
+[![Theme](https://img.shields.io/badge/Giao_diện-Sáng_%7C_Tối-141a2e)](#-tính-năng)
+[![Project](https://img.shields.io/badge/Dự_án-Học_tập_%2F_phi_thương_mại-orange)](#%EF%B8%8F-tuyên-bố-miễn-trừ)
 
-![PHP](https://img.shields.io/badge/PHP-8%2B-777BB4?logo=php&logoColor=white)
-![JavaScript](https://img.shields.io/badge/JavaScript-thuần-F7DF1E?logo=javascript&logoColor=black)
-![Song ngữ](https://img.shields.io/badge/Ngôn_ngữ-Việt_%7C_English-5b3fd9)
-![Giao diện](https://img.shields.io/badge/Giao_diện-Sáng_%7C_Tối-141a2e)
-
-[English](README.md) · **Tiếng Việt**
+[**Xem demo**](https://godrive.rf.gd) · [Trang quản trị](https://godrive.rf.gd/admin) · [English](README.md) · **Tiếng Việt**
 
 </div>
 
+> [!IMPORTANT]
+> **GoDrive là dự án học tập phi thương mại, không phải dịch vụ cho thuê xe thật.** Không có đơn đặt xe nào được thực hiện và website không nhận thanh toán; xe, giá và số liệu đều là dữ liệu mẫu. Khi thử đặt xe, vui lòng dùng thông tin giả. Xem [Tuyên bố miễn trừ](#%EF%B8%8F-tuyên-bố-miễn-trừ) và trang [`/disclaimer.html`](disclaimer.html).
+
 ---
 
-## 📸 Hình ảnh ứng dụng
+## 📑 Mục lục
+
+- [Tổng quan](#-tổng-quan)
+- [Ảnh chụp màn hình](#-ảnh-chụp-màn-hình)
+- [Tính năng](#-tính-năng)
+- [Cách hoạt động](#-cách-hoạt-động)
+- [Công nghệ](#-công-nghệ)
+- [Cài đặt và chạy](#-cài-đặt-và-chạy)
+- [Hướng dẫn cho khách hàng](#-hướng-dẫn-cho-khách-hàng)
+- [Hướng dẫn cho quản trị viên](#%EF%B8%8F-hướng-dẫn-cho-quản-trị-viên)
+- [Triển khai lên hosting](#%EF%B8%8F-triển-khai-lên-hosting)
+- [Cấu trúc dự án](#%EF%B8%8F-cấu-trúc-dự-án)
+- [Tài liệu API](#-tài-liệu-api)
+- [Bảo mật](#-bảo-mật)
+- [Xử lý sự cố](#-xử-lý-sự-cố)
+- [Định hướng phát triển](#%EF%B8%8F-định-hướng-phát-triển)
+- [Tuyên bố miễn trừ](#%EF%B8%8F-tuyên-bố-miễn-trừ)
+
+---
+
+## 🔎 Tổng quan
+
+GoDrive mô phỏng trọn quy trình của một cửa hàng cho thuê xe nhỏ:
+
+1. Khách xem xe, chọn ngày và đặt xe **không cần tạo tài khoản**.
+2. Admin xem đơn và **duyệt đơn, đồng thời chọn hình thức thanh toán**.
+3. Khi giao dịch được **xác nhận đã thu tiền**, số tiền mới được tính vào doanh thu, và tổng chi tiêu giúp khách lên **hạng thành viên**.
+
+Toàn bộ viết bằng **HTML, CSS, JavaScript thuần và PHP**, dữ liệu lưu trong file JSON, nên chạy được trên hosting PHP miễn phí (ví dụ InfinityFree) mà không cần cơ sở dữ liệu hay bước build.
+
+---
+
+## 📸 Ảnh chụp màn hình
 
 <table>
   <tr>
-    <td width="62%"><img src="docs/screenshots/01-trang-chu.png" alt="Trang chủ GoDrive" /></td>
+    <td width="62%"><img src="docs/screenshots/01-home.png" alt="Trang chủ chế độ tối" /></td>
     <td width="38%">
       <h3>🏠 Trang chủ</h3>
-      <p>Giới thiệu dịch vụ, số xe đang sẵn sàng và ô tìm xe theo địa điểm, ngày nhận và ngày trả xe.</p>
+      <p>Hero có hiệu ứng, số liệu lấy từ dữ liệu thật (số xe sẵn sàng, giá thấp nhất, điểm đánh giá) và ô tìm xe theo địa điểm, ngày thuê.</p>
     </td>
   </tr>
   <tr>
     <td width="38%">
-      <h3>🌙 Chế độ tối & tiếng Anh</h3>
-      <p>Lọc xe theo loại, sắp xếp theo giá hoặc độ nổi bật. Có nút chuyển Việt ↔ Anh và sáng ↔ tối ngay trên thanh menu.</p>
+      <h3>🚙 Danh sách & bộ lọc</h3>
+      <p>Lọc theo dáng xe và hãng, sắp xếp theo giá hoặc độ nổi bật. Mỗi thẻ hiện tiền tạm tính theo ngày đã chọn. Xe chưa có ảnh được vẽ minh họa tự động.</p>
     </td>
-    <td width="62%"><img src="docs/screenshots/02-danh-sach-xe-dark-en.png" alt="Danh sách xe ở chế độ tối, tiếng Anh" /></td>
+    <td width="62%"><img src="docs/screenshots/02-cars.png" alt="Danh sách xe và bộ lọc" /></td>
   </tr>
   <tr>
-    <td width="62%"><img src="docs/screenshots/03-dat-xe.png" alt="Form đặt xe" /></td>
+    <td width="62%"><img src="docs/screenshots/03-car-details.png" alt="Popup chi tiết xe" /></td>
     <td width="38%">
-      <h3>📝 Đặt xe</h3>
-      <p>Chỉ cần họ tên, số điện thoại và email. Tổng tiền được tính sẵn theo số ngày thuê. Nhập sai sẽ được báo ngay dưới từng ô.</p>
-    </td>
-  </tr>
-  <tr>
-    <td width="38%">
-      <h3>📊 Bảng điều khiển admin</h3>
-      <p>Doanh thu thật theo 7 hoặc 30 ngày, so sánh với kỳ trước, trạng thái đơn, tình trạng đội xe và danh sách việc cần xử lý.</p>
-    </td>
-    <td width="62%"><img src="docs/screenshots/04-admin-dashboard.png" alt="Dashboard quản trị" /></td>
-  </tr>
-  <tr>
-    <td width="62%"><img src="docs/screenshots/05-admin-doi-xe-dark.png" alt="Quản lý đội xe ở chế độ tối" /></td>
-    <td width="38%">
-      <h3>🚙 Quản lý đội xe</h3>
-      <p>Thêm, sửa, xóa xe, đổi trạng thái ngay trên thẻ xe, đánh dấu xe nổi bật và thêm ảnh xe bằng đường link.</p>
+      <h3>🔍 Chi tiết xe</h3>
+      <p>Thông số, quyền lợi, tiền tạm tính và các xe tương tự, đặt xe chỉ với một nút bấm.</p>
     </td>
   </tr>
   <tr>
     <td width="38%">
-      <h3>📱 Tối ưu cho điện thoại</h3>
-      <p>Cả trang khách và trang admin đều hiển thị tốt trên màn hình nhỏ: menu thu gọn, form dạng trượt từ dưới lên.</p>
+      <h3>📊 Tổng quan quản trị</h3>
+      <p>Doanh thu đã thu (chỉ tính giao dịch đã thanh toán) kèm biểu đồ 7/30 ngày và xu hướng, số tiền chờ thu, trạng thái đơn, đội xe và việc cần làm.</p>
     </td>
-    <td width="62%"><img src="docs/screenshots/06-mobile.png" alt="Giao diện trên điện thoại" /></td>
+    <td width="62%"><img src="docs/screenshots/04-admin-dashboard.png" alt="Trang tổng quan" /></td>
+  </tr>
+  <tr>
+    <td width="62%"><img src="docs/screenshots/05-admin-approve.png" alt="Duyệt đơn kèm hình thức thanh toán" /></td>
+    <td width="38%">
+      <h3>✅ Duyệt đơn & ghi nhận thanh toán</h3>
+      <p>Duyệt đơn bắt buộc chọn hình thức thanh toán và cho biết đã thu tiền hay chưa. Giao dịch được ghi nhận ngay lúc duyệt.</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="38%">
+      <h3>💳 Thanh toán</h3>
+      <p>Tổng đã thu, chờ thu, đã hoàn tiền, cơ cấu theo hình thức thanh toán và lịch sử giao dịch luôn đồng bộ với đơn, chỉnh sửa được.</p>
+    </td>
+    <td width="62%"><img src="docs/screenshots/06-admin-payments.png" alt="Trang thanh toán" /></td>
   </tr>
 </table>
+
+<sub>Ảnh chụp ở chế độ tối, dùng dữ liệu mẫu.</sub>
 
 ---
 
 ## ✨ Tính năng
 
-### Dành cho khách hàng
+### Trang khách hàng
 
-- Xem danh sách xe, lọc theo loại (Sedan / SUV / Hatchback), hãng xe và địa điểm, sắp xếp theo giá hoặc độ nổi bật
-- Xe chưa có ảnh được **vẽ minh họa chi tiết** theo dáng xe và màu sơn
-- **Popup chi tiết xe**: thông số, tiền tạm tính theo ngày đã chọn và các xe tương tự
-- Chọn xe theo **thành phố** hoặc **hãng xe** ngay trên trang chủ; mỗi thẻ xe hiện tiền tạm tính theo ngày đã chọn
-- Tra cứu đơn để xem **hạng thành viên** (Đồng → Kim cương) và tổng tiền đã thuê
-- Đặt xe **không cần tạo tài khoản**, tổng tiền tự tính theo số ngày thuê
-- Tự động **chặn đặt trùng lịch** trên cùng một xe
-- Tra cứu đơn chỉ cần **email (Gmail)** đã dùng khi đặt, xem được cả tình trạng thanh toán
-- Ghi nhớ thông tin liên hệ cho lần đặt sau
-- **Song ngữ Việt - Anh** và **chế độ sáng/tối** (lần đầu tự theo cài đặt của máy)
+| Nhóm | Chi tiết |
+|---|---|
+| **Tìm xe** | Lọc theo dáng xe (Sedan / SUV / Hatchback), hãng và thành phố; sắp xếp theo giá hoặc độ nổi bật; dải hãng xe và thẻ thành phố để chọn nhanh |
+| **Hiển thị xe** | Ảnh thật hoặc hình minh họa SVG theo dáng xe và màu sơn; popup chi tiết có thông số, quyền lợi và xe tương tự |
+| **Đặt xe** | Không cần tài khoản; tổng tiền tự tính (giá/ngày × số ngày); họ tên chỉ chữ cái, số điện thoại 9–10 số; chặn đặt trùng lịch; tối đa 90 ngày |
+| **Tra cứu** | Chỉ cần email đã dùng khi đặt; xem trạng thái đơn, **tình trạng thanh toán**, **hạng thành viên** và tổng tiền đã thuê |
+| **Trải nghiệm** | Việt ↔ Anh, sáng ↔ tối (lần đầu theo máy), tối ưu cho điện thoại, popup hướng dẫn, nút tải lại bản mới nhất |
 
-### Dành cho quản trị viên (`/admin`)
+### Trang quản trị (`/admin`)
 
-- Dashboard với doanh thu thực tế, xu hướng so với kỳ trước và danh sách việc cần làm
-- Quản lý đơn: duyệt, bàn giao xe, hủy đơn, xem chi tiết, gọi hoặc gửi email cho khách
-- **Duyệt đơn bắt buộc chọn hình thức thanh toán** (tiền mặt, chuyển khoản, thẻ, MoMo, ZaloPay, VNPay); giao dịch được ghi vào mục Thanh toán từ lúc duyệt
-- Xếp hạng khách theo số tiền thuê với 5 hạng tự động (Kim cương = trên 1 tỷ)
-- Quản lý đội xe, khách hàng, thanh toán và lịch bảo trì
-- Xuất file CSV cho đơn đặt xe, khách hàng và thanh toán
-- Tạo/xóa tài khoản admin, đổi mật khẩu
-- Tự làm mới dữ liệu mỗi phút, phím tắt `/` để nhảy tới ô tìm kiếm
-- Song ngữ và chế độ sáng/tối giống trang khách
+| Nhóm | Chi tiết |
+|---|---|
+| **Tổng quan** | Doanh thu đã thu, so với 30 ngày trước, số tiền chờ thu, biểu đồ 7/30 ngày, trạng thái đơn và đội xe, việc cần làm |
+| **Đơn đặt xe** | Tab, tìm kiếm, chi tiết, gọi/email khách; **duyệt kèm hình thức thanh toán**, bàn giao xe, hủy đơn; cột thanh toán cho từng đơn |
+| **Thanh toán** | Tạo khi duyệt đơn; xác nhận đã thu; **sửa** hình thức, trạng thái, số tiền, thời điểm thu, ghi chú; cơ cấu theo hình thức; tự đồng bộ với đơn |
+| **Đội xe** | Thêm/sửa/xóa xe, link ảnh hoặc màu sơn cho hình minh họa, đánh dấu nổi bật, đổi trạng thái ngay trên thẻ |
+| **Khách hàng** | Tự xếp hạng theo số tiền thuê với 5 hạng (Kim cương = trên 1 tỷ), lọc theo hạng, tiến độ lên hạng kế tiếp |
+| **Bảo trì** | Lên lịch → bắt đầu (xe ẩn khỏi trang khách) → hoàn thành (xe sẵn sàng trở lại) |
+| **Hệ thống** | Nhiều tài khoản admin, đổi mật khẩu có đo độ mạnh, xuất CSV, tự làm mới mỗi phút, phím tắt `/`, hướng dẫn tích hợp |
 
 ---
 
-## 🚀 Cài đặt và chạy trên máy
+## 🔄 Cách hoạt động
 
-### 1. Cài PHP 8 trở lên
+### Vòng đời đơn đặt xe
 
-- **Windows:** mở PowerShell và chạy
-  ```powershell
-  winget install PHP.PHP.8.4
-  ```
-  Sau khi cài xong, **mở lại terminal** để dùng được lệnh `php`.
-- **macOS:** `brew install php`
-- **Ubuntu/Debian:** `sudo apt install php-cli`
+```
+               ┌───────────── Duyệt + chọn hình thức thanh toán ─────────────┐
+               │                                                             ▼
+ Khách ──▶ Chờ duyệt                                                    Đã xác nhận ──[Bàn giao]──▶ Xe "Đang thuê"
+               │                                                             │
+               └──────────────[Hủy]──────────────┬──────────────[Hủy]────────┘
+                                                 ▼
+                                              Đã hủy  (xe đang thuê trở về "Sẵn sàng")
+```
 
-Kiểm tra bằng lệnh `php -v`.
+### Thanh toán và doanh thu
 
-### 2. Tải mã nguồn
+| Sự kiện | Giao dịch | Doanh thu |
+|---|---|---|
+| Khách đặt xe | — | Chưa tính |
+| Admin duyệt, **chưa thu tiền** | Tạo giao dịch *Chờ thanh toán* với hình thức đã chọn | **Chưa tính** (hiện ở "Chờ thu") |
+| **Xác nhận đã thu tiền** | *Đã thanh toán*, kèm thời điểm thu | **Tính** vào ngày thu tiền |
+| Hủy đơn đã duyệt | *Đã thanh toán* → *Đã hoàn tiền*; *Chờ thanh toán* → bị bỏ | Bị trừ khỏi doanh thu |
+
+Giao dịch luôn đồng bộ với đơn: tên khách, tên xe và số tiền lấy theo đơn, trừ khi admin đã tự sửa số tiền (có nút lấy lại theo tổng tiền đơn). Đơn được duyệt trước khi có tính năng thanh toán sẽ tự có giao dịch chờ bổ sung hình thức.
+
+### Hạng thành viên
+
+Hạng được tính tự động từ tổng tiền các đơn **đã duyệt**:
+
+| Hạng | Tổng tiền thuê |
+|---|---|
+| 💎 Kim cương | **trên** 1.000.000.000 ₫ |
+| Bạch kim | từ 500.000.000 ₫ |
+| Vàng | từ 200.000.000 ₫ |
+| Bạc | từ 50.000.000 ₫ |
+| Đồng | dưới 50.000.000 ₫ |
+
+Các mốc nằm ở `api/_helpers.php` (`CUSTOMER_TIERS`) và được khai báo tương ứng trong `js/app.js`, `js/admin.js`.
+
+---
+
+## 🧰 Công nghệ
+
+| Thành phần | Công nghệ |
+|---|---|
+| Giao diện | HTML5, CSS3 (biến CSS, bộ màu sáng/tối), JavaScript thuần (ES2020) |
+| Biểu đồ | [Chart.js 4](https://www.chartjs.org/) (chỉ trang quản trị, qua CDN) |
+| Máy chủ | PHP 8 (không framework), API dạng REST trả JSON |
+| Lưu trữ | File JSON trong `data/`, có khóa file khi ghi |
+| Xác thực | Token ký HMAC, mật khẩu băm bcrypt |
+| Hosting | Bất kỳ hosting Apache + PHP (`.htaccess`), hoặc `php -S` trên máy |
+
+---
+
+## 🚀 Cài đặt và chạy
+
+### Yêu cầu
+
+- **PHP 8.0 trở lên** (không cần cài thêm extension, không cần `mbstring`)
+- Trình duyệt hiện đại
+
+| Hệ điều hành | Cài PHP |
+|---|---|
+| Windows | `winget install PHP.PHP.8.4` (cài xong mở lại terminal) |
+| macOS | `brew install php` |
+| Ubuntu / Debian | `sudo apt install php-cli` |
+
+### Chạy trên máy
 
 ```bash
 git clone https://github.com/s1gnuh/Car-Rental-App-GoDrive.git
 cd Car-Rental-App-GoDrive
-```
-
-### 3. Chạy ứng dụng
-
-```bash
 php -S localhost:8080 router.php
 ```
-
-Mở trình duyệt:
 
 | Trang | Địa chỉ |
 |---|---|
 | Trang khách hàng | http://localhost:8080/ |
 | Trang quản trị | http://localhost:8080/admin |
+| Tuyên bố miễn trừ | http://localhost:8080/disclaimer.html |
 
-**Tài khoản admin mặc định:** `admin` / `admin123`. Hãy **đổi mật khẩu ngay** sau lần đăng nhập đầu tiên.
+**Tài khoản admin mặc định:** `admin` / `admin123`. Hãy đổi mật khẩu ngay sau lần đăng nhập đầu tiên.
 
-> ⚠️ Không mở trực tiếp file `index.html` bằng cách nhấp đúp hoặc dùng Live Server, vì khi đó phần PHP (API) sẽ không chạy và trang không tải được danh sách xe.
+> [!WARNING]
+> Không mở trực tiếp `index.html` (nhấp đúp hoặc Live Server). Khi đó phần PHP (API) không chạy và trang không tải được danh sách xe.
 
 ---
 
-## 📖 Hướng dẫn sử dụng cho khách hàng
+## 📖 Hướng dẫn cho khách hàng
 
 ### Tìm xe
 
-1. Ở ô tìm kiếm trên trang chủ, chọn **Địa điểm nhận xe**, **Ngày nhận xe** và **Ngày trả xe**, rồi bấm **Tìm xe**.
-2. Trong mục **Chọn chiếc xe phù hợp**, bấm **Sedan**, **SUV** hoặc **Hatchback** để lọc theo loại xe.
-3. Dùng ô sắp xếp bên phải để xem theo **Nổi bật nhất**, **Giá thấp đến cao** hoặc **Giá cao đến thấp**.
-4. Xe có nhãn **Đang cho thuê** hoặc nút **Không khả dụng** thì tạm thời chưa đặt được.
+1. Chọn **địa điểm nhận xe** và **ngày thuê** ở ô tìm kiếm, bấm **Tìm xe**.
+2. Lọc theo **dáng xe** hoặc **hãng**, hoặc bấm **thẻ thành phố** / **hãng xe** ở trang chủ.
+3. Sắp xếp theo **Nổi bật nhất**, **Giá thấp đến cao** hoặc **Giá cao đến thấp**.
+4. Bấm tên xe hoặc **Xem chi tiết** để xem thông số và xe tương tự.
 
 ### Đặt xe
 
-1. Bấm nút **Đặt xe** trên thẻ xe bạn muốn thuê.
-2. Điền thông tin liên hệ:
-   - **Họ và tên:** chỉ gồm chữ cái (có dấu tiếng Việt) và khoảng trắng.
-   - **Số điện thoại:** chỉ gồm chữ số, 9 đến 10 số.
-   - **Email:** để nhận thông tin và tra cứu đơn.
-3. Chọn địa điểm, ngày nhận và ngày trả xe. Thời gian thuê tối đa là 90 ngày.
-4. Kiểm tra **Tổng cộng** (giá thuê một ngày × số ngày) rồi bấm **Xác nhận đặt xe**.
-5. Màn hình thành công hiển thị **mã đơn**. Đơn có trạng thái **Chờ xác nhận** cho tới khi GoDrive gọi điện xác nhận.
+1. Bấm **Đặt xe** trên thẻ (hoặc **Đặt xe này** trong popup chi tiết).
+2. Nhập họ tên (chỉ chữ cái), số điện thoại (9–10 số) và email.
+3. Chọn địa điểm, ngày nhận và trả xe (tối đa 90 ngày), kiểm tra **Tổng cộng** rồi bấm **Xác nhận đặt xe**.
+4. Ghi lại **mã đơn**. Đơn ở trạng thái **Chờ xác nhận** cho tới khi được duyệt.
 
-> Bạn chưa phải thanh toán khi đặt xe. Nếu xe đã có người đặt trong khoảng ngày bạn chọn, hệ thống sẽ báo và không cho đặt trùng.
+### Tra cứu đơn
 
-### Tra cứu đơn đã đặt
-
-1. Bấm **Tra cứu đơn** trên thanh menu, hoặc ở chân trang.
-2. Nhập **email (Gmail)** đã dùng khi đặt xe.
-3. Bấm **Xem đơn của tôi** để xem danh sách đơn, ngày thuê, tổng tiền và trạng thái: *Chờ xác nhận*, *Đã xác nhận* hoặc *Đã hủy*.
-
-### Đổi ngôn ngữ và giao diện
-
-- Bấm nút **🌐 EN / VI** để chuyển giữa tiếng Việt và tiếng Anh.
-- Bấm nút **☀ / 🌙** để chuyển giữa chế độ sáng và tối.
-- Lựa chọn được ghi nhớ cho những lần truy cập sau và dùng chung cho cả trang admin.
+Bấm **Tra cứu đơn**, nhập email đã dùng khi đặt. Kết quả hiện trạng thái từng đơn, tình trạng thanh toán (hình thức · đã/chưa thanh toán · đã hoàn tiền), hạng thành viên và tổng tiền đã thuê.
 
 ---
 
-## 🛠️ Hướng dẫn sử dụng cho quản trị viên
-
-### Đăng nhập
-
-Vào `/admin`, nhập tên đăng nhập (hoặc email) và mật khẩu. Bấm biểu tượng 👁 để hiện hoặc ẩn mật khẩu. Phiên đăng nhập có hiệu lực 7 ngày.
-
-### Tổng quan (Dashboard)
-
-- **4 thẻ số liệu:** doanh thu đã thu (chỉ tính giao dịch đã xác nhận thanh toán; bấm để mở mục Thanh toán), số đơn chờ duyệt (bấm vào để mở danh sách đơn chờ duyệt), số xe đang cho thuê, số khách hàng.
-- **Biểu đồ doanh thu:** chọn **7 ngày** hoặc **30 ngày**. Doanh thu chỉ ghi nhận khi giao dịch được **xác nhận đã thu tiền**, tính theo ngày thu tiền. Đơn đã duyệt nhưng chưa thu tiền chưa được tính.
-- **Trạng thái đơn**, **tình trạng đội xe** và **việc cần làm**. Có thể duyệt đơn ngay trong mục việc cần làm.
+## 🛠️ Hướng dẫn cho quản trị viên
 
 ### Đơn đặt xe
 
-Quy trình xử lý một đơn:
-
-```
-Chờ duyệt ──[Duyệt + chọn hình thức thanh toán]──▶ Đã xác nhận ──[Bàn giao]──▶ Xe chuyển sang "Đang thuê"
-    │                        │
-    └────────[Hủy]───────────┴──▶ Đã hủy (xe đang thuê được trả về "Sẵn sàng")
-```
-
-- Dùng các tab **Tất cả / Chờ duyệt / Đã xác nhận / Đã hủy** và ô tìm kiếm (theo mã đơn, tên khách, số điện thoại, email, tên xe).
-- Bấm vào một dòng để xem **chi tiết đơn**, có nút gọi điện cho khách.
-- Bấm **Duyệt** sẽ mở hộp thoại: bắt buộc chọn **hình thức thanh toán** và cho biết **đã thu tiền hay chưa**. Giao dịch được tạo trong mục **Thanh toán** ngay lúc này.
-- Hủy đơn luôn có hộp thoại xác nhận để tránh bấm nhầm. Hủy đơn đã duyệt: giao dịch đã thu chuyển sang hoàn tiền, giao dịch chưa thu bị bỏ.
-- Bấm **Xuất CSV** để tải danh sách đơn, mở được bằng Excel.
-
-### Đội xe
-
-- **Thêm xe:** bấm **+ Thêm xe**, nhập tên, hãng, loại, số chỗ, giá thuê/ngày, địa điểm. Ảnh xe là đường link bắt đầu bằng `https://`. Chưa có ảnh thì chọn **màu xe**, trang khách sẽ vẽ hình minh họa theo dáng xe.
-- Tích **Đánh dấu là xe nổi bật** để xe có nhãn "Được yêu thích" và được ưu tiên hiển thị trên trang khách.
-- **Đổi trạng thái:** chọn trực tiếp *Sẵn sàng / Đang thuê / Bảo trì* trên thẻ xe. Khi khách trả xe, chuyển xe về **Sẵn sàng**.
-- Xe ở trạng thái **Bảo trì** sẽ bị ẩn khỏi trang khách.
-
-### Khách hàng
-
-Khách hàng được tự động thêm vào danh sách khi đặt xe lần đầu. Tổng tiền thuê chỉ tính các đơn **đã duyệt**. Khách được xếp hạng theo số tiền thuê thành 5 hạng: Kim cương (trên 1 tỷ), Bạch kim (từ 500 triệu), Vàng (từ 200 triệu), Bạc (từ 50 triệu) và Đồng. Bấm thẻ hạng để lọc; danh sách xuất được ra CSV.
+- Dùng các tab (**Tất cả / Chờ duyệt / Đã xác nhận / Đã hủy**) và ô tìm kiếm (mã đơn, tên, số điện thoại, email, tên xe).
+- **Duyệt** mở hộp thoại: chọn **hình thức thanh toán** (tiền mặt, chuyển khoản, thẻ tín dụng, MoMo, ZaloPay, VNPay), chọn **đã thu** hoặc **chưa thu tiền**, thêm ghi chú nếu cần rồi xác nhận.
+- **Bàn giao** chuyển xe sang *Đang thuê*; khi khách trả xe, vào **Đội xe** đổi về *Sẵn sàng*.
+- **Hủy** luôn có hộp thoại xác nhận; hủy đơn đã duyệt sẽ hoàn tiền hoặc bỏ giao dịch tương ứng.
 
 ### Thanh toán
 
-Số liệu thanh toán **bắt đầu từ lúc duyệt đơn**: admin chọn hình thức thanh toán và cho biết đã thu tiền hay chưa. Trang hiển thị tổng đã thu, chờ thanh toán, đã hoàn tiền, cơ cấu theo hình thức thanh toán và lịch sử giao dịch. Khách trả tiền sau thì bấm **Xác nhận đã thu**, hoặc bấm **Sửa** để đổi hình thức, trạng thái, số tiền, thời điểm thu và ghi chú. Tên khách, tên xe và số tiền tự đồng bộ theo đơn (trừ khi số tiền đã được sửa tay); đơn đã duyệt từ trước sẽ có giao dịch chờ bổ sung hình thức. Hủy đơn đã thu tiền thì giao dịch tự chuyển sang hoàn tiền. Phiên bản hiện tại chưa tích hợp cổng thanh toán online.
+- **Xác nhận đã thu** khi khách trả tiền sau; doanh thu được ghi nhận từ lúc này.
+- **Sửa (✎)** để đổi hình thức, trạng thái (chờ thanh toán / đã thanh toán / đã hoàn tiền), số tiền, thời điểm thu hoặc ghi chú. Hệ thống lưu người sửa và thời gian sửa.
+- Dải cảnh báo màu cam báo các giao dịch còn thiếu hình thức thanh toán.
 
-### Bảo trì
+### Đội xe, khách hàng, bảo trì
 
-1. Bấm **+ Lên lịch bảo trì**, chọn xe, hạng mục, ngày bắt đầu, ngày kết thúc, chi phí và ghi chú.
-2. Bấm **Bắt đầu**: xe tự chuyển sang trạng thái **Bảo trì**.
-3. Bấm **Hoàn thành**: xe tự trở lại trạng thái **Sẵn sàng**.
+- **Đội xe:** nhập link ảnh (`https://…`) hoặc chọn **màu sơn** cho hình minh họa; viết tên hãng thống nhất để bộ lọc hãng hoạt động đúng.
+- **Khách hàng:** bấm thẻ hạng để lọc; xuất CSV.
+- **Bảo trì:** lên lịch, **Bắt đầu** (xe ẩn khỏi trang khách), **Hoàn thành** (xe sẵn sàng trở lại).
 
-### Tài khoản và bảo mật
+### Phím tắt
 
-- **Tài khoản admin** (thanh bên trái): xem danh sách, tạo tài khoản mới, xóa tài khoản khác. Không thể tự xóa chính mình và luôn phải còn ít nhất một admin.
-- **Đổi mật khẩu:** nhập mật khẩu hiện tại và mật khẩu mới (ít nhất 6 ký tự). Thanh màu cho biết độ mạnh của mật khẩu.
-
-### Mẹo
-
-- Nhấn phím `/` để nhảy tới ô tìm kiếm của trang đang xem.
-- Nhấn `Esc` để đóng hộp thoại.
-- Dữ liệu tự làm mới mỗi phút. Bấm biểu tượng ↻ để làm mới ngay.
+`/` nhảy tới ô tìm kiếm · `Esc` đóng hộp thoại · ↻ làm mới dữ liệu (tự động mỗi phút).
 
 ---
 
-## ☁️ Đưa lên hosting (InfinityFree hoặc hosting PHP bất kỳ)
+## ☁️ Triển khai lên hosting
 
-1. Tải toàn bộ mã nguồn lên thư mục gốc của website (với InfinityFree là `htdocs`).
-2. Đảm bảo thư mục `data/` **cho phép ghi**, để lưu đơn đặt xe và file secret.
-3. Truy cập `https://ten-mien-cua-ban/data/admins.json`: trang **phải báo lỗi 403 (bị từ chối)**. Nếu xem được nội dung file thì `.htaccess` chưa hoạt động.
-4. Đăng nhập `/admin` và **đổi mật khẩu mặc định ngay**.
+### Lần đầu (InfinityFree hoặc hosting Apache + PHP bất kỳ)
 
-> File `router.php` chỉ dùng khi chạy trên máy. Trên hosting Apache, các file `.htaccess` sẽ đảm nhận việc định tuyến và chặn truy cập thư mục `data/`.
+1. Upload mã nguồn vào thư mục gốc (`htdocs`), **kể cả các file ẩn `.htaccess`**.
+2. Đảm bảo thư mục `data/` ghi được.
+3. Mở `https://ten-mien/data/admins.json`: **phải trả về 403 Forbidden**.
+4. Đăng nhập `/admin` và đổi mật khẩu mặc định.
 
-### Cập nhật website đang chạy
+### Cập nhật web đang chạy
 
-1. Tạo gói deploy (PowerShell trên Windows, trong thư mục dự án):
-   ```powershell
-   powershell -ExecutionPolicy Bypass -File .\build-deploy.ps1
-   ```
-   Script sẽ ghi số phiên bản mới vào `version.json` và các đường dẫn `?v=` trong HTML, rồi tạo `..\godrive-deploy.zip` **không chứa thư mục `data/`**.
-2. Trong File Manager, upload file zip vào `htdocs`, **Extract** với tùy chọn **Overwrite**, rồi xóa file zip.
-3. Mở trang admin → bấm **Tải lại bản mới nhất** (thanh bên trái). Tab **Hướng dẫn → Cập nhật website** cho biết phiên bản bạn đang dùng và phiên bản trên server.
+```powershell
+powershell -ExecutionPolicy Bypass -File .\build-deploy.ps1
+```
 
-> Không bao giờ upload thư mục `data/` đè lên website đang chạy, vì sẽ mất đơn đặt xe thật. Trình duyệt của khách cũng tự nhận bản mới ở lần truy cập tiếp theo nhờ cơ chế kiểm tra phiên bản và header chống bộ nhớ đệm trong `.htaccess`.
+Script gắn số phiên bản mới vào `version.json` và các link `?v=` trong HTML, rồi tạo `..\godrive-deploy.zip` **không chứa `data/`**. Upload file zip vào `htdocs`, **Extract** và chọn **Overwrite**, sau đó bấm **Tải lại bản mới nhất** (🔄) để trình duyệt bỏ bản cũ trong bộ nhớ đệm.
+
+> [!CAUTION]
+> Không bao giờ upload thư mục `data/` đè lên web thật: sẽ mất toàn bộ đơn đặt xe và tài khoản.
 
 ---
 
-## 🗂️ Cấu trúc thư mục
+## 🗂️ Cấu trúc dự án
 
 ```
 ├── index.html            # Trang khách hàng
 ├── admin.html            # Trang quản trị
+├── disclaimer.html       # Tuyên bố dự án học tập (Việt/Anh)
 ├── css/
 │   ├── style.css         # Giao diện trang khách (sáng/tối)
-│   └── admin.css         # Giao diện trang admin (sáng/tối)
+│   └── admin.css         # Giao diện trang quản trị (sáng/tối)
 ├── js/
-│   ├── app.js            # Logic trang khách + bản dịch Việt/Anh
-│   └── admin.js          # Logic trang admin + bản dịch Việt/Anh
-├── api/                  # API viết bằng PHP
-│   ├── _helpers.php      # Hàm dùng chung: đọc/ghi JSON, token, kiểm tra dữ liệu
-│   ├── login.php         # Đăng nhập, đổi mật khẩu, quản lý admin
-│   ├── products.php      # Danh sách và quản lý xe
-│   ├── orders.php        # Đặt xe, tra cứu, duyệt/hủy đơn
+│   ├── app.js            # Logic trang khách + bản dịch
+│   ├── admin.js          # Logic trang quản trị + bản dịch
+│   └── car-art.js        # Hình minh họa xe SVG dùng chung
+├── api/
+│   ├── _helpers.php      # Lưu JSON, khóa file, token, kiểm tra dữ liệu, hạng khách, đồng bộ thanh toán
+│   ├── login.php         # Đăng nhập, mật khẩu, tài khoản admin
+│   ├── products.php      # Xe và quản lý đội xe
+│   ├── orders.php        # Đơn đặt xe, tra cứu, duyệt/hủy/bàn giao
 │   └── users.php         # Khách hàng, thanh toán, bảo trì
-├── data/                 # Dữ liệu JSON (bị chặn truy cập từ web)
-├── docs/screenshots/     # Ảnh chụp màn hình dùng trong README
-├── .htaccess             # Cấu hình Apache: /admin, chặn file ẩn
-└── router.php            # Bộ định tuyến khi chạy bằng php -S trên máy
+├── data/                 # Dữ liệu JSON (chặn truy cập từ web)
+├── docs/screenshots/     # Ảnh dùng trong README
+├── build-deploy.ps1      # Tạo gói godrive-deploy.zip
+├── version.json          # Phiên bản hiện tại (làm mới bộ nhớ đệm)
+├── .htaccess             # Định tuyến, chống cache, chặn file ẩn
+└── router.php            # Router cho php -S (chỉ dùng trên máy)
 ```
 
 ### Các file dữ liệu
 
 | File | Nội dung |
 |---|---|
-| `data/cars.json` | Danh sách xe |
-| `data/bookings.json` | Đơn đặt xe |
-| `data/customers.json` | Khách hàng (tự tạo khi đặt xe) |
-| `data/payments.json` | Lịch sử thanh toán |
+| `data/cars.json` | Danh sách xe (có thể có `image`, `color`) |
+| `data/bookings.json` | Đơn đặt xe (kèm `paymentMethod`, `approvedAt`) |
+| `data/payments.json` | Giao dịch (`method`, `status`, `amount`, `paidAt`, `approvedBy`…) |
+| `data/customers.json` | Khách hàng, tổng tiền thuê và hạng |
 | `data/maintenance.json` | Lịch bảo trì |
-| `data/admins.json` | Tài khoản admin (mật khẩu đã được mã hóa bcrypt) |
-| `data/.jwt_secret` | Khóa ký phiên đăng nhập, **tự sinh** lần chạy đầu, không đưa lên Git |
+| `data/admins.json` | Tài khoản admin (mật khẩu băm bcrypt) |
+| `data/.jwt_secret` | Khóa ký token, tự tạo khi chạy lần đầu, không đưa lên Git |
 
 ---
 
-## 🔌 API
+## 🔌 Tài liệu API
 
-| Endpoint | Phương thức | Chức năng | Cần đăng nhập |
+Mọi endpoint trả về JSON. Endpoint cần đăng nhập đọc header `Authorization: Bearer <token>`.
+
+| Endpoint | Phương thức | Mô tả | Cần đăng nhập |
 |---|---|---|---|
-| `api/products.php` | GET | Danh sách xe | Không |
-| `api/products.php` | POST / PUT / PATCH / DELETE | Thêm, sửa, đổi trạng thái, xóa xe | Có |
-| `api/orders.php` | POST | Khách đặt xe | Không |
-| `api/orders.php?action=lookup` | GET | Tra cứu đơn theo email | Không |
-| `api/orders.php` | GET / PATCH | Xem tất cả đơn, duyệt/hủy/bàn giao | Có |
-| `api/login.php` | POST | Đăng nhập, nhận token | Không |
-| `api/login.php?action=...` | GET / POST / DELETE | Thông tin admin, đổi mật khẩu, quản lý admin | Có |
-| `api/users.php?action=...` | GET / POST / PATCH / DELETE | Khách hàng, thanh toán, bảo trì | Có |
-
-API đọc token qua header `Authorization: Bearer <token>`.
+| `api/products.php` | GET | Danh sách xe | — |
+| `api/products.php` | POST · PUT · DELETE | Thêm, sửa, xóa xe | ✔ |
+| `api/products.php?action=status&id=` | PATCH | Đổi trạng thái xe | ✔ |
+| `api/orders.php` | POST | Khách đặt xe | — |
+| `api/orders.php?action=lookup&email=` | GET | Đơn, tình trạng thanh toán và hạng theo email | — |
+| `api/orders.php` | GET | Toàn bộ đơn | ✔ |
+| `api/orders.php?id=` | PATCH | Duyệt (`status`, `paymentMethod`, `paymentStatus`, `paymentNote`) hoặc hủy | ✔ |
+| `api/orders.php?action=mark-rented&id=` | PATCH | Bàn giao xe | ✔ |
+| `api/users.php` | GET | Khách hàng kèm hạng và thứ hạng | ✔ |
+| `api/users.php?action=payments` | GET | Giao dịch (đã đồng bộ với đơn) | ✔ |
+| `api/users.php?action=payments&id=` | PATCH | Sửa `method`, `status`, `amount` / `syncAmount`, `paidAt`, `note` | ✔ |
+| `api/users.php?action=maintenance` | GET · POST · PATCH · DELETE | Lịch bảo trì | ✔ |
+| `api/login.php` | POST | Đăng nhập, nhận token | — |
+| `api/login.php?action=…` | GET · POST · DELETE | Hồ sơ, đổi mật khẩu, quản lý admin | ✔ |
 
 ---
 
 ## 🔐 Bảo mật
 
-- Khóa ký token được **tự sinh ngẫu nhiên** và lưu trong `data/.jwt_secret` (đã có trong `.gitignore`). Có thể đặt cố định bằng biến môi trường `GODRIVE_JWT_SECRET` (tối thiểu 16 ký tự). Xóa file này sẽ đăng xuất toàn bộ admin.
-- Mật khẩu admin được mã hóa bằng **bcrypt**.
-- Mọi dữ liệu do khách nhập đều được **escape khi hiển thị** để chống XSS. Link ảnh chỉ chấp nhận `http(s)`, file CSV xuất ra được chặn công thức Excel.
-- Mọi API ghi đều **kiểm tra dữ liệu đầu vào** và chạy tuần tự bằng khóa file (`data/.write.lock`), nên không mất dữ liệu khi nhiều người đặt xe cùng lúc.
-- Thư mục `data/` và các file ẩn bị chặn truy cập trực tiếp, cả trên hosting (`.htaccess`) lẫn khi chạy trên máy (`router.php`).
+- **Token** ký HMAC bằng khóa ngẫu nhiên trong `data/.jwt_secret` (hoặc biến môi trường `GODRIVE_JWT_SECRET`, tối thiểu 16 ký tự). Xóa file này sẽ đăng xuất mọi admin.
+- **Mật khẩu** băm bằng bcrypt.
+- **Kiểm tra dữ liệu** ở mọi API ghi: chỉ nhận trường cho phép, giá trị liệt kê, ngày, số tiền, quy tắc họ tên và số điện thoại.
+- **Chống XSS:** mọi nội dung người dùng nhập đều được escape; link ảnh phải là `http(s)`; file CSV vô hiệu hóa công thức Excel.
+- **Ghi đồng thời:** các thao tác ghi chạy lần lượt sau khóa file (`data/.write.lock`).
+- **Bảo vệ dữ liệu:** thư mục `data/` và file ẩn bị chặn bởi `.htaccess` (hosting) và `router.php` (máy cá nhân).
+- **Lưu ý quyền riêng tư:** tra cứu đơn chỉ cần email, nên ai biết email cũng xem được đơn của email đó. Cần thêm bước xác thực email nếu dùng ngoài mục đích demo.
 
 ---
 
-## ❓ Khắc phục sự cố
+## ❓ Xử lý sự cố
 
 <details>
-<summary><b>Trang không hiện danh sách xe / báo "Không kết nối được máy chủ"</b></summary>
+<summary><b>Danh sách xe không tải được / "Không kết nối được máy chủ"</b></summary>
 
-Bạn đang mở file HTML trực tiếp hoặc chưa chạy PHP. Hãy chạy `php -S localhost:8080 router.php` trong thư mục dự án rồi mở http://localhost:8080.
+PHP chưa chạy hoặc bạn mở trực tiếp file HTML. Chạy `php -S localhost:8080 router.php` rồi mở http://localhost:8080.
 </details>
 
 <details>
-<summary><b>Gõ lệnh <code>php</code> báo "không tìm thấy lệnh"</b></summary>
+<summary><b>Giao diện vẫn là bản cũ sau khi upload</b></summary>
 
-PHP chưa được cài, hoặc terminal chưa nhận đường dẫn mới. Hãy đóng terminal, mở lại rồi chạy `php -v`.
+Bấm 🔄 **Tải lại bản mới nhất** (thanh menu trang khách hoặc thanh bên trang quản trị), hoặc nhấn **Ctrl + Shift + R**.
 </details>
 
 <details>
 <summary><b>Quên mật khẩu admin</b></summary>
 
-Tạo mã băm mật khẩu mới:
-
 ```bash
 php -r "echo password_hash('matkhaumoi', PASSWORD_BCRYPT);"
 ```
 
-Mở `data/admins.json` và thay giá trị `passwordHash` của tài khoản bằng chuỗi vừa tạo.
+Thay giá trị `passwordHash` của tài khoản trong `data/admins.json` bằng chuỗi vừa tạo.
 </details>
 
 <details>
-<summary><b>Trên hosting, đăng nhập được nhưng các thao tác báo "Chưa đăng nhập"</b></summary>
+<summary><b>Trên hosting đăng nhập được nhưng thao tác nào cũng báo "Chưa đăng nhập"</b></summary>
 
-Một số hosting làm mất header `Authorization`. File `.htaccess` đã có sẵn dòng chuyển tiếp header này, hãy chắc chắn bạn đã tải cả file `.htaccess` (là file ẩn) lên hosting.
+Hosting đã bỏ header `Authorization`. Kiểm tra file ẩn `.htaccess` đã được upload chưa; file này chuyển tiếp header đó.
 </details>
 
 <details>
-<summary><b>Giao diện chưa cập nhật sau khi sửa code</b></summary>
+<summary><b>FileZilla báo lỗi "451" khi upload file lớn</b></summary>
 
-Nhấn **Ctrl + F5** (macOS: **Cmd + Shift + R**) để trình duyệt tải lại CSS và JS mới.
+Chuyển kiểu truyền sang **Binary**, hoặc upload file zip qua File Manager của hosting rồi giải nén tại đó.
 </details>
 
 ---
 
 ## 🗺️ Định hướng phát triển
 
-- [ ] Thanh toán online (VNPay / MoMo) và đặt cọc
-- [ ] Gửi email/SMS xác nhận khi đặt xe và khi đơn được duyệt
-- [ ] Khách tự hủy đơn khi đơn còn chờ duyệt
-- [ ] Lịch hiển thị những ngày xe đã có người đặt
-- [ ] Trang chi tiết xe với nhiều ảnh và đánh giá từ khách đã thuê
-- [ ] Ghi nhận giao/nhận xe: số km, mức xăng, ảnh tình trạng xe
-- [ ] Xuất hóa đơn PDF, phân quyền admin, nhật ký thao tác
-- [ ] Chuyển dữ liệu từ JSON sang MySQL khi số lượng đơn lớn
+- [ ] Mã xác thực qua email khi tra cứu đơn
+- [ ] Thanh toán online bản thử nghiệm (VNPay / MoMo) và đặt cọc
+- [ ] Gửi email khi đơn được duyệt
+- [ ] Lịch trống của từng xe và biểu đồ thời gian đội xe cho admin
+- [ ] Biên bản nhận xe: số km, xăng, ảnh hư hỏng, phụ phí
+- [ ] Hóa đơn PDF, phân quyền admin, nhật ký thao tác
+- [ ] Ưu đãi theo hạng thành viên và mã khuyến mãi
+- [ ] Chuyển từ file JSON sang MySQL khi dữ liệu lớn
 
 ---
 
-## 📞 Liên hệ
+## ⚖️ Tuyên bố miễn trừ
 
-- Hotline: **0365 551 920**
-- Email: support@godrive.vn
+GoDrive là **dự án cá nhân, phi thương mại, phục vụ mục đích học tập** và làm hồ sơ năng lực.
 
-<div align="center"><sub>© 2026 GoDrive. Bản quyền thuộc về GoDrive.</sub></div>
+- Đây **không phải doanh nghiệp** và **không cung cấp** dịch vụ cho thuê xe thật. Đơn đặt xe không có giá trị.
+- Website **không nhận thanh toán**. Hình thức thanh toán, giao dịch và doanh thu trong trang quản trị chỉ là **chức năng mô phỏng**, không gắn với tài khoản ngân hàng hay ví điện tử nào.
+- Xe, giá, đánh giá và số liệu là **dữ liệu mẫu**. Vui lòng không nhập thông tin cá nhân thật.
+- Tên hãng và mẫu xe thuộc về chủ sở hữu tương ứng, chỉ dùng để minh họa; dự án không liên kết hay được các hãng xác nhận. "GoDrive" là tên dự án, không liên quan đến doanh nghiệp nào có tên tương tự. Ảnh xe (nếu có) lấy từ Wikimedia Commons theo giấy phép của tác giả.
+
+Toàn văn có trên website tại [`/disclaimer.html`](https://godrive.rf.gd/disclaimer.html).
+
+---
+
+<div align="center">
+
+Thực hiện với ☕ trong quá trình học tập · [Báo lỗi / góp ý](https://github.com/s1gnuh/Car-Rental-App-GoDrive/issues)
+
+</div>
