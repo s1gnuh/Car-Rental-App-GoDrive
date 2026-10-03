@@ -180,8 +180,8 @@ Vào `/admin`, nhập tên đăng nhập (hoặc email) và mật khẩu. Bấm 
 
 ### Tổng quan (Dashboard)
 
-- **4 thẻ số liệu:** doanh thu đã xác nhận, số đơn chờ duyệt (bấm vào để mở danh sách đơn chờ duyệt), số xe đang cho thuê, số khách hàng.
-- **Biểu đồ doanh thu:** chọn **7 ngày** hoặc **30 ngày**. Doanh thu tính theo ngày đặt của các đơn đã xác nhận.
+- **4 thẻ số liệu:** doanh thu đã thu (chỉ tính giao dịch đã xác nhận thanh toán; bấm để mở mục Thanh toán), số đơn chờ duyệt (bấm vào để mở danh sách đơn chờ duyệt), số xe đang cho thuê, số khách hàng.
+- **Biểu đồ doanh thu:** chọn **7 ngày** hoặc **30 ngày**. Doanh thu chỉ ghi nhận khi giao dịch được **xác nhận đã thu tiền**, tính theo ngày thu tiền. Đơn đã duyệt nhưng chưa thu tiền chưa được tính.
 - **Trạng thái đơn**, **tình trạng đội xe** và **việc cần làm**. Có thể duyệt đơn ngay trong mục việc cần làm.
 
 ### Đơn đặt xe

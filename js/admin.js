@@ -137,7 +137,8 @@ const STR = {
     themeDark: ["Đã bật chế độ tối", "Dark mode on"],
     themeLight: ["Đã bật chế độ sáng", "Light mode on"],
 
-    revenue: ["Doanh thu đã xác nhận", "Confirmed revenue"],
+    revenue: ["Doanh thu đã thu", "Collected revenue"],
+    awaitingRevenue: ["Chờ thu: {v}", "Awaiting: {v}"],
     pendingBookings: ["Đơn chờ duyệt", "Pending bookings"],
     activeRentals: ["Xe đang cho thuê", "Cars on rent"],
     customersStat: ["Khách hàng", "Customers"],
@@ -147,7 +148,7 @@ const STR = {
     ofCars: ["trên tổng {n} xe", "of {n} cars"],
     newCustomers: ["+{n} khách mới trong 30 ngày", "+{n} new in 30 days"],
     revenueChart: ["Doanh thu", "Revenue"],
-    revenueChartSub: ["Doanh thu đơn đã xác nhận theo ngày đặt", "Confirmed booking revenue by booking date"],
+    revenueChartSub: ["Chỉ tính giao dịch đã xác nhận thanh toán, theo ngày thu tiền", "Only confirmed payments, by collection date"],
     days7: ["7 ngày", "7 days"],
     days30: ["30 ngày", "30 days"],
     rangeTotal: ["Tổng: {v}", "Total: {v}"],
@@ -193,7 +194,7 @@ const STR = {
     markPaid: ["Xác nhận đã thu", "Mark as paid"],
     markPaidToast: ["Đã xác nhận thu tiền giao dịch {code}", "Transaction {code} marked as paid"],
     payByMethod: ["Theo hình thức thanh toán", "By payment method"],
-    paySince: ["Số liệu tính từ lúc admin duyệt đơn. Hình thức thanh toán do admin chọn khi duyệt.", "Figures start when a booking is approved. The payment method is chosen by the admin at approval."],
+    paySince: ["Số liệu tính từ lúc admin duyệt đơn. Hình thức thanh toán do admin chọn khi duyệt. Doanh thu chỉ ghi nhận khi giao dịch được xác nhận đã thu.", "Figures start when a booking is approved. The payment method is chosen by the admin at approval. Revenue is only recognised once a payment is confirmed as collected."],
     paymentCol: ["Thanh toán", "Payment"],
     editPayment: ["Sửa giao dịch {code}", "Edit transaction {code}"],
     editPaymentBtn: ["Sửa thanh toán", "Edit payment"],
@@ -731,6 +732,9 @@ function inRange(dateValue, fromDays, toDays) {
     return d.getTime() <= now - toDays * 86400000 && d.getTime() > now - fromDays * 86400000;
 }
 
+// Giao dịch đã xác nhận thanh toán (đã thu tiền, chưa hoàn) - nguồn duy nhất để tính doanh thu
+const paidPayments = () => payments.filter(p => p.status === "paid" && p.paidAt);
+
 function renderDashboard() {
     const host = $("#dashboardPage");
     if (!dataLoaded) {
@@ -738,10 +742,13 @@ function renderDashboard() {
         return;
     }
 
-    const confirmed = bookings.filter(b => b.status === "confirmed");
-    const revenue = confirmed.reduce((s, b) => s + (Number(b.total) || 0), 0);
-    const revCur = confirmed.filter(b => inRange(b.createdAt, 30, 0)).reduce((s, b) => s + (Number(b.total) || 0), 0);
-    const revPrev = confirmed.filter(b => inRange(b.createdAt, 60, 30)).reduce((s, b) => s + (Number(b.total) || 0), 0);
+    // Doanh thu chỉ ghi nhận khi giao dịch đã được xác nhận thanh toán, tính theo thời điểm thu tiền
+    const paid = paidPayments();
+    const sumAmount = (list) => list.reduce((s, p) => s + (Number(p.amount) || 0), 0);
+    const revenue = sumAmount(paid);
+    const revCur = sumAmount(paid.filter(p => inRange(p.paidAt, 30, 0)));
+    const revPrev = sumAmount(paid.filter(p => inRange(p.paidAt, 60, 30)));
+    const awaiting = sumAmount(payments.filter(p => p.status === "pending"));
     const pending = bookings.filter(b => b.status === "pending");
     const rented = cars.filter(c => c.status === "rented").length;
     const available = cars.filter(c => c.status === "available").length;
@@ -778,7 +785,7 @@ function renderDashboard() {
 
     host.innerHTML = `
         <div class="stat-grid">
-            ${statCard(0, "violet", "wallet", t("revenue"), esc(shortMoney(revenue)) + " ₫", `${trendHtml(revCur, revPrev)} ${esc(t("vsPrev"))}`)}
+            ${statCard(0, "violet", "wallet", t("revenue"), esc(shortMoney(revenue)) + " ₫", `${trendHtml(revCur, revPrev)} ${esc(t("vsPrev"))}${awaiting ? `<span class="stat-sub">${esc(t("awaitingRevenue", { v: shortMoney(awaiting) + " ₫" }))}</span>` : ""}`, `data-go="payments"`)}
             ${statCard(1, "orange", "clipboard", t("pendingBookings"), pending.length, esc(pending.length ? t("needAction") : t("allClear")), `data-go="bookings" data-tab="pending"`)}
             ${statCard(2, "blue", "car", t("activeRentals"), rented, esc(t("ofCars", { n: cars.length })))}
             ${statCard(3, "green", "users", t("customersStat"), customers.length, esc(t("newCustomers", { n: newCustomers })))}
@@ -856,7 +863,7 @@ function renderCharts(statusCounts, statusColors) {
     const grid = cssVar("--line");
     const primary = cssVar("--primary");
 
-    // Doanh thu theo ngày đặt của các đơn đã xác nhận
+    // Doanh thu theo ngày thu tiền của các giao dịch đã xác nhận thanh toán
     const days = ui.revenueRange;
     const labels = [], keys = [];
     for (let i = days - 1; i >= 0; i--) {
@@ -866,11 +873,11 @@ function renderCharts(statusCounts, statusColors) {
         labels.push(d.toLocaleDateString(locale(), { day: "2-digit", month: "2-digit" }));
     }
     const sums = Object.fromEntries(keys.map(k => [k, 0]));
-    bookings.filter(b => b.status === "confirmed").forEach(b => {
-        const d = parseDate(b.createdAt);
+    paidPayments().forEach(p => {
+        const d = parseDate(p.paidAt);
         if (!d) return;
         const k = dayKey(d);
-        if (k in sums) sums[k] += Number(b.total) || 0;
+        if (k in sums) sums[k] += Number(p.amount) || 0;
     });
     const values = keys.map(k => sums[k]);
     const rangeTotal = values.reduce((a, b) => a + b, 0);
@@ -2173,7 +2180,7 @@ const ADMIN_HELP = {
         ["start", "Bắt đầu", `
             <ol class="help-list">
                 <li><b>Đổi mật khẩu ngay</b> nếu vẫn dùng <code>admin123</code>: thanh bên trái → <em>Đổi mật khẩu</em>.</li>
-                <li><b>Tổng quan</b> cho biết doanh thu, đơn chờ duyệt và việc cần làm. Bấm thẻ <em>Đơn chờ duyệt</em> để xử lý ngay.</li>
+                <li><b>Tổng quan</b> cho biết doanh thu (chỉ tính giao dịch đã xác nhận thanh toán), đơn chờ duyệt và việc cần làm. Bấm thẻ <em>Đơn chờ duyệt</em> để xử lý ngay.</li>
                 <li>Dữ liệu tự làm mới mỗi phút. Bấm <b>↻</b> trên thanh trên cùng để làm mới ngay.</li>
                 <li>Nút 🌐 đổi ngôn ngữ Việt/Anh, nút ☀/🌙 đổi giao diện sáng/tối.</li>
                 <li>Phím tắt: <kbd>/</kbd> nhảy tới ô tìm kiếm, <kbd>Esc</kbd> đóng hộp thoại.</li>
@@ -2208,7 +2215,7 @@ const ADMIN_HELP = {
         ["start", "Getting started", `
             <ol class="help-list">
                 <li><b>Change the password now</b> if you still use <code>admin123</code>: left sidebar → <em>Change password</em>.</li>
-                <li>The <b>Dashboard</b> shows revenue, pending bookings and your to-do list. Click the <em>Pending bookings</em> card to handle them.</li>
+                <li>The <b>Dashboard</b> shows revenue (confirmed payments only), pending bookings and your to-do list. Click the <em>Pending bookings</em> card to handle them.</li>
                 <li>Data refreshes every minute. Click <b>↻</b> in the top bar to refresh immediately.</li>
                 <li>Use 🌐 to switch Vietnamese/English and ☀/🌙 for light/dark mode.</li>
                 <li>Shortcuts: <kbd>/</kbd> jumps to the search box, <kbd>Esc</kbd> closes dialogs.</li>

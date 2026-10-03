@@ -3060,3 +3060,14 @@ tbody tr.clickable {
   color: var(--orange);
   background: var(--orange-50);
 }
+
+.stat-foot {
+  flex-wrap: wrap;
+}
+
+.stat-sub {
+  flex-basis: 100%;
+  font-size: 12px;
+  color: var(--orange);
+  font-weight: 600;
+}

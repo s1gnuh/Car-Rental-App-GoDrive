@@ -180,8 +180,8 @@ Go to `/admin` and enter your username (or email) and password. Click the 👁 i
 
 ### Dashboard
 
-- **4 stat cards:** confirmed revenue, pending bookings (click to open the pending list), cars on rent, and customers.
-- **Revenue chart:** choose **7 days** or **30 days**. Revenue is grouped by the booking date of confirmed bookings.
+- **4 stat cards:** collected revenue (only payments confirmed as collected; click to open Payments), pending bookings (click to open the pending list), cars on rent, and customers.
+- **Revenue chart:** choose **7 days** or **30 days**. Revenue is only recognised once a payment is **confirmed as collected**, grouped by collection date. Approved bookings that have not been paid are not counted yet.
 - **Booking status**, **fleet status** and a **to-do list**. You can approve bookings directly from the to-do list.
 
 ### Bookings
