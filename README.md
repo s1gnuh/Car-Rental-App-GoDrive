@@ -71,7 +71,11 @@ Data is stored in JSON files, so no database is required. Runs on free PHP hosti
 
 ### For customers
 
-- Browse cars, filter by type (Sedan / SUV / Hatchback) and location, sort by price or popularity
+- Browse cars, filter by type (Sedan / SUV / Hatchback), brand and location, sort by price or popularity
+- Cars without a photo get a **detailed illustration** matching their body type and paint color
+- **Car details popup** with specs, price estimate for the chosen dates and similar cars
+- Browse by **city** or by **brand** from the home page; each card shows the estimated total for the selected dates
+- Look up a booking to see your **membership tier** (Bronze → Diamond) and total rented
 - Book **without creating an account**; the total is calculated automatically from the rental days
 - **Double bookings are blocked** for the same car
 - Track a booking with the **email and phone number** used when booking
@@ -82,6 +86,8 @@ Data is stored in JSON files, so no database is required. Runs on free PHP hosti
 
 - Dashboard with real revenue, trends versus the previous period and a to-do list
 - Booking management: approve, hand over the car, cancel, view details, call or email the customer
+- **Approving a booking requires choosing the payment method** (cash, bank transfer, card, MoMo, ZaloPay, VNPay); the transaction is recorded under Payments from that moment
+- Customers ranked by spending with 5 automatic tiers (Diamond = over 1 billion VND)
 - Manage the fleet, customers, payments and maintenance schedules
 - Export bookings, customers and payments to CSV
 - Create/delete admin accounts, change password
@@ -183,30 +189,31 @@ Go to `/admin` and enter your username (or email) and password. Click the 👁 i
 How a booking moves through the system:
 
 ```
-Pending ──[Approve]──▶ Confirmed ──[Hand over]──▶ Car becomes "On rent"
+Pending ──[Approve + payment method]──▶ Confirmed ──[Hand over]──▶ Car becomes "On rent"
    │                       │
    └───────[Cancel]────────┴──▶ Cancelled (a car on rent goes back to "Available")
 ```
 
 - Use the **All / Pending / Confirmed / Cancelled** tabs and the search box (booking code, customer name, phone, email or car).
 - Click a row to open the **booking details**, including a button to call the customer.
-- Cancelling always asks for confirmation to prevent accidental clicks.
+- **Approve** opens a dialog where you must pick the payment method and whether the money has been collected. A transaction is created under **Payments** at that moment.
+- Cancelling always asks for confirmation to prevent accidental clicks. Cancelling an approved booking refunds a collected payment or drops an uncollected one.
 - Click **Export CSV** to download the booking list for Excel.
 
 ### Fleet
 
-- **Add a car:** click **+ Add car** and enter the name, brand, type, seats, daily rate and location. The photo is a URL starting with `https://`.
+- **Add a car:** click **+ Add car** and enter the name, brand, type, seats, daily rate and location. The photo is a URL starting with `https://`. No photo? Pick a **car color** and the site draws an illustration of that body type.
 - Tick **Mark as featured on the customer site** to give the car a "Popular" badge and show it first on the customer site.
 - **Change status:** pick *Available / On rent / Maintenance* right on the car card. When a customer returns a car, set it back to **Available**.
 - Cars in **Maintenance** are hidden from the customer site.
 
 ### Customers
 
-Customers are added automatically on their first booking. Each new booking adds to their booking count and total spent. The list is sorted by spending and can be exported to CSV.
+Customers are added automatically on their first booking. Total spent only counts **approved** bookings. Customers are ranked by spending into 5 tiers: Diamond (over 1 billion VND), Platinum (500M+), Gold (200M+), Silver (50M+) and Bronze. Click a tier card to filter; the list can be exported to CSV.
 
 ### Payments
 
-Shows the amount collected, pending and refunded, plus the transaction history, with status filters and CSV export. Data is read from `data/payments.json`. Online payment gateways are not integrated yet.
+Payments start **when a booking is approved**: the admin picks the payment method and whether it was collected. The page shows the amount collected, awaiting payment and refunded, a breakdown by payment method and the transaction history. Use **Mark as paid** when a customer pays later. Cancelling a paid booking marks its transaction as refunded. Online payment gateways are not integrated yet.
 
 ### Maintenance
 

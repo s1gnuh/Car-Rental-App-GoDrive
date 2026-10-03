@@ -68,6 +68,12 @@ const EN_STATIC = {
     "car.imageUrl": "Image URL",
     "car.imageHint": "Paste an image URL starting with https:// (JPG, PNG, WEBP)",
     "car.clearImage": "Remove image",
+    "car.color": "Car color (illustration when there is no photo)",
+    "approve.method": "Payment method *",
+    "approve.status": "Collection status",
+    "approve.note": "Note / reference code (optional)",
+    "approve.hint": "The transaction is recorded under Payments as soon as you approve. You can mark it as collected later.",
+    "approve.submit": "Approve & record payment",
     "car.name": "Car name *",
     "car.brand": "Brand",
     "car.type": "Type",
@@ -176,6 +182,27 @@ const STR = {
     noBookings: ["Không có đơn phù hợp", "No matching bookings"],
     noBookingsHint: ["Thử đổi bộ lọc hoặc từ khóa tìm kiếm.", "Try a different filter or search term."],
     approved: ["Đã duyệt đơn #{id}", "Booking #{id} approved"],
+    approveTitle: ["Duyệt đơn #{id}", "Approve booking #{id}"],
+    approvedPay: ["Đã duyệt đơn #{id} · ghi nhận thanh toán {method}", "Booking #{id} approved · {method} payment recorded"],
+    payMethodRequired: ["Vui lòng chọn hình thức thanh toán", "Please choose a payment method"],
+    payNotCollected: ["Chưa thu tiền", "Not collected yet"],
+    payCollected: ["Đã thu tiền", "Already collected"],
+    markPaid: ["Xác nhận đã thu", "Mark as paid"],
+    markPaidToast: ["Đã xác nhận thu tiền giao dịch {code}", "Transaction {code} marked as paid"],
+    payByMethod: ["Theo hình thức thanh toán", "By payment method"],
+    paySince: ["Số liệu tính từ lúc admin duyệt đơn. Hình thức thanh toán do admin chọn khi duyệt.", "Figures start when a booking is approved. The payment method is chosen by the admin at approval."],
+    paymentCol: ["Thanh toán", "Payment"],
+    note: ["Ghi chú", "Note"],
+    approvedBy: ["Duyệt bởi {name}", "Approved by {name}"],
+    colorAuto: ["Tự động", "Auto"],
+    color_purple: ["Tím", "Purple"],
+    color_blue: ["Xanh dương", "Blue"],
+    color_red: ["Đỏ", "Red"],
+    color_white: ["Trắng", "White"],
+    color_black: ["Đen", "Black"],
+    color_silver: ["Bạc", "Silver"],
+    color_teal: ["Xanh ngọc", "Teal"],
+    color_orange: ["Cam", "Orange"],
     cancelledToast: ["Đã hủy đơn #{id}", "Booking #{id} cancelled"],
     handedOver: ["Đã bàn giao xe cho đơn #{id}", "Car handed over for booking #{id}"],
     confirmCancelTitle: ["Hủy đơn #{id}?", "Cancel booking #{id}?"],
@@ -305,6 +332,10 @@ const SERVER_ERRORS_EN = {
     "Email không hợp lệ": "Invalid email address",
     "Username chỉ gồm chữ, số, . _ - (3-50 ký tự)": "Username may contain letters, digits, . _ - (3-50 characters)",
     "Phải giữ lại ít nhất 1 admin": "At least one admin must remain",
+    "Hình thức thanh toán không hợp lệ": "Please choose a valid payment method",
+    "Trạng thái thanh toán không hợp lệ": "Invalid payment status",
+    "Không tìm thấy giao dịch": "Transaction not found",
+    "Màu xe không hợp lệ": "Invalid car color",
     "Không thể xóa chính mình": "You can't delete yourself",
     "Không tìm thấy": "Not found",
     "Không tìm thấy xe": "Car not found",
@@ -325,7 +356,17 @@ const SERVER_ERRORS_EN = {
 };
 
 const CITY_EN = { "Hà Nội": "Hanoi", "TP. Hồ Chí Minh": "Ho Chi Minh City", "Đà Nẵng": "Da Nang" };
-const METHOD_EN = { "Chuyển khoản": "Bank transfer", "Thẻ tín dụng": "Credit card", "Ví MoMo": "MoMo e-wallet", "Tiền mặt": "Cash", "COD": "Cash on delivery" };
+const METHOD_EN = { "Chuyển khoản": "Bank transfer", "Thẻ tín dụng": "Credit card", "Ví MoMo": "MoMo e-wallet", "Tiền mặt": "Cash", "COD": "Cash on delivery", "ZaloPay": "ZaloPay", "VNPay": "VNPay QR" };
+// Hình thức thanh toán admin chọn khi duyệt đơn (khớp với PAYMENT_METHODS ở api/_helpers.php)
+const PAY_METHODS = [
+    ["Tiền mặt", "cash"],
+    ["Chuyển khoản", "bank"],
+    ["Thẻ tín dụng", "card"],
+    ["Ví MoMo", "smartphone"],
+    ["ZaloPay", "smartphone"],
+    ["VNPay", "qr"]
+];
+const methodIcon = (m) => (PAY_METHODS.find(x => x[0] === m) || [m, "wallet"])[1];
 
 let lang = store(LANG_KEY) === "en" ? "en" : "vi";
 const viOriginal = new Map();
@@ -523,6 +564,11 @@ function emptyState(iconName, title, hint = "") {
 
 function statusBadge(s) {
     return `<span class="status ${esc(s)}">${esc(statusLabel(s))}</span>`;
+}
+
+// Nhãn trạng thái giao dịch ("pending" ở đây là chờ thanh toán, không phải chờ duyệt)
+function payBadge(s) {
+    return `<span class="status ${esc(s)}">${esc(s === "pending" ? t("pendingPay") : statusLabel(s))}</span>`;
 }
 
 function tabsHtml(name, current, items) {
@@ -926,6 +972,8 @@ function openBookingDetail(id) {
     if (!b) return;
     $("#bookingModalTitle").textContent = t("bookingDetail", { id: String(b.id).slice(-5) });
     const phoneHref = String(b.customerPhone || "").replace(/[^\d+]/g, "");
+    const ofBooking = payments.filter(p => String(p.bookingId) === String(b.id));
+    const pay = ofBooking.find(p => p.status !== "refunded") || ofBooking[0];
     $("#bookingDetail").innerHTML = `
         <div style="margin-bottom:10px">${statusBadge(b.status)}</div>
         <div class="detail-list">
@@ -936,6 +984,7 @@ function openBookingDetail(id) {
             <div class="detail-row"><span>${esc(t("pickup"))}</span><strong>${esc(fmtDate(b.startDate))}</strong></div>
             <div class="detail-row"><span>${esc(t("return"))}</span><strong>${esc(fmtDate(b.endDate))} · ${esc(t("nDays", { n: nightCount(b.startDate, b.endDate) }))}</strong></div>
             <div class="detail-row"><span>${esc(t("location"))}</span><strong>${esc(city(b.location))}</strong></div>
+            ${pay ? `<div class="detail-row"><span>${esc(t("paymentCol"))}</span><strong><span class="method-chip">${icon(methodIcon(pay.method))}${esc(methodLabel(pay.method))}</span> ${payBadge(pay.status)}</strong></div>` : ""}
             <div class="detail-row"><span>${esc(t("createdAt"))}</span><strong>${esc(fmtDateTime(b.createdAt))}</strong></div>
         </div>
         <div class="detail-total"><span>${esc(t("total"))}</span><strong>${esc(money(b.total))}</strong></div>
@@ -948,24 +997,116 @@ function openBookingDetail(id) {
     openModal("bookingModal");
 }
 
+/* ---------- Duyệt đơn + ghi nhận thanh toán ---------- */
+
+const approveState = { id: null, method: "", status: "pending" };
+
+function openApproveModal(id) {
+    const b = bookings.find(x => Number(x.id) === Number(id));
+    if (!b) return;
+    if (!$("#bookingModal").classList.contains("hidden")) closeModal("bookingModal");
+    approveState.id = b.id;
+    approveState.method = "";
+    approveState.status = "pending";
+    $("#approveTitle").textContent = t("approveTitle", { id: String(b.id).slice(-5) });
+    $("#approveSummary").innerHTML = `
+        <div class="approve-card">
+            <div class="approve-who">
+                <strong>${esc(b.customerName)}</strong>
+                <span>${esc(b.carName)} · ${esc(fmtDate(b.startDate))} → ${esc(fmtDate(b.endDate))} · ${esc(t("nDays", { n: nightCount(b.startDate, b.endDate) }))}</span>
+            </div>
+            <div class="approve-amount"><small>${esc(t("total"))}</small><strong>${esc(money(b.total))}</strong></div>
+        </div>`;
+    $("#approveNote").value = "";
+    renderApproveControls();
+    openModal("approveModal");
+}
+
+function renderApproveControls() {
+    $("#approveMethods").innerHTML = PAY_METHODS.map(([m, ic]) => {
+        const on = m === approveState.method;
+        return `<button type="button" class="pay-method ${on ? "active" : ""}" role="radio" aria-checked="${on}" data-pay-method="${esc(m)}">${icon(ic)}<span>${esc(methodLabel(m))}</span></button>`;
+    }).join("");
+    $("#approveStatus").innerHTML = [["pending", t("payNotCollected"), "clock"], ["paid", t("payCollected"), "check"]].map(([v, label, ic]) => {
+        const on = v === approveState.status;
+        return `<button type="button" class="seg-btn ${on ? "active" : ""}" role="radio" aria-checked="${on}" data-pay-status="${v}">${icon(ic)} ${esc(label)}</button>`;
+    }).join("");
+}
+
+async function reloadMoneyData() {
+    try {
+        const [p, cu] = await Promise.all([api("/api/users.php?action=payments"), api("/api/users.php")]);
+        payments = p;
+        customers = cu;
+    } catch (_) { /* giữ dữ liệu cũ, lần tự làm mới sau sẽ cập nhật */ }
+}
+
+async function submitApprove(e) {
+    e.preventDefault();
+    const b = bookings.find(x => Number(x.id) === Number(approveState.id));
+    if (!b) return;
+    if (!approveState.method) {
+        showToast(t("payMethodRequired"), "error");
+        const box = $("#approveMethods");
+        box.classList.remove("shake");
+        void box.offsetWidth;
+        box.classList.add("shake");
+        return;
+    }
+    const btn = $("#approveSubmit");
+    setLoading(btn, true);
+    try {
+        const { payment, ...updated } = await api(`/api/orders.php?id=${Number(b.id)}`, {
+            method: "PATCH",
+            body: JSON.stringify({
+                status: "confirmed",
+                paymentMethod: approveState.method,
+                paymentStatus: approveState.status,
+                paymentNote: $("#approveNote").value.trim()
+            })
+        });
+        Object.assign(b, updated);
+        await reloadMoneyData();
+        showToast(t("approvedPay", { id: String(b.id).slice(-5), method: methodLabel(approveState.method) }), "success");
+        closeModal("approveModal");
+        renderEverything();
+    } catch (err) {
+        showToast(err.message, "error");
+    } finally {
+        setLoading(btn, false);
+    }
+}
+
+async function markPaymentPaid(id) {
+    const p = payments.find(x => Number(x.id) === Number(id));
+    if (!p) return;
+    try {
+        const updated = await api(`/api/users.php?action=payments&id=${Number(id)}`, { method: "PATCH", body: JSON.stringify({ status: "paid" }) });
+        Object.assign(p, updated);
+        showToast(t("markPaidToast", { code: p.txnCode }), "success");
+        renderEverything();
+    } catch (err) {
+        showToast(err.message, "error");
+    }
+}
+
 async function bookingAction(act, id) {
     const b = bookings.find(x => Number(x.id) === Number(id));
     if (!b) return;
     const short = String(b.id).slice(-5);
+    if (act === "approve") return openApproveModal(id);
     try {
-        if (act === "approve") {
-            const updated = await api(`/api/orders.php?id=${Number(id)}`, { method: "PATCH", body: JSON.stringify({ status: "confirmed" }) });
-            Object.assign(b, updated);
-            showToast(t("approved", { id: short }), "success");
-        } else if (act === "cancel") {
+        if (act === "cancel") {
             const ok = await confirmDialog({
                 title: t("confirmCancelTitle", { id: short }),
                 text: t("confirmCancelText", { name: b.customerName, car: b.carName }),
                 okText: t("confirmCancelOk")
             });
             if (!ok) return;
-            const updated = await api(`/api/orders.php?id=${Number(id)}`, { method: "PATCH", body: JSON.stringify({ status: "cancelled" }) });
+            const { payment: _p, ...updated } = await api(`/api/orders.php?id=${Number(id)}`, { method: "PATCH", body: JSON.stringify({ status: "cancelled" }) });
             Object.assign(b, updated);
+            // Hủy đơn đã duyệt làm thay đổi giao dịch (hoàn tiền / bỏ giao dịch chưa thu) và hạng khách
+            await reloadMoneyData();
             const car = cars.find(c => c.id === b.carId);
             if (car && car.status === "rented") car.status = "available";
             showToast(t("cancelledToast", { id: short }), "success");
@@ -1008,8 +1149,8 @@ function renderFleet() {
         const type = (c.type || "").toLowerCase();
         return `
             <article class="fleet-card" style="--i:${i}">
-                <div class="fleet-thumb ${esc(type)}">
-                    ${img ? `<img src="${esc(img)}" alt="${esc(c.name)}" loading="lazy" />` : icon("car")}
+                <div class="fleet-thumb ${esc(type)} ${img ? "" : "art"}">
+                    ${img ? `<img src="${esc(img)}" alt="${esc(c.name)}" loading="lazy" />` : CarArt.svg(c)}
                     ${statusBadge(c.status)}
                     ${c.featured ? `<span class="featured-mark" title="${esc(t("featured"))}">${icon("star")}</span>` : ""}
                 </div>
@@ -1039,9 +1180,29 @@ function renderFleet() {
     }
 }
 
+/* ---------- Màu xe & hình minh họa trong form xe ---------- */
+
+let carColor = "";
+
+function renderColorSwatches() {
+    const keys = ["", ...Object.keys(CarArt.COLORS)];
+    $("#carColors").innerHTML = keys.map(k => {
+        const on = k === carColor;
+        const label = k ? t("color_" + k) : t("colorAuto");
+        const style = k ? `--sw:${CarArt.COLORS[k]}` : "";
+        return `<button type="button" class="swatch ${k ? "" : "auto"} ${on ? "active" : ""}" style="${style}" data-color="${k}" role="radio" aria-checked="${on}" title="${esc(label)}" aria-label="${esc(label)}">${on ? icon("check") : ""}</button>`;
+    }).join("") + `<span class="swatch-label">${esc(carColor ? t("color_" + carColor) : t("colorAuto"))}</span>`;
+}
+
+function refreshCarArt() {
+    const car = { name: $("#carName").value || "GoDrive", brand: $("#carBrand").value, type: $("#carType").value, color: carColor };
+    $("#carImagePlaceholder").innerHTML = CarArt.svg(car);
+}
+
 function setCarImagePreview(src) {
     const img = $("#carImagePreviewImg");
     const url = safeUrl(src);
+    refreshCarArt();
     if (url) {
         img.src = url;
         img.hidden = false;
@@ -1071,6 +1232,8 @@ function openCarModal(car = null) {
     $("#carLocation").value = loc;
     $("#carFeatured").checked = !!car?.featured;
     $("#carImageUrl").value = car?.image || "";
+    carColor = CarArt.COLORS[car?.color] ? car.color : "";
+    renderColorSwatches();
     setCarImagePreview(car?.image || "");
     openModal("carModal");
 }
@@ -1090,7 +1253,8 @@ async function saveCar(e) {
         type: $("#carType").value,
         seats: Number($("#carSeats").value) || 5,
         location: $("#carLocation").value,
-        featured: $("#carFeatured").checked
+        featured: $("#carFeatured").checked,
+        color: carColor
     };
     const btn = $("#carSaveBtn");
     setLoading(btn, true);
@@ -1262,15 +1426,45 @@ function renderPayments() {
             <div class="stat-value">${esc(value)}</div><div class="stat-foot">${esc(foot)}</div>
         </div>`;
 
+    // Cơ cấu theo hình thức thanh toán (không tính giao dịch đã hoàn tiền)
+    const active = payments.filter(p => p.status !== "refunded");
+    const activeTotal = active.reduce((a, p) => a + (Number(p.amount) || 0), 0);
+    const byMethod = [...active.reduce((m, p) => {
+        const k = p.method || "—";
+        const cur = m.get(k) || { amount: 0, n: 0 };
+        cur.amount += Number(p.amount) || 0;
+        cur.n++;
+        return m.set(k, cur);
+    }, new Map()).entries()].sort((a, b) => b[1].amount - a[1].amount);
+
     host.innerHTML = `
+        <p class="page-note">${icon("shield")}<span>${esc(t("paySince"))}</span></p>
         <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
             ${card(0, "green", "wallet", t("paidTotal"), money(sum("paid")), t("transactions", { n: cnt("paid") }))}
             ${card(1, "orange", "clock", t("pendingPay"), money(sum("pending")), t("transactions", { n: cnt("pending") }))}
             ${card(2, "violet", "refresh", t("refundedPay"), money(sum("refunded")), t("transactions", { n: cnt("refunded") }))}
         </div>
+        ${byMethod.length ? `
+        <div class="panel method-panel">
+            <div class="panel-head"><h3>${esc(t("payByMethod"))}</h3></div>
+            <div class="method-list">
+                ${byMethod.map(([m, v]) => {
+                    const pct = activeTotal ? Math.round((v.amount / activeTotal) * 100) : 0;
+                    return `
+                    <div class="method-row">
+                        <span class="method-ico">${icon(methodIcon(m))}</span>
+                        <div class="method-main">
+                            <div class="method-top"><strong>${esc(methodLabel(m))}</strong><span>${esc(money(v.amount))} · ${pct}%</span></div>
+                            <div class="method-bar"><span style="width:${pct}%"></span></div>
+                            <small>${esc(t("transactions", { n: v.n }))}</small>
+                        </div>
+                    </div>`;
+                }).join("")}
+            </div>
+        </div>` : ""}
         <div class="toolbar">
             <div class="toolbar-left">
-                ${tabsHtml("paymentTab", ui.paymentTab, [["all", t("all"), payments.length], ["paid", t("paid"), cnt("paid")], ["pending", t("pending"), cnt("pending")], ["refunded", t("refunded"), cnt("refunded")]])}
+                ${tabsHtml("paymentTab", ui.paymentTab, [["all", t("all"), payments.length], ["paid", t("paid"), cnt("paid")], ["pending", t("pendingPay"), cnt("pending")], ["refunded", t("refunded"), cnt("refunded")]])}
                 <label class="search-input">${icon("search")}<input type="search" id="paymentSearch" placeholder="${esc(t("searchPayments"))}" value="${esc(ui.paymentSearch)}" /><kbd>/</kbd></label>
             </div>
             <button class="btn btn-outline" id="exportPayments">${icon("download")} ${esc(t("exportCsv"))}</button>
@@ -1278,15 +1472,16 @@ function renderPayments() {
         <div class="panel">
             <div class="table-scroll">
                 ${list.length ? `<table>
-                    <thead><tr><th>${esc(t("txn"))}</th><th>${esc(t("customer"))}</th><th>${esc(t("method"))}</th><th>${esc(t("amount"))}</th><th>${esc(t("time"))}</th><th>${esc(t("status"))}</th></tr></thead>
+                    <thead><tr><th>${esc(t("txn"))}</th><th>${esc(t("customer"))}</th><th>${esc(t("method"))}</th><th>${esc(t("amount"))}</th><th>${esc(t("time"))}</th><th>${esc(t("status"))}</th><th></th></tr></thead>
                     <tbody>${list.map(p => `
                         <tr>
-                            <td><span class="code">${esc(p.txnCode)}</span><span class="cell-sub">#${esc(p.id)}</span></td>
-                            <td><span class="cell-main">${esc(p.customerName)}</span><span class="cell-sub">${p.bookingId ? esc(t("orderRef", { id: String(p.bookingId).slice(-5) })) : "—"}</span></td>
-                            <td>${esc(methodLabel(p.method))}</td>
+                            <td><span class="code">${esc(p.txnCode)}</span><span class="cell-sub">${p.bookingId ? esc(t("orderRef", { id: String(p.bookingId).slice(-5) })) : "—"}</span></td>
+                            <td><span class="cell-main">${esc(p.customerName)}</span><span class="cell-sub">${esc(p.carName || "")}${p.approvedBy ? " · " + esc(t("approvedBy", { name: p.approvedBy })) : ""}</span></td>
+                            <td><span class="method-chip">${icon(methodIcon(p.method))}${esc(methodLabel(p.method))}</span>${p.note ? `<span class="cell-sub">${esc(p.note)}</span>` : ""}</td>
                             <td class="money">${esc(money(p.amount))}</td>
-                            <td>${esc(p.paidAt ? fmtDateTime(p.paidAt) : "—")}</td>
-                            <td>${statusBadge(p.status)}</td>
+                            <td>${esc(fmtDateTime(p.paidAt || p.createdAt || ""))}<span class="cell-sub">${esc(p.paidAt ? t("paidTotal") : t("approve"))}</span></td>
+                            <td>${payBadge(p.status)}</td>
+                            <td class="row-actions">${p.status === "pending" ? `<button class="act ok" data-pay-paid="${Number(p.id)}">${icon("check")} ${esc(t("markPaid"))}</button>` : ""}</td>
                         </tr>`).join("")}</tbody>
                 </table>` : emptyState("wallet", t("noPayments"))}
             </div>
@@ -1623,6 +1818,29 @@ function bindEvents() {
     $("#carImageUrl").addEventListener("input", e => setCarImagePreview(e.target.value));
     $("#carImagePreviewImg").addEventListener("error", () => setCarImagePreview(""));
     $("#carImageClearBtn").onclick = () => { $("#carImageUrl").value = ""; setCarImagePreview(""); };
+    ["carName", "carBrand", "carType"].forEach(id => $("#" + id).addEventListener("input", refreshCarArt));
+    $("#carColors").addEventListener("click", e => {
+        const sw = e.target.closest("[data-color]");
+        if (!sw) return;
+        carColor = sw.dataset.color;
+        renderColorSwatches();
+        refreshCarArt();
+    });
+
+    // Duyệt đơn: chọn hình thức thanh toán và tình trạng thu tiền
+    $("#approveMethods").addEventListener("click", e => {
+        const btn = e.target.closest("[data-pay-method]");
+        if (!btn) return;
+        approveState.method = btn.dataset.payMethod;
+        renderApproveControls();
+    });
+    $("#approveStatus").addEventListener("click", e => {
+        const btn = e.target.closest("[data-pay-status]");
+        if (!btn) return;
+        approveState.status = btn.dataset.payStatus;
+        renderApproveControls();
+    });
+    $("#approveForm").addEventListener("submit", submitApprove);
     $("#maintForm").addEventListener("submit", saveMaint);
     $("#m_start").addEventListener("change", () => {
         $("#m_end").min = $("#m_start").value;
@@ -1644,7 +1862,7 @@ function bindEvents() {
 
     // Ủy quyền sự kiện cho nội dung render động
     document.addEventListener("click", e => {
-        const el = e.target.closest("[data-go], [data-act], [data-detail], .tab, [data-car-edit], [data-car-delete], [data-maint], [data-maint-delete], [data-admin-delete], #addCarBtn, #addMaintBtn, #exportBookings, #exportPayments, #exportCustomers");
+        const el = e.target.closest("[data-go], [data-act], [data-detail], .tab, [data-car-edit], [data-car-delete], [data-maint], [data-maint-delete], [data-admin-delete], [data-pay-paid], #addCarBtn, #addMaintBtn, #exportBookings, #exportPayments, #exportCustomers");
         if (!el) return;
 
         if (el.matches(".tab")) {
@@ -1671,6 +1889,7 @@ function bindEvents() {
         if (el.dataset.maint) { updateMaint(Number(el.dataset.id), el.dataset.maint); return; }
         if (el.dataset.maintDelete) { deleteMaint(Number(el.dataset.maintDelete)); return; }
         if (el.dataset.adminDelete) { deleteAdmin(Number(el.dataset.adminDelete)); return; }
+        if (el.dataset.payPaid) { markPaymentPaid(Number(el.dataset.payPaid)); return; }
         if (el.id === "addCarBtn") return openCarModal();
         if (el.id === "addMaintBtn") return openMaintModal();
         if (el.id === "exportBookings") {
@@ -1681,8 +1900,8 @@ function bindEvents() {
         }
         if (el.id === "exportPayments") {
             return downloadCsv("godrive-payments.csv", [
-                [t("txn"), t("customer"), t("method"), t("amount"), t("status"), t("time")],
-                ...payments.map(p => [p.txnCode, p.customerName, methodLabel(p.method), p.amount, statusLabel(p.status), p.paidAt || ""])
+                [t("txn"), t("customer"), t("car"), t("method"), t("amount"), t("status"), t("approve"), t("paidTotal"), t("note")],
+                ...payments.map(p => [p.txnCode, p.customerName, p.carName || "", methodLabel(p.method), p.amount, (p.status === "pending" ? t("pendingPay") : statusLabel(p.status)), p.createdAt || "", p.paidAt || "", p.note || ""])
             ]);
         }
         if (el.id === "exportCustomers") {
@@ -1802,6 +2021,8 @@ const ADMIN_HELP = {
         ["bookings", "Đơn đặt xe", `
             <ol class="help-list">
                 <li>Đơn mới có trạng thái <b>Chờ duyệt</b>. Bấm vào dòng để xem số điện thoại, gọi cho khách rồi bấm <b>Duyệt</b>.</li>
+                <li>Khi duyệt, <b>bắt buộc chọn hình thức thanh toán</b> (tiền mặt, chuyển khoản, thẻ, MoMo, ZaloPay, VNPay) và cho biết đã thu tiền hay chưa. Giao dịch được ghi vào mục <b>Thanh toán</b> từ lúc này.</li>
+                <li>Khách trả tiền sau: vào <b>Thanh toán</b> → bấm <b>Xác nhận đã thu</b>. Hủy đơn đã thu tiền thì giao dịch tự chuyển sang <b>Đã hoàn tiền</b>.</li>
                 <li>Khi giao xe cho khách, bấm <b>Bàn giao</b>: xe chuyển sang <b>Đang thuê</b>.</li>
                 <li>Khi khách trả xe, vào <b>Đội xe</b> và đổi trạng thái xe về <b>Sẵn sàng</b>.</li>
                 <li>Bấm <b>✕</b> để hủy đơn. Xe đang thuê sẽ tự trở về Sẵn sàng.</li>
@@ -1809,7 +2030,7 @@ const ADMIN_HELP = {
             </ol>`],
         ["fleet", "Đội xe & bảo trì", `
             <ol class="help-list">
-                <li><b>+ Thêm xe</b>: nhập tên, hãng, loại, số chỗ, giá/ngày, địa điểm. Ảnh xe là link bắt đầu bằng <code>https://</code>.</li>
+                <li><b>+ Thêm xe</b>: nhập tên, hãng, loại, số chỗ, giá/ngày, địa điểm. Ảnh xe là link bắt đầu bằng <code>https://</code>. Chưa có ảnh thì chọn <b>màu xe</b>, trang khách sẽ hiện hình minh họa theo dáng xe.</li>
                 <li>Tên <b>hãng</b> được dùng cho bộ lọc hãng xe trên trang khách, hãy viết thống nhất (ví dụ luôn là "Toyota").</li>
                 <li>Tích <b>xe nổi bật</b> để xe có nhãn "Được yêu thích" và hiện trước trên trang khách.</li>
                 <li><b>Bảo trì</b>: Lên lịch → <b>Bắt đầu</b> (xe tạm ẩn khỏi trang khách) → <b>Hoàn thành</b> (xe sẵn sàng trở lại).</li>
@@ -1835,6 +2056,8 @@ const ADMIN_HELP = {
         ["bookings", "Bookings", `
             <ol class="help-list">
                 <li>New bookings are <b>Pending</b>. Click a row to see the phone number, call the customer, then click <b>Approve</b>.</li>
+                <li>When approving, you <b>must choose the payment method</b> (cash, bank transfer, card, MoMo, ZaloPay, VNPay) and whether it has been collected. The transaction is recorded under <b>Payments</b> from that moment.</li>
+                <li>Paid later? Go to <b>Payments</b> → <b>Mark as paid</b>. Cancelling a paid booking automatically marks the transaction as <b>Refunded</b>.</li>
                 <li>When handing the car over, click <b>Hand over</b>: the car becomes <b>On rent</b>.</li>
                 <li>When the customer returns the car, go to <b>Fleet</b> and set the car back to <b>Available</b>.</li>
                 <li>Click <b>✕</b> to cancel a booking. A car on rent goes back to Available automatically.</li>
@@ -1842,7 +2065,7 @@ const ADMIN_HELP = {
             </ol>`],
         ["fleet", "Fleet & maintenance", `
             <ol class="help-list">
-                <li><b>+ Add car</b>: enter the name, brand, type, seats, daily rate and location. The photo is a URL starting with <code>https://</code>.</li>
+                <li><b>+ Add car</b>: enter the name, brand, type, seats, daily rate and location. The photo is a URL starting with <code>https://</code>. No photo? Pick a <b>car color</b> and the customer site shows an illustration of that body type.</li>
                 <li>The <b>brand</b> name powers the brand filter on the customer site, so keep it consistent (e.g. always "Toyota").</li>
                 <li>Tick <b>featured</b> to give a car the "Popular" badge and show it first on the customer site.</li>
                 <li><b>Maintenance</b>: Schedule → <b>Start</b> (car hidden from the customer site) → <b>Complete</b> (car available again).</li>

@@ -71,7 +71,11 @@ Dữ liệu lưu trong file JSON nên không cần database. Chạy được tr�
 
 ### Dành cho khách hàng
 
-- Xem danh sách xe, lọc theo loại (Sedan / SUV / Hatchback) và địa điểm, sắp xếp theo giá hoặc độ nổi bật
+- Xem danh sách xe, lọc theo loại (Sedan / SUV / Hatchback), hãng xe và địa điểm, sắp xếp theo giá hoặc độ nổi bật
+- Xe chưa có ảnh được **vẽ minh họa chi tiết** theo dáng xe và màu sơn
+- **Popup chi tiết xe**: thông số, tiền tạm tính theo ngày đã chọn và các xe tương tự
+- Chọn xe theo **thành phố** hoặc **hãng xe** ngay trên trang chủ; mỗi thẻ xe hiện tiền tạm tính theo ngày đã chọn
+- Tra cứu đơn để xem **hạng thành viên** (Đồng → Kim cương) và tổng tiền đã thuê
 - Đặt xe **không cần tạo tài khoản**, tổng tiền tự tính theo số ngày thuê
 - Tự động **chặn đặt trùng lịch** trên cùng một xe
 - Tra cứu trạng thái đơn bằng **email và số điện thoại** đã dùng khi đặt
@@ -82,6 +86,8 @@ Dữ liệu lưu trong file JSON nên không cần database. Chạy được tr�
 
 - Dashboard với doanh thu thực tế, xu hướng so với kỳ trước và danh sách việc cần làm
 - Quản lý đơn: duyệt, bàn giao xe, hủy đơn, xem chi tiết, gọi hoặc gửi email cho khách
+- **Duyệt đơn bắt buộc chọn hình thức thanh toán** (tiền mặt, chuyển khoản, thẻ, MoMo, ZaloPay, VNPay); giao dịch được ghi vào mục Thanh toán từ lúc duyệt
+- Xếp hạng khách theo số tiền thuê với 5 hạng tự động (Kim cương = trên 1 tỷ)
 - Quản lý đội xe, khách hàng, thanh toán và lịch bảo trì
 - Xuất file CSV cho đơn đặt xe, khách hàng và thanh toán
 - Tạo/xóa tài khoản admin, đổi mật khẩu
@@ -183,30 +189,31 @@ Vào `/admin`, nhập tên đăng nhập (hoặc email) và mật khẩu. Bấm 
 Quy trình xử lý một đơn:
 
 ```
-Chờ duyệt ──[Duyệt]──▶ Đã xác nhận ──[Bàn giao]──▶ Xe chuyển sang "Đang thuê"
+Chờ duyệt ──[Duyệt + chọn hình thức thanh toán]──▶ Đã xác nhận ──[Bàn giao]──▶ Xe chuyển sang "Đang thuê"
     │                        │
     └────────[Hủy]───────────┴──▶ Đã hủy (xe đang thuê được trả về "Sẵn sàng")
 ```
 
 - Dùng các tab **Tất cả / Chờ duyệt / Đã xác nhận / Đã hủy** và ô tìm kiếm (theo mã đơn, tên khách, số điện thoại, email, tên xe).
 - Bấm vào một dòng để xem **chi tiết đơn**, có nút gọi điện cho khách.
-- Hủy đơn luôn có hộp thoại xác nhận để tránh bấm nhầm.
+- Bấm **Duyệt** sẽ mở hộp thoại: bắt buộc chọn **hình thức thanh toán** và cho biết **đã thu tiền hay chưa**. Giao dịch được tạo trong mục **Thanh toán** ngay lúc này.
+- Hủy đơn luôn có hộp thoại xác nhận để tránh bấm nhầm. Hủy đơn đã duyệt: giao dịch đã thu chuyển sang hoàn tiền, giao dịch chưa thu bị bỏ.
 - Bấm **Xuất CSV** để tải danh sách đơn, mở được bằng Excel.
 
 ### Đội xe
 
-- **Thêm xe:** bấm **+ Thêm xe**, nhập tên, hãng, loại, số chỗ, giá thuê/ngày, địa điểm. Ảnh xe là đường link bắt đầu bằng `https://`.
+- **Thêm xe:** bấm **+ Thêm xe**, nhập tên, hãng, loại, số chỗ, giá thuê/ngày, địa điểm. Ảnh xe là đường link bắt đầu bằng `https://`. Chưa có ảnh thì chọn **màu xe**, trang khách sẽ vẽ hình minh họa theo dáng xe.
 - Tích **Đánh dấu là xe nổi bật** để xe có nhãn "Được yêu thích" và được ưu tiên hiển thị trên trang khách.
 - **Đổi trạng thái:** chọn trực tiếp *Sẵn sàng / Đang thuê / Bảo trì* trên thẻ xe. Khi khách trả xe, chuyển xe về **Sẵn sàng**.
 - Xe ở trạng thái **Bảo trì** sẽ bị ẩn khỏi trang khách.
 
 ### Khách hàng
 
-Khách hàng được tự động thêm vào danh sách khi đặt xe lần đầu. Mỗi lần đặt tiếp theo sẽ cộng dồn số đơn và tổng chi tiêu. Danh sách được sắp xếp theo mức chi tiêu và xuất được ra CSV.
+Khách hàng được tự động thêm vào danh sách khi đặt xe lần đầu. Tổng tiền thuê chỉ tính các đơn **đã duyệt**. Khách được xếp hạng theo số tiền thuê thành 5 hạng: Kim cương (trên 1 tỷ), Bạch kim (từ 500 triệu), Vàng (từ 200 triệu), Bạc (từ 50 triệu) và Đồng. Bấm thẻ hạng để lọc; danh sách xuất được ra CSV.
 
 ### Thanh toán
 
-Hiển thị tổng tiền đã thu, chờ thanh toán, đã hoàn tiền và lịch sử giao dịch. Có lọc theo trạng thái và xuất CSV. Dữ liệu được đọc từ `data/payments.json`. Phiên bản hiện tại chưa tích hợp cổng thanh toán online.
+Số liệu thanh toán **bắt đầu từ lúc duyệt đơn**: admin chọn hình thức thanh toán và cho biết đã thu tiền hay chưa. Trang hiển thị tổng đã thu, chờ thanh toán, đã hoàn tiền, cơ cấu theo hình thức thanh toán và lịch sử giao dịch. Khách trả tiền sau thì bấm **Xác nhận đã thu**. Hủy đơn đã thu tiền thì giao dịch tự chuyển sang hoàn tiền. Phiên bản hiện tại chưa tích hợp cổng thanh toán online.
 
 ### Bảo trì
 

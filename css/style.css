@@ -443,6 +443,7 @@ ol {
 
 .nav-links>a {
   position: relative;
+  white-space: nowrap;
   padding: 8px 14px;
   border-radius: 10px;
   font-size: 14px;
@@ -485,6 +486,12 @@ ol {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.brand {
+  flex-shrink: 0;
 }
 
 .menu-toggle {
@@ -668,44 +675,6 @@ ol {
   border-radius: 50%;
   background: var(--ring-bg);
   box-shadow: inset 0 0 0 14px var(--ring-inset), var(--shadow-lg);
-}
-
-.hero-car {
-  position: relative;
-  z-index: 2;
-  width: min(520px, 110%);
-  height: auto;
-  filter: drop-shadow(0 20px 30px rgba(60, 40, 150, .18));
-}
-
-.hero-car .wheel {
-  animation: wheel 1.4s linear infinite;
-}
-
-.hero-car .car-bounce {
-  animation: bounce 1.4s ease-in-out infinite;
-}
-
-.hero-car .road path {
-  animation: road 1s linear infinite;
-}
-
-@keyframes wheel {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes bounce {
-  50% {
-    transform: translateY(-2px);
-  }
-}
-
-@keyframes road {
-  to {
-    stroke-dashoffset: 44;
-  }
 }
 
 .floating-card {
@@ -1030,62 +999,6 @@ input.invalid:focus {
   place-items: center;
   overflow: hidden;
   background: var(--img-purple);
-}
-
-.car-image::before {
-  content: "";
-  width: 200px;
-  height: 60px;
-  border-radius: 50px 45px 18px 15px;
-  background: linear-gradient(145deg, #7a62ef, #4a2fc4);
-  transform: skew(-9deg);
-  box-shadow: 0 16px 22px rgba(55, 39, 150, .22);
-  transition: transform .5s var(--ease);
-}
-
-.car-image::after {
-  content: "";
-  position: absolute;
-  top: 50px;
-  left: calc(50% - 38px);
-  width: 86px;
-  height: 36px;
-  border-radius: 42px 42px 0 0;
-  background: #c9dcf4;
-  border: 5px solid #4a2fc4;
-  transition: transform .5s var(--ease);
-}
-
-.car-card:hover .car-image::before {
-  transform: skew(-9deg) translateX(8px);
-}
-
-.car-card:hover .car-image::after {
-  transform: translateX(8px);
-}
-
-.car-image.suv {
-  background: var(--img-orange);
-}
-
-.car-image.suv::before {
-  background: linear-gradient(145deg, #f7a35d, #d6752f);
-}
-
-.car-image.suv::after {
-  border-color: #b85e2a;
-}
-
-.car-image.hatchback {
-  background: var(--img-green);
-}
-
-.car-image.hatchback::before {
-  background: linear-gradient(145deg, #4fcf88, #239256);
-}
-
-.car-image.hatchback::after {
-  border-color: #23824c;
 }
 
 .car-image.has-photo {
@@ -1811,15 +1724,6 @@ footer .brand:hover {
   border-radius: 14px;
 }
 
-.booking-head .car-image::before {
-  transform: scale(.6) skew(-9deg);
-}
-
-.booking-head .car-image::after {
-  transform: scale(.6);
-  top: 24px;
-}
-
 .booking-head h2 {
   font-size: 22px;
   font-weight: 700;
@@ -2139,7 +2043,38 @@ footer .brand:hover {
   }
 }
 
-@media (max-width: 920px) {
+/* Màn hình vừa: nút "Tra cứu đơn" chỉ còn icon để menu không bị xuống dòng */
+@media (max-width: 1280px) {
+  .nav-inner {
+    gap: 16px;
+  }
+
+  .nav-links>a {
+    padding: 8px 11px;
+  }
+
+  .nav-links>a::after {
+    left: 11px;
+    right: 11px;
+  }
+
+  #lookupBtn {
+    width: 44px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  #lookupBtn span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 1100px) {
   :root {
     --nav-h: 64px;
   }
@@ -2198,7 +2133,9 @@ footer .brand:hover {
     display: block;
     margin-top: 10px;
   }
+}
 
+@media (max-width: 920px) {
   .hero {
     padding-top: 36px;
   }
@@ -2500,7 +2437,41 @@ footer .brand:hover {
   font-size: 17px;
 }
 
+/* Nút tải lại bản mới nhất (xóa cache) */
+.refresh-btn.spinning .i,
+.mobile-refresh.spinning .i {
+  animation: refresh-spin .8s linear infinite;
+}
+
+@keyframes refresh-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.mobile-refresh {
+  display: none;
+  margin-top: 6px;
+}
+
+@media (max-width: 1280px) {
+  #lookupBtn {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    border-radius: 12px;
+    height: 42px;
+  }
+}
+
 @media (max-width: 600px) {
+  .nav-actions .refresh-btn {
+    display: none;
+  }
+
+  .mobile-refresh {
+    display: inline-flex;
+  }
+
   .nav-actions {
     gap: 6px;
   }
@@ -2855,5 +2826,814 @@ footer .brand:hover {
 
   .tier-ladder small {
     font-size: 9.5px;
+  }
+}
+
+/* =====================================================================
+   NÂNG CẤP GIAO DIỆN 2026.10: minh họa xe, hero, dải hãng xe,
+   thành phố, popup chi tiết xe, hiệu ứng
+   ===================================================================== */
+:root {
+  --stage-1: #ffffff;
+  --stage-2: #eeebf9;
+  --stage-floor: rgba(91, 63, 217, .07);
+  --ca-glass-1: #dbe6f7;
+  --ca-glass-2: #7f93b6;
+  --card-glow: rgba(91, 63, 217, .10);
+  --road: rgba(91, 63, 217, .28);
+}
+
+:root[data-theme="dark"] {
+  --stage-1: #262341;
+  --stage-2: #15141f;
+  --stage-floor: rgba(0, 0, 0, .25);
+  --ca-glass-1: #9fb0d0;
+  --ca-glass-2: #3a4664;
+  --card-glow: rgba(139, 115, 255, .16);
+  --road: rgba(201, 188, 255, .25);
+}
+
+/* ---------- Thanh tiến độ cuộn trang ---------- */
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 60;
+  height: 3px;
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  background: linear-gradient(90deg, var(--primary), #9b6bff, var(--accent));
+  pointer-events: none;
+}
+
+/* ---------- Minh họa xe (SVG) ---------- */
+.ca {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.ca .ca-wheel {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform .9s var(--ease);
+}
+
+.ca .ca-body {
+  transition: transform .5s var(--ease);
+}
+
+.ca-road {
+  stroke: var(--road);
+}
+
+.ca-spin .ca-wheel {
+  animation: caWheel 1.1s linear infinite;
+}
+
+.ca-spin .ca-body {
+  animation: caBounce 1.1s ease-in-out infinite;
+}
+
+.ca-spin .ca-road {
+  animation: caRoad .9s linear infinite;
+}
+
+@keyframes caWheel {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes caBounce {
+  50% {
+    transform: translateY(-1.5px);
+  }
+}
+
+@keyframes caRoad {
+  to {
+    stroke-dashoffset: -44;
+  }
+}
+
+/* Sân khấu chứa xe trong thẻ */
+.car-image {
+  height: 196px;
+}
+
+.car-image.art {
+  background: radial-gradient(120% 90% at 50% 18%, var(--stage-1) 0%, var(--stage-2) 72%);
+}
+
+.art-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(55% 55% at 50% 58%, color-mix(in srgb, var(--paint) 26%, transparent), transparent 72%);
+  opacity: .9;
+  pointer-events: none;
+}
+
+.art-floor {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 30%;
+  background: linear-gradient(180deg, transparent, var(--stage-floor));
+  border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  pointer-events: none;
+}
+
+.art-brand {
+  position: absolute;
+  top: 14%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  line-height: 1;
+  color: var(--text);
+  opacity: .045;
+  white-space: nowrap;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+
+.car-image.art .ca {
+  position: relative;
+  z-index: 1;
+  width: 86%;
+  margin-top: 18px;
+  filter: drop-shadow(0 10px 14px rgba(20, 16, 60, .12));
+}
+
+.car-card:hover .car-image.art .ca-body {
+  transform: translateX(6px);
+}
+
+.car-card:hover .car-image.art .ca-wheel {
+  transform: rotate(150deg);
+}
+
+/* Nút xem nhanh trên ảnh */
+.quick-view {
+  position: absolute;
+  z-index: 3;
+  right: 12px;
+  bottom: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(8px);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity .25s var(--ease), transform .25s var(--ease), color .2s;
+}
+
+.quick-view:hover {
+  color: var(--primary);
+}
+
+.car-card:hover .quick-view,
+.quick-view:focus-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@media (hover: none) {
+  .quick-view {
+    opacity: 1;
+    transform: none;
+  }
+
+  .quick-view span {
+    display: none;
+  }
+}
+
+/* ---------- Thẻ xe ---------- */
+.car-card {
+  position: relative;
+  isolation: isolate;
+}
+
+.car-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 0%), var(--card-glow), transparent 45%);
+  opacity: 0;
+  transition: opacity .3s;
+  pointer-events: none;
+}
+
+.car-card:hover::after {
+  opacity: 1;
+}
+
+.car-card.is-featured {
+  border-color: var(--primary-100);
+}
+
+.car-name {
+  display: block;
+  padding: 0;
+  text-align: left;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.3;
+  transition: color .2s;
+}
+
+.car-name:hover {
+  color: var(--primary);
+}
+
+.price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 4px;
+}
+
+.price-est {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  margin-top: 2px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--green);
+}
+
+.price-est .i {
+  width: 13px;
+  height: 13px;
+}
+
+/* ---------- Hero ---------- */
+.hero-car {
+  position: relative;
+  z-index: 2;
+  width: min(540px, 112%);
+}
+
+.hero-car .ca {
+  filter: drop-shadow(0 26px 30px rgba(50, 30, 140, .22));
+}
+
+.floating-mid {
+  left: -6px;
+  bottom: 54px;
+  animation-delay: -1.5s;
+}
+
+.floating-mid strong {
+  font-size: 15px;
+  color: var(--primary-strong);
+}
+
+.float-icon.purple {
+  color: var(--primary);
+  background: var(--primary-50);
+}
+
+@media (max-width: 1100px) {
+  .floating-mid {
+    display: none;
+  }
+}
+
+/* ---------- Dải hãng xe ---------- */
+.brands-strip {
+  padding: 46px 0 6px;
+  overflow: hidden;
+}
+
+.brands-title {
+  margin-bottom: 18px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.marquee {
+  position: relative;
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+}
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  gap: 14px;
+  padding: 6px 0;
+  animation: marquee var(--mq-duration, 32s) linear infinite;
+}
+
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+@keyframes marquee {
+  to {
+    transform: translateX(calc(-50% - 7px));
+  }
+}
+
+.marquee-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px 10px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  white-space: nowrap;
+  transition: border-color .2s, transform .2s var(--ease), box-shadow .2s;
+}
+
+.marquee-item:hover {
+  border-color: var(--primary-100);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.mq-mark {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(135deg, #7a5cff, var(--primary-700));
+}
+
+.mq-name {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -.01em;
+}
+
+.marquee-item small {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ---------- Thành phố ---------- */
+.city-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+.city-card {
+  --c1: hsl(var(--hue) 78% 60%);
+  --c2: hsl(calc(var(--hue) + 28) 82% 46%);
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-height: 236px;
+  padding: 22px;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  text-align: left;
+  color: #fff;
+  background: linear-gradient(140deg, var(--c1), var(--c2));
+  box-shadow: 0 18px 40px -18px hsl(var(--hue) 70% 40% / .55);
+  transition: transform .35s var(--ease), box-shadow .35s var(--ease);
+  animation: cardIn .55s var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 90ms);
+}
+
+.city-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(300px circle at var(--mx, 80%) var(--my, 0%), rgba(255, 255, 255, .22), transparent 50%),
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, .05) 0 2px, transparent 2px 14px);
+}
+
+.city-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 26px 50px -18px hsl(var(--hue) 70% 40% / .7);
+}
+
+.city-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.city-pin {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  font-size: 18px;
+  background: rgba(255, 255, 255, .18);
+  border: 1px solid rgba(255, 255, 255, .25);
+}
+
+.city-count {
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  background: rgba(0, 0, 0, .18);
+}
+
+.city-name {
+  margin-top: 18px;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+  line-height: 1.15;
+}
+
+.city-from {
+  margin-top: 4px;
+  font-size: 14px;
+  opacity: .9;
+}
+
+.city-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 16px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.city-cta .i {
+  transition: transform .25s var(--ease);
+}
+
+.city-card:hover .city-cta .i {
+  transform: translateX(4px);
+}
+
+.city-car {
+  position: absolute;
+  z-index: -1;
+  right: -38px;
+  bottom: -6px;
+  width: 62%;
+  opacity: .95;
+  filter: drop-shadow(0 12px 16px rgba(0, 0, 0, .25));
+  transition: transform .5s var(--ease);
+}
+
+.city-card:hover .city-car {
+  transform: translateX(-10px);
+}
+
+/* ---------- Thẻ bước / tính năng: vệt sáng theo chuột ---------- */
+.step,
+.feature-card {
+  position: relative;
+  isolation: isolate;
+}
+
+.step::after,
+.feature-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(360px circle at var(--mx, 50%) var(--my, 0%), var(--card-glow), transparent 50%);
+  opacity: 0;
+  transition: opacity .3s;
+  pointer-events: none;
+}
+
+.step:hover::after,
+.feature-card:hover::after {
+  opacity: 1;
+}
+
+/* ---------- Popup đặt xe: ảnh nhỏ đầu form ---------- */
+.booking-head .car-image {
+  width: 150px;
+  height: 100px;
+}
+
+.booking-head .car-image.art .ca {
+  width: 92%;
+  margin-top: 10px;
+}
+
+.booking-head .art-brand {
+  font-size: 26px;
+}
+
+/* ---------- Popup chi tiết xe ---------- */
+.car-detail-modal {
+  width: min(560px, 100%);
+  padding: 0;
+  overflow-x: hidden;
+}
+
+.car-detail-modal .modal-close {
+  z-index: 5;
+  background: var(--glass);
+  backdrop-filter: blur(6px);
+}
+
+.detail-media {
+  position: relative;
+  height: 250px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: radial-gradient(120% 90% at 50% 18%, var(--stage-1) 0%, var(--stage-2) 72%);
+}
+
+.detail-media.has-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.detail-media .ca {
+  position: relative;
+  z-index: 1;
+  width: 82%;
+  margin-top: 26px;
+  filter: drop-shadow(0 14px 18px rgba(20, 16, 60, .16));
+}
+
+.detail-media .art-brand {
+  font-size: 72px;
+  top: 16%;
+}
+
+.detail-body {
+  padding: 22px 26px 26px;
+}
+
+.detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.detail-head h2 {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+  line-height: 1.2;
+}
+
+.spec-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.spec {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--bg-tint);
+  border: 1px solid var(--line);
+}
+
+.spec > .i {
+  width: 36px;
+  height: 36px;
+  padding: 8px;
+  border-radius: 10px;
+  color: var(--primary);
+  background: var(--primary-50);
+}
+
+.spec small {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.spec strong {
+  font-size: 14.5px;
+  font-weight: 700;
+}
+
+.inc-list {
+  display: grid;
+  gap: 9px;
+  margin-bottom: 22px;
+}
+
+.inc-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--text-2);
+}
+
+.inc-list .i {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  padding: 3px;
+  border-radius: 50%;
+  color: var(--green);
+  background: var(--green-50);
+  stroke-width: 3;
+}
+
+.detail-price {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--primary-50);
+  border: 1px solid var(--primary-100);
+}
+
+.detail-price small {
+  display: block;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.detail-price strong {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+}
+
+.detail-price strong em {
+  font-style: normal;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.detail-price strong.accent {
+  color: var(--primary-strong);
+}
+
+.detail-body > .btn {
+  margin-bottom: 22px;
+}
+
+.similar-list {
+  display: grid;
+  gap: 8px;
+}
+
+.similar-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 14px 8px 8px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  text-align: left;
+  transition: border-color .2s, background-color .2s;
+}
+
+.similar-item:hover {
+  border-color: var(--primary-100);
+  background: var(--primary-50);
+}
+
+.similar-item > .i {
+  color: var(--muted);
+}
+
+.similar-thumb {
+  width: 84px;
+  height: 52px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 10px;
+  background: radial-gradient(120% 90% at 50% 18%, var(--stage-1) 0%, var(--stage-2) 80%);
+}
+
+.similar-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.similar-thumb .ca {
+  width: 92%;
+}
+
+.similar-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.similar-info strong {
+  display: block;
+  font-size: 14.5px;
+}
+
+.similar-info small {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+@media (max-width: 600px) {
+  .detail-media {
+    height: 200px;
+  }
+
+  .detail-media .art-brand {
+    font-size: 48px;
+  }
+
+  .detail-body {
+    padding: 18px 18px 22px;
+  }
+
+  .detail-head h2 {
+    font-size: 22px;
+  }
+
+  .spec {
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .spec > .i {
+    width: 30px;
+    height: 30px;
+    padding: 6px;
+  }
+
+  .spec strong {
+    font-size: 13.5px;
+  }
+
+  .detail-price strong {
+    font-size: 17px;
+  }
+
+  .city-card {
+    min-height: 210px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .marquee-track,
+  .ca-spin .ca-wheel,
+  .ca-spin .ca-body,
+  .ca-spin .ca-road,
+  .city-card {
+    animation: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .hero-car {
+    width: 94%;
   }
 }

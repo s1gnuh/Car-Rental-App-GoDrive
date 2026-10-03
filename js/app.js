@@ -125,7 +125,12 @@ const EN_STATIC = {
     "lookup.btn": "View my bookings",
     "help.open": "How to use",
     "help.footer": "User guide",
-    "refresh.link": "Load the latest version"
+    "refresh.link": "Load the latest version",
+    "hero.fromPrice": "Prices from",
+    "brands.title": "Car brands available at GoDrive",
+    "cities.eyebrow": "Pick-up points",
+    "cities.title": "Available in <span class=\"gradient-text\">major cities</span>",
+    "cities.sub": "Choose a city to see the cars ready there right now."
 };
 
 // Chuỗi dùng trong JS: [tiếng Việt, tiếng Anh]
@@ -218,7 +223,26 @@ const STR = {
     refreshing: ["Đang tải bản mới nhất...", "Loading the latest version..."],
     gotIt: ["Đã hiểu", "Got it"],
     findCarNow: ["Tìm xe ngay", "Find a car"],
-    versionLabel: ["Phiên bản", "Version"]
+    versionLabel: ["Phiên bản", "Version"],
+    quickView: ["Xem chi tiết", "View details"],
+    estLine: ["{n} ngày · {total}", "{n} day(s) · {total}"],
+    brandCars: ["{n} xe", "{n} cars"],
+    cityCars: ["{n} xe sẵn sàng", "{n} cars ready"],
+    cityFrom: ["Giá từ {price}/ngày", "From {price}/day"],
+    cityNone: ["Tạm hết xe", "Fully booked"],
+    cityView: ["Xem xe", "See cars"],
+    specSeats: ["Số chỗ", "Seats"],
+    specType: ["Dáng xe", "Body type"],
+    specGear: ["Hộp số", "Transmission"],
+    specLocation: ["Nhận xe tại", "Pick-up at"],
+    includedTitle: ["Quyền lợi khi thuê tại GoDrive", "What you get with GoDrive"],
+    inc1: ["Không cần tài khoản, đặt xe trong 30 giây", "No account needed, book in 30 seconds"],
+    inc2: ["Giá minh bạch, tổng tiền hiển thị trước khi xác nhận", "Transparent pricing, total shown before you confirm"],
+    inc3: ["Hệ thống tự kiểm tra lịch, không lo trùng đơn", "Automatic schedule check, no double bookings"],
+    inc4: ["Hỗ trợ 24/7 qua hotline 0365 551 920", "24/7 support via hotline 0365 551 920"],
+    estTotal: ["Tạm tính {n} ngày", "Estimate for {n} day(s)"],
+    bookThis: ["Đặt xe này", "Book this car"],
+    similar: ["Xe tương tự", "Similar cars"]
 };
 
 // Dịch thông báo lỗi trả về từ API (server luôn trả tiếng Việt)
@@ -278,7 +302,12 @@ function applyStaticTranslations() {
         const orig = viOriginal.get(el);
         if (el.dataset.i18n) el.textContent = lang === "en" ? (EN_STATIC[el.dataset.i18n] ?? orig.text) : orig.text;
         if (el.dataset.i18nHtml) el.innerHTML = lang === "en" ? (EN_STATIC[el.dataset.i18nHtml] ?? orig.html) : orig.html;
-        if (el.dataset.i18nAria) el.setAttribute("aria-label", lang === "en" ? (EN_STATIC[el.dataset.i18nAria] ?? orig.aria) : orig.aria);
+        if (el.dataset.i18nAria) {
+            const label = lang === "en" ? (EN_STATIC[el.dataset.i18nAria] ?? orig.aria) : orig.aria;
+            el.setAttribute("aria-label", label);
+            // Nút chỉ có icon trên thanh menu: hiện chú thích khi rê chuột
+            if (el.closest(".nav-actions")) el.title = label;
+        }
     });
     document.documentElement.lang = lang;
     document.title = t("pageTitle");
@@ -297,6 +326,7 @@ function setLang(next) {
     }
     if ($("#lookupResults").innerHTML && lastLookup) renderLookup(lastLookup);
     if (!$("#helpModal").classList.contains("hidden")) renderHelp();
+    if (!$("#carModal").classList.contains("hidden") && detailCarId != null) openCarDetail(detailCarId, true);
 }
 
 /* ================== Chế độ sáng / tối ================== */
@@ -446,15 +476,56 @@ async function loadCars() {
     renderCars();
 }
 
-function carImageBlock(car, extraClass = "") {
-    const type = (car.type || "").toLowerCase();
+// Phần "sân khấu" minh họa xe khi không có ảnh: màu nền theo màu sơn, tên hãng chìm phía sau
+function carArtStage(car, opts = {}) {
+    const paint = CarArt.COLORS[CarArt.colorKey(car)];
+    return `<span class="art-glow" style="--paint:${paint}"></span>
+        <span class="art-brand" aria-hidden="true">${esc(car.brand || "GoDrive")}</span>
+        <span class="art-floor" aria-hidden="true"></span>
+        ${CarArt.svg(car, opts)}`;
+}
+
+function carImageBlock(car, extraClass = "", extraHtml = "") {
     const img = safeUrl(car.image);
     const tag = car.featured ? `<span class="car-tag">${icon("star")} ${esc(t("featured"))}</span>` : "";
     const status = car.status === "rented" ? `<span class="car-status">${esc(t("rented"))}</span>` : "";
     if (img) {
-        return `<div class="car-image has-photo ${extraClass}">${tag}${status}<img src="${esc(img)}" alt="${esc(car.name || "")}" loading="lazy" /></div>`;
+        return `<div class="car-image has-photo ${extraClass}" data-car-id="${Number(car.id)}">${tag}${status}<img src="${esc(img)}" alt="${esc(car.name || "")}" loading="lazy" />${extraHtml}</div>`;
     }
-    return `<div class="car-image ${esc(type)} ${extraClass}">${tag}${status}</div>`;
+    return `<div class="car-image art ${extraClass}">${tag}${status}${carArtStage(car)}${extraHtml}</div>`;
+}
+
+// Ảnh xe lỗi (link hỏng) thì tự chuyển sang hình minh họa
+document.addEventListener("error", e => {
+    const img = e.target;
+    if (!(img instanceof HTMLImageElement)) return;
+    const box = img.closest(".car-image.has-photo, .detail-media.has-photo");
+    if (!box) return;
+    const car = cars.find(c => c.id === Number(box.dataset.carId)) || { name: img.alt };
+    box.classList.remove("has-photo");
+    box.classList.add("art");
+    img.insertAdjacentHTML("afterend", carArtStage(car));
+    img.remove();
+}, true);
+
+// Số ngày thuê theo ô tìm kiếm (null nếu chưa chọn hợp lệ)
+function selectedDays() {
+    const s = $("#startDate").value, e = $("#endDate").value;
+    return s && e && e > s ? dateDiff(s, e) : null;
+}
+
+// Hiệu ứng đếm số tăng dần
+function countUp(el, to, duration = 900) {
+    if (!el) return;
+    const target = Number(to) || 0;
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches || target <= 1) { el.textContent = target; return; }
+    const start = performance.now();
+    const step = now => {
+        const p = Math.min(1, (now - start) / duration);
+        el.textContent = Math.round(target * (1 - Math.pow(1 - p, 3)));
+        if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
 }
 
 const brandKey = (car) => String(car.brand || "").trim().toLowerCase();
@@ -505,20 +576,28 @@ function renderCars() {
     result.sort((a, b) => Number(b.status === "available") - Number(a.status === "available"));
 
     const available = visible.filter(c => c.status === "available").length;
-    $("#statCars").textContent = loadFailed ? "–" : available;
+    const statEl = $("#statCars");
+    if (loadFailed) statEl.textContent = "–";
+    else if (statEl.dataset.value !== String(available)) {
+        statEl.dataset.value = available;
+        countUp(statEl, available);
+    }
     $("#carCount").textContent = loadFailed
         ? t("loadFail")
         : t("carCount", { n: result.length, a: result.filter(c => c.status === "available").length });
 
+    const days = selectedDays();
     $("#carGrid").innerHTML = result.map((car, i) => {
         const ok = car.status === "available";
+        const id = Number(car.id);
+        const quick = `<button class="quick-view" data-detail="${id}" aria-label="${esc(t("quickView") + ": " + (car.name || ""))}">${icon("eye")}<span>${esc(t("quickView"))}</span></button>`;
         return `
-        <article class="car-card ${ok ? "" : "unavailable"}" style="--i:${i}">
-            ${carImageBlock(car)}
+        <article class="car-card ${ok ? "" : "unavailable"} ${car.featured ? "is-featured" : ""}" style="--i:${i}">
+            ${carImageBlock(car, "", quick)}
             <div class="car-info">
                 <div class="car-name-row">
                     <div>
-                        <span class="car-name">${esc(car.name)}</span>
+                        <button class="car-name" data-detail="${id}">${esc(car.name)}</button>
                         <span class="car-brand">${esc(car.brand)} · ${esc(car.type)}</span>
                     </div>
                     <span class="car-rating">${icon("star")} ${esc(car.rating || 4.8)}</span>
@@ -529,7 +608,9 @@ function renderCars() {
                     <span>${icon("pin")} ${esc(city(car.location))}</span>
                 </div>
                 <div class="car-bottom">
-                    <div class="price"><strong>${esc(money(car.price))}</strong><small>${esc(t("perDay"))}</small></div>
+                    <div class="price"><strong>${esc(money(car.price))}</strong><small>${esc(t("perDay"))}</small>
+                        ${days > 1 && ok ? `<span class="price-est">${icon("calendar")} ${esc(t("estLine", { n: days, total: money(car.price * days) }))}</span>` : ""}
+                    </div>
                     ${ok
                 ? `<button class="btn btn-primary" data-book="${Number(car.id)}">${esc(t("book"))}</button>`
                 : `<button class="btn btn-outline" disabled>${esc(t("unavailable"))}</button>`}
@@ -539,6 +620,143 @@ function renderCars() {
     }).join("");
 
     $("#emptyCars").classList.toggle("hidden", result.length > 0 || loadFailed);
+    renderExtras(visible);
+}
+
+/* ================== Hero, hãng xe, thành phố ================== */
+
+const DEFAULT_CITIES = ["Hà Nội", "TP. Hồ Chí Minh", "Đà Nẵng"];
+const CITY_HUES = { "Hà Nội": 258, "TP. Hồ Chí Minh": 22, "Đà Nẵng": 190 };
+
+function renderExtras(visible) {
+    const avail = visible.filter(c => c.status === "available");
+    // Đánh giá trung bình và giá thấp nhất trên hero lấy từ dữ liệu thật
+    const rated = visible.filter(c => Number(c.rating) > 0);
+    if (rated.length) $("#heroRating").textContent = (rated.reduce((s, c) => s + Number(c.rating), 0) / rated.length).toFixed(1);
+    const minPrice = avail.length ? Math.min(...avail.map(c => Number(c.price) || 0)) : 0;
+    $("#heroFrom").textContent = minPrice ? money(minPrice) : "–";
+
+    renderMarquee();
+    renderCities(visible);
+}
+
+function renderMarquee() {
+    const track = $("#brandMarquee");
+    if (!track) return;
+    const brands = new Map();
+    cars.filter(c => c.status !== "maintenance").forEach(c => {
+        const key = brandKey(c);
+        if (!key) return;
+        if (!brands.has(key)) brands.set(key, { name: String(c.brand).trim(), count: 0 });
+        brands.get(key).count++;
+    });
+    const list = [...brands.entries()].sort((a, b) => a[1].name.localeCompare(b[1].name));
+    track.closest(".brands-strip").classList.toggle("hidden", list.length === 0);
+    if (!list.length) return;
+    const item = ([key, b], hidden) => `
+        <button class="marquee-item" data-brand-jump="${esc(key)}" ${hidden ? 'tabindex="-1" aria-hidden="true"' : ""}>
+            <span class="mq-mark">${esc(b.name.charAt(0).toUpperCase())}</span>
+            <span class="mq-name">${esc(b.name)}</span>
+            <small>${esc(t("brandCars", { n: b.count }))}</small>
+        </button>`;
+    // Lặp danh sách cho đủ dài rồi nhân đôi để chạy vòng liền mạch
+    let row = [...list];
+    while (row.length < 8) row = row.concat(list);
+    track.innerHTML = row.map(b => item(b, false)).join("") + row.map(b => item(b, true)).join("");
+    track.style.setProperty("--mq-duration", `${row.length * 4}s`);
+}
+
+function renderCities(visible) {
+    const grid = $("#cityGrid");
+    if (!grid) return;
+    const names = [...DEFAULT_CITIES];
+    visible.forEach(c => { if (c.location && !names.includes(c.location)) names.push(c.location); });
+    countUp($("#statCities"), names.length);
+    grid.innerHTML = names.map((name, i) => {
+        const here = visible.filter(c => c.location === name);
+        const ready = here.filter(c => c.status === "available");
+        const min = ready.length ? Math.min(...ready.map(c => Number(c.price) || 0)) : 0;
+        const show = [...(ready.length ? ready : here)].sort((a, b) => Number(b.featured) - Number(a.featured) || (b.rating || 0) - (a.rating || 0))[0];
+        const hue = CITY_HUES[name] ?? (i * 67) % 360;
+        return `
+        <button class="city-card" style="--hue:${hue};--i:${i}" data-city="${esc(name)}">
+            <span class="city-top">
+                <span class="city-pin">${icon("pin")}</span>
+                <span class="city-count">${esc(ready.length ? t("cityCars", { n: ready.length }) : t("cityNone"))}</span>
+            </span>
+            <strong class="city-name">${esc(city(name))}</strong>
+            <span class="city-from">${min ? esc(t("cityFrom", { price: money(min) })) : "&nbsp;"}</span>
+            <span class="city-cta">${esc(t("cityView"))} ${icon("arrow")}</span>
+            ${show ? `<span class="city-car" aria-hidden="true">${CarArt.svg(show)}</span>` : ""}
+        </button>`;
+    }).join("");
+}
+
+function jumpToCars() {
+    $("#cars").scrollIntoView({ behavior: "smooth" });
+}
+
+/* ================== Chi tiết xe ================== */
+
+let detailCarId = null;
+
+function openCarDetail(carId, keep = false) {
+    const car = cars.find(c => c.id === carId);
+    if (!car) return;
+    detailCarId = carId;
+    const ok = car.status === "available";
+    const img = safeUrl(car.image);
+    const days = selectedDays() || 1;
+    const spec = (ic, label, value) => `<div class="spec">${icon(ic)}<div><small>${esc(label)}</small><strong>${esc(value)}</strong></div></div>`;
+    const similar = cars
+        .filter(c => c.id !== car.id && c.status === "available" && (c.type === car.type || c.location === car.location))
+        .sort((a, b) => Number(b.type === car.type) - Number(a.type === car.type) || Math.abs(a.price - car.price) - Math.abs(b.price - car.price))
+        .slice(0, 3);
+
+    $("#carDetail").innerHTML = `
+        <div class="detail-media ${img ? "has-photo" : "art"}" data-car-id="${Number(car.id)}">
+            ${car.featured ? `<span class="car-tag">${icon("star")} ${esc(t("featured"))}</span>` : ""}
+            ${car.status === "rented" ? `<span class="car-status">${esc(t("rented"))}</span>` : ""}
+            ${img ? `<img src="${esc(img)}" alt="${esc(car.name || "")}" />` : carArtStage(car)}
+        </div>
+        <div class="detail-body">
+            <div class="detail-head">
+                <div>
+                    <span class="car-brand">${esc(car.brand)} · ${esc(car.type)}</span>
+                    <h2 id="carDetailTitle">${esc(car.name)}</h2>
+                </div>
+                <span class="car-rating">${icon("star")} ${esc(car.rating || 4.8)}</span>
+            </div>
+            <div class="spec-grid">
+                ${spec("users", t("specSeats"), t("seats", { n: car.seats }))}
+                ${spec("car", t("specType"), car.type || "")}
+                ${spec("gear", t("specGear"), t("auto"))}
+                ${spec("pin", t("specLocation"), city(car.location))}
+            </div>
+            <p class="form-section-title">${esc(t("includedTitle"))}</p>
+            <ul class="inc-list">
+                ${["inc1", "inc2", "inc3", "inc4"].map(k => `<li>${icon("check")}<span>${esc(t(k))}</span></li>`).join("")}
+            </ul>
+            <div class="detail-price">
+                <div><small>${esc(t("dailyRate"))}</small><strong>${esc(money(car.price))}<em>${esc(t("perDay"))}</em></strong></div>
+                <div><small>${esc(t("estTotal", { n: days }))}</small><strong class="accent">${esc(money(car.price * days))}</strong></div>
+            </div>
+            ${ok
+            ? `<button class="btn btn-primary full btn-large" data-book="${Number(car.id)}">${esc(t("bookThis"))} ${icon("arrow")}</button>`
+            : `<button class="btn btn-outline full btn-large" disabled>${esc(t("unavailable"))}</button>`}
+            ${similar.length ? `
+            <p class="form-section-title">${esc(t("similar"))}</p>
+            <div class="similar-list">
+                ${similar.map(c => `
+                <button class="similar-item" data-detail="${Number(c.id)}">
+                    <span class="similar-thumb">${safeUrl(c.image) ? `<img src="${esc(safeUrl(c.image))}" alt="" loading="lazy" />` : CarArt.svg(c)}</span>
+                    <span class="similar-info"><strong>${esc(c.name)}</strong><small>${esc(money(c.price))}${esc(t("perDay"))}</small></span>
+                    ${icon("arrow")}
+                </button>`).join("")}
+            </div>` : ""}
+        </div>`;
+    if (!keep) openModal("carModal");
+    $("#carModal .modal-box").scrollTop = 0;
 }
 
 /* ================== Tìm kiếm ================== */
@@ -911,10 +1129,13 @@ function setMenu(open) {
 function initNavigation() {
     const navbar = $("#navbar");
     const backTop = $("#backToTop");
+    const progress = $("#scrollProgress");
     const onScroll = () => {
         const y = window.scrollY;
         navbar.classList.toggle("scrolled", y > 8);
         backTop.classList.toggle("show", y > 600);
+        const max = document.documentElement.scrollHeight - window.innerHeight;
+        progress.style.transform = `scaleX(${max > 0 ? Math.min(1, y / max) : 0})`;
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
@@ -938,6 +1159,22 @@ function initNavigation() {
         }, { rootMargin: "-45% 0px -50% 0px" });
         sections.forEach(s => spy.observe(s));
     }
+}
+
+// Vệt sáng chạy theo con trỏ trên các thẻ (chỉ trên thiết bị có chuột)
+function initSpotlight() {
+    if (!matchMedia("(hover: hover)").matches) return;
+    document.addEventListener("pointermove", e => {
+        const card = e.target.closest?.(".car-card, .feature-card, .step, .city-card");
+        if (!card) return;
+        const r = card.getBoundingClientRect();
+        card.style.setProperty("--mx", `${e.clientX - r.left}px`);
+        card.style.setProperty("--my", `${e.clientY - r.top}px`);
+    }, { passive: true });
+}
+
+function initHeroCar() {
+    $("#heroCar").innerHTML = CarArt.svg({ type: "Sedan", color: "purple", name: "GoDrive" }, { spin: true, road: true, className: "hero-svg" });
 }
 
 function initReveal() {
@@ -968,8 +1205,10 @@ function bindEvents() {
         renderCars();
         $("#cars").scrollIntoView({ behavior: "smooth" });
     });
-    $("#startDate").addEventListener("change", syncDateInputs);
-    $("#endDate").addEventListener("change", syncDateInputs);
+    // Đổi ngày thì cập nhật luôn tiền tạm tính trên từng thẻ xe
+    const onDates = () => { syncDateInputs(); if (cars.length) renderCars(); };
+    $("#startDate").addEventListener("change", onDates);
+    $("#endDate").addEventListener("change", onDates);
     $("#locationFilter").onchange = renderCars;
     $("#sortCars").onchange = renderCars;
 
@@ -1007,6 +1246,35 @@ function bindEvents() {
         if (btn) openBooking(Number(btn.dataset.book));
     });
 
+    // Mở popup chi tiết xe (thẻ xe, xe tương tự)
+    document.addEventListener("click", e => {
+        const btn = e.target.closest("[data-detail]");
+        if (!btn) return;
+        const keep = !$("#carModal").classList.contains("hidden");
+        openCarDetail(Number(btn.dataset.detail), keep);
+    });
+    $("#carDetail").addEventListener("click", e => {
+        const btn = e.target.closest("[data-book]");
+        if (!btn) return;
+        closeModal("carModal");
+        openBooking(Number(btn.dataset.book));
+    });
+
+    $("#cityGrid").addEventListener("click", e => {
+        const card = e.target.closest("[data-city]");
+        if (!card) return;
+        $("#locationFilter").value = card.dataset.city;
+        renderCars();
+        jumpToCars();
+    });
+    $("#brandMarquee").addEventListener("click", e => {
+        const btn = e.target.closest("[data-brand-jump]");
+        if (!btn) return;
+        activeBrand = btn.dataset.brandJump;
+        renderCars();
+        jumpToCars();
+    });
+
     $$("[data-close]").forEach(button => {
         button.onclick = () => closeModal(button.dataset.close);
     });
@@ -1029,6 +1297,7 @@ function bindEvents() {
         const btn = e.target.closest("[data-hard-refresh]");
         if (!btn) return;
         e.preventDefault();
+        btn.classList.add("spinning");
         showToast(t("refreshing"));
         hardRefresh();
     });
@@ -1142,6 +1411,8 @@ applyStaticTranslations();
 syncDateInputs();
 bindEvents();
 initNavigation();
+initHeroCar();
+initSpotlight();
 initReveal();
 loadCars();
 checkForUpdate();

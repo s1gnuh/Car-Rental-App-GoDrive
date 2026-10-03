@@ -11,8 +11,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <meta name="app-version" content="2026.10.03-1458" />
-  <link rel="stylesheet" href="/css/style.css?v=2026.10.03-1458" />
+  <meta name="app-version" content="2026.10.03-1537" />
+  <link rel="stylesheet" href="/css/style.css?v=2026.10.03-1537" />
   <script>
     // Áp dụng chế độ sáng/tối trước khi trang hiển thị để tránh nháy màu
     (function () {
@@ -54,11 +54,13 @@
       <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></symbol>
       <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></symbol>
       <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16M3 12a9 9 0 0 1 15.5-6.2L21 8M21 3v5h-5M3 21v-5h5"/></symbol>
+      <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
       <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></symbol>
     </defs>
   </svg>
 
   <a class="skip-link" href="#cars" data-i18n="skip">Bỏ qua đến danh sách xe</a>
+  <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
   <div id="toast" role="status" aria-live="polite"></div>
 
   <header class="navbar" id="navbar">
@@ -78,15 +80,21 @@
           <button class="btn btn-light full" data-open-lookup>
             <svg class="i"><use href="#i-file" /></svg> <span data-i18n="nav.lookup">Tra cứu đơn</span>
           </button>
+          <button class="btn btn-ghost full mobile-refresh" data-hard-refresh>
+            <svg class="i"><use href="#i-refresh" /></svg> <span data-i18n="refresh.link">Tải lại bản mới nhất</span>
+          </button>
         </div>
       </nav>
 
       <div class="nav-actions">
-        <button class="btn btn-ghost" id="lookupBtn">
+        <button class="btn btn-ghost" id="lookupBtn" data-i18n-aria="nav.lookup" aria-label="Tra cứu đơn">
           <svg class="i"><use href="#i-file" /></svg><span data-i18n="nav.lookup">Tra cứu đơn</span>
         </button>
         <button class="icon-btn" id="helpBtn" data-i18n-aria="help.open" aria-label="Hướng dẫn sử dụng">
           <svg class="i"><use href="#i-help" /></svg>
+        </button>
+        <button class="icon-btn refresh-btn" data-hard-refresh data-i18n-aria="refresh.link" aria-label="Tải lại bản mới nhất">
+          <svg class="i"><use href="#i-refresh" /></svg>
         </button>
         <button class="icon-btn lang-toggle" id="langToggle" data-i18n-aria="lang.switch" aria-label="Switch to English">
           <svg class="i"><use href="#i-globe" /></svg><span id="langLabel">EN</span>
@@ -126,7 +134,7 @@
           </div>
           <ul class="hero-stats reveal" style="--d:320ms">
             <li><strong id="statCars">–</strong><span data-i18n="hero.statCars">xe sẵn sàng</span></li>
-            <li><strong>3</strong><span data-i18n="hero.statCities">thành phố</span></li>
+            <li><strong id="statCities">3</strong><span data-i18n="hero.statCities">thành phố</span></li>
             <li><strong>24/7</strong><span data-i18n="hero.statSupport">hỗ trợ</span></li>
           </ul>
         </div>
@@ -138,49 +146,16 @@
             <div><strong data-i18n="hero.float1">Đặt xe thành công</strong><small data-i18n="hero.float1s">Admin sẽ liên hệ xác nhận</small></div>
           </div>
 
-          <svg class="hero-car" viewBox="0 0 480 230">
-            <defs>
-              <linearGradient id="carBody" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stop-color="#7c63ff" />
-                <stop offset="1" stop-color="#4a2fc4" />
-              </linearGradient>
-              <linearGradient id="carGlass" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0" stop-color="#e6f1ff" />
-                <stop offset="1" stop-color="#9fb8e6" />
-              </linearGradient>
-            </defs>
-            <g class="road">
-              <path d="M0 214H480" stroke="#d9d4f5" stroke-opacity=".7" stroke-width="3" stroke-dasharray="26 18" />
-            </g>
-            <ellipse cx="245" cy="200" rx="200" ry="9" fill="rgba(60,40,150,.18)" />
-            <g class="car-bounce">
-              <path d="M40 150c0-22 12-32 34-36l66-10c22-24 56-42 100-44h60c34 0 60 16 84 40l36 8c22 4 32 18 32 38v14c0 8-6 14-14 14H54c-8 0-14-6-14-14Z" fill="url(#carBody)" />
-              <path d="M162 104c18-22 42-30 74-30h14v30Z" fill="url(#carGlass)" />
-              <path d="M264 74h34c24 0 42 10 62 30h-96Z" fill="url(#carGlass)" />
-              <path d="M257 106v62" stroke="#3b23a8" stroke-width="2" opacity=".6" />
-              <path d="M64 136h372" stroke="#fff" stroke-width="2" opacity=".18" />
-              <rect x="426" y="122" width="22" height="10" rx="5" fill="#ffd36b" />
-              <rect x="40" y="124" width="12" height="12" rx="4" fill="#ff6b81" />
-              <rect x="222" y="118" width="22" height="4" rx="2" fill="#fff" opacity=".5" />
-              <rect x="300" y="118" width="22" height="4" rx="2" fill="#fff" opacity=".5" />
-            </g>
-            <g class="wheel" style="transform-origin:122px 176px">
-              <circle cx="122" cy="176" r="32" fill="#1d1b2e" />
-              <circle cx="122" cy="176" r="19" fill="#d7dbef" />
-              <path d="M122 159v34M105 176h34M110 164l24 24M134 164l-24 24" stroke="#8a8fae" stroke-width="3" />
-              <circle cx="122" cy="176" r="6" fill="#4a2fc4" />
-            </g>
-            <g class="wheel" style="transform-origin:372px 176px">
-              <circle cx="372" cy="176" r="32" fill="#1d1b2e" />
-              <circle cx="372" cy="176" r="19" fill="#d7dbef" />
-              <path d="M372 159v34M355 176h34M360 164l24 24M384 164l-24 24" stroke="#8a8fae" stroke-width="3" />
-              <circle cx="372" cy="176" r="6" fill="#4a2fc4" />
-            </g>
-          </svg>
+          <div class="hero-car" id="heroCar"></div>
 
           <div class="floating-card floating-bottom">
             <span class="float-icon orange"><svg class="i"><use href="#i-star" /></svg></span>
-            <div><strong>4.9/5</strong><small data-i18n="hero.float2s">Đánh giá trung bình</small></div>
+            <div><strong><span id="heroRating">4.8</span>/5</strong><small data-i18n="hero.float2s">Đánh giá trung bình</small></div>
+          </div>
+
+          <div class="floating-card floating-mid">
+            <span class="float-icon purple"><svg class="i"><use href="#i-tag" /></svg></span>
+            <div><small data-i18n="hero.fromPrice">Giá chỉ từ</small><strong id="heroFrom">–</strong></div>
           </div>
         </div>
       </div>
@@ -213,6 +188,13 @@
           </div>
           <p class="search-hint" id="searchHint"></p>
         </form>
+      </div>
+    </section>
+
+    <section class="brands-strip" aria-labelledby="brandsTitle">
+      <p class="brands-title" id="brandsTitle" data-i18n="brands.title">Các hãng xe đang có tại GoDrive</p>
+      <div class="marquee">
+        <div class="marquee-track" id="brandMarquee"></div>
       </div>
     </section>
 
@@ -258,7 +240,18 @@
       </div>
     </section>
 
-    <section class="section section-tint" id="how">
+    <section class="section section-tint" id="cities">
+      <div class="container">
+        <div class="center-heading reveal">
+          <span class="eyebrow" data-i18n="cities.eyebrow">Điểm nhận xe</span>
+          <h2 data-i18n-html="cities.title">Có mặt tại <span class="gradient-text">các thành phố lớn</span></h2>
+          <p class="section-sub" data-i18n="cities.sub">Chọn thành phố để xem ngay những xe đang sẵn sàng tại đó.</p>
+        </div>
+        <div class="city-grid" id="cityGrid"></div>
+      </div>
+    </section>
+
+    <section class="section" id="how">
       <div class="container">
         <div class="center-heading reveal">
           <span class="eyebrow" data-i18n="how.eyebrow">Đơn giản trong 3 bước</span>
@@ -287,7 +280,7 @@
       </div>
     </section>
 
-    <section class="section" id="about">
+    <section class="section section-tint" id="about">
       <div class="container">
         <div class="center-heading reveal">
           <span class="eyebrow" data-i18n="why.eyebrow">Vì sao chọn GoDrive?</span>
@@ -318,7 +311,7 @@
       </div>
     </section>
 
-    <section class="section section-tint" id="faq">
+    <section class="section" id="faq">
       <div class="container faq-wrap">
         <div class="faq-intro reveal">
           <span class="eyebrow" data-i18n="faq.eyebrow">Hỏi đáp</span>
@@ -406,6 +399,15 @@
     </div>
   </div>
 
+  <div class="modal hidden" id="carModal" role="dialog" aria-modal="true" aria-labelledby="carDetailTitle">
+    <div class="modal-box car-detail-modal">
+      <button class="modal-close" data-close="carModal" data-i18n-aria="close" aria-label="Đóng">
+        <svg class="i"><use href="#i-x" /></svg>
+      </button>
+      <div id="carDetail"></div>
+    </div>
+  </div>
+
   <div class="modal hidden" id="bookingModal" role="dialog" aria-modal="true" data-i18n-aria="booking.aria" aria-label="Đặt xe">
     <div class="modal-box booking-modal">
       <button class="modal-close" data-close="bookingModal" data-i18n-aria="close" aria-label="Đóng">
@@ -442,7 +444,8 @@
     </div>
   </div>
 
-  <script src="/js/app.js?v=2026.10.03-1458"></script>
+  <script src="/js/car-art.js?v=2026.10.03-1537"></script>
+  <script src="/js/app.js?v=2026.10.03-1537"></script>
 </body>
 
 </html>

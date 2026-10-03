@@ -134,7 +134,7 @@ if ($method === "POST" && $action === "") {
 }
 
 if ($method === "PATCH") {
-    require_auth();
+    $admin = require_auth();
     $id = isset($_GET["id"]) ? (int)$_GET["id"] : 0;
     $bookings = read_json($bookingsFile);
     $idx = -1;
@@ -162,8 +162,64 @@ if ($method === "PATCH") {
     if ($status === "") fail("Thiếu trạng thái");
     require_enum($status, BOOKING_STATUSES, "Trạng thái");
     $oldStatus = $bookings[$idx]["status"] ?? "";
+
+    // Duyệt đơn: admin bắt buộc chọn hình thức thanh toán, giao dịch được ghi nhận từ thời điểm này
+    $approving = $status === "confirmed" && $oldStatus !== "confirmed";
+    if ($approving) {
+        $payMethod = require_enum($data["paymentMethod"] ?? "", PAYMENT_METHODS, "Hình thức thanh toán");
+        $payStatus = require_enum($data["paymentStatus"] ?? "pending", ["pending", "paid"], "Trạng thái thanh toán");
+        $payNote = clean_str($data["paymentNote"] ?? "", 120);
+        $bookings[$idx]["paymentMethod"] = $payMethod;
+        $bookings[$idx]["approvedAt"] = date("c");
+    }
     $bookings[$idx]["status"] = $status;
     write_json($bookingsFile, $bookings);
+
+    $payment = null;
+    $paymentsFile = "payments.json";
+    if ($approving) {
+        $payments = read_json($paymentsFile);
+        $pi = -1;
+        foreach ($payments as $i => $p) {
+            if ((string)($p["bookingId"] ?? "") === (string)$id && in_array($p["status"] ?? "", ["pending", "paid"], true)) { $pi = $i; break; }
+        }
+        $now = date("Y-m-d H:i");
+        $record = [
+            "bookingId" => $id,
+            "customerName" => $bookings[$idx]["customerName"] ?? "",
+            "carName" => $bookings[$idx]["carName"] ?? "",
+            "amount" => (int)($bookings[$idx]["total"] ?? 0),
+            "method" => $payMethod,
+            "status" => $payStatus,
+            "createdAt" => $now,
+            "paidAt" => $payStatus === "paid" ? $now : "",
+            "note" => $payNote,
+            "approvedBy" => (string)($admin["username"] ?? "")
+        ];
+        if ($pi >= 0) {
+            $payments[$pi] = array_merge($payments[$pi], $record);
+            $payment = $payments[$pi];
+        } else {
+            $payment = array_merge(["id" => next_id($payments), "txnCode" => txn_code()], $record);
+            $payments[] = $payment;
+        }
+        write_json($paymentsFile, $payments);
+    } elseif ($oldStatus === "confirmed" && $status !== "confirmed") {
+        // Đơn đã duyệt bị hủy: giao dịch đã thu chuyển sang hoàn tiền, giao dịch chưa thu thì bỏ
+        $payments = read_json($paymentsFile);
+        $out = [];
+        foreach ($payments as $p) {
+            if ((string)($p["bookingId"] ?? "") === (string)$id) {
+                if (($p["status"] ?? "") === "pending") continue;
+                if (($p["status"] ?? "") === "paid") {
+                    $p["status"] = "refunded";
+                    $p["refundedAt"] = date("Y-m-d H:i");
+                }
+            }
+            $out[] = $p;
+        }
+        write_json($paymentsFile, $out);
+    }
 
     // Cập nhật tổng tiền thuê và hạng của khách: cộng khi đơn được xác nhận, trừ lại nếu đơn đã xác nhận bị hủy
     $delta = 0;
@@ -192,7 +248,7 @@ if ($method === "PATCH") {
         write_json($carsFile, $cars);
     }
 
-    respond($bookings[$idx]);
+    respond(array_merge($bookings[$idx], ["payment" => $payment]));
 }
 
 fail("Không hỗ trợ yêu cầu này", 405);

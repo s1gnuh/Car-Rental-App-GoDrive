@@ -40,6 +40,10 @@ function car_fields($data, $partial) {
     if (!$partial || array_key_exists("image", $data)) {
         $out["image"] = clean_image_url($data["image"] ?? "");
     }
+    // Màu sơn của hình minh họa khi xe chưa có ảnh ("" = tự chọn theo tên xe)
+    if (!$partial || array_key_exists("color", $data)) {
+        $out["color"] = require_enum((string)($data["color"] ?? ""), CAR_COLORS, "Màu xe");
+    }
     return $out;
 }
 

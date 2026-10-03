@@ -6,7 +6,33 @@ $action = action();
 
 if ($action === "payments") {
     require_auth();
-    if ($method === "GET") respond(read_json("payments.json"));
+    if ($method === "GET") {
+        respond(payments_visible(read_json("payments.json"), read_json("bookings.json")));
+    }
+    if ($method === "PATCH") {
+        // Cập nhật thủ công: xác nhận đã thu tiền / đổi hình thức thanh toán
+        $id = isset($_GET["id"]) ? (int)$_GET["id"] : 0;
+        $list = read_json("payments.json");
+        $idx = -1;
+        foreach ($list as $i => $p) {
+            if ((int)$p["id"] === $id) { $idx = $i; break; }
+        }
+        if ($idx < 0) fail("Không tìm thấy giao dịch", 404);
+        $data = body_json();
+        if (array_key_exists("method", $data)) {
+            $list[$idx]["method"] = require_enum($data["method"], PAYMENT_METHODS, "Hình thức thanh toán");
+        }
+        if (array_key_exists("status", $data)) {
+            $new = require_enum($data["status"], PAYMENT_STATUSES, "Trạng thái thanh toán");
+            if ($new === "paid" && ($list[$idx]["status"] ?? "") !== "paid") $list[$idx]["paidAt"] = date("Y-m-d H:i");
+            if ($new === "pending") $list[$idx]["paidAt"] = "";
+            if ($new === "refunded") $list[$idx]["refundedAt"] = date("Y-m-d H:i");
+            $list[$idx]["status"] = $new;
+        }
+        if (array_key_exists("note", $data)) $list[$idx]["note"] = clean_str($data["note"], 120);
+        write_json("payments.json", $list);
+        respond($list[$idx]);
+    }
     fail("Không hỗ trợ yêu cầu này", 405);
 }
 

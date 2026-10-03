@@ -179,6 +179,28 @@ const BOOKING_STATUSES = ["pending", "confirmed", "cancelled"];
 const CAR_STATUSES = ["available", "rented", "maintenance"];
 const CAR_TYPES = ["Sedan", "SUV", "Hatchback"];
 const MAINT_STATUSES = ["scheduled", "in_progress", "completed"];
+// Hình thức thanh toán admin chọn khi duyệt đơn ("COD" giữ lại để đọc dữ liệu cũ)
+const PAYMENT_METHODS = ["Tiền mặt", "Chuyển khoản", "Thẻ tín dụng", "Ví MoMo", "ZaloPay", "VNPay", "COD"];
+const PAYMENT_STATUSES = ["pending", "paid", "refunded"];
+const CAR_COLORS = ["", "purple", "blue", "red", "white", "black", "silver", "teal", "orange"];
+
+function txn_code() {
+    return "TXN-" . date("Ymd") . "-" . strtoupper(bin2hex(random_bytes(2)));
+}
+
+// Số liệu thanh toán chỉ tính từ lúc đơn được duyệt: bỏ các giao dịch không gắn với đơn,
+// hoặc gắn với đơn chưa duyệt (dữ liệu cũ). Đơn đã hủy chỉ giữ giao dịch đã hoàn tiền.
+function payments_visible($payments, $bookings) {
+    $status = [];
+    foreach ($bookings as $b) $status[(string)$b["id"]] = $b["status"] ?? "";
+    $list = array_values(array_filter($payments, function ($p) use ($status) {
+        $bs = $status[(string)($p["bookingId"] ?? "")] ?? null;
+        if ($bs === "confirmed") return true;
+        return $bs === "cancelled" && ($p["status"] ?? "") === "refunded";
+    }));
+    usort($list, fn($a, $b) => strcmp($b["createdAt"] ?? $b["paidAt"] ?? "", $a["createdAt"] ?? $a["paidAt"] ?? ""));
+    return $list;
+}
 
 function clean_str($value, $max = 200) {
     $value = is_scalar($value) ? trim((string)$value) : "";
