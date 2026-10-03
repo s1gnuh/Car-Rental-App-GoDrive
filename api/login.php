@@ -7,8 +7,8 @@ $action = action();
 
 if ($method === "POST" && ($action === "" || $action === "login")) {
     $body = body_json();
-    $username = trim($body["username"] ?? "");
-    $password = $body["password"] ?? "";
+    $username = clean_str($body["username"] ?? "", 150);
+    $password = is_string($body["password"] ?? null) ? $body["password"] : "";
     if ($username === "" || $password === "") fail("Thiếu thông tin");
 
     $admins = read_json($adminsFile);
@@ -22,10 +22,7 @@ if ($method === "POST" && ($action === "" || $action === "login")) {
     if (!$admin) fail("Tài khoản không tồn tại", 401);
 
     $hash = $admin["passwordHash"] ?? "";
-    $ok = password_verify($password, $hash);
-    // Fallback plain compare for seed/demo if hash missing
-    if (!$ok && isset($admin["password"]) && $admin["password"] === $password) $ok = true;
-    if (!$ok) fail("Sai mật khẩu", 401);
+    if (!password_verify($password, $hash)) fail("Sai mật khẩu", 401);
 
     $token = make_token(["id" => $admin["id"], "username" => $admin["username"]]);
     respond([
@@ -59,8 +56,8 @@ if ($method === "GET" && ($action === "" || $action === "me")) {
 if ($method === "POST" && $action === "change-password") {
     $auth = require_auth();
     $body = body_json();
-    $oldPassword = $body["oldPassword"] ?? "";
-    $newPassword = $body["newPassword"] ?? "";
+    $oldPassword = is_string($body["oldPassword"] ?? null) ? $body["oldPassword"] : "";
+    $newPassword = is_string($body["newPassword"] ?? null) ? $body["newPassword"] : "";
     if ($oldPassword === "" || strlen($newPassword) < 6) {
         fail("Mật khẩu mới ít nhất 6 ký tự");
     }
@@ -95,11 +92,13 @@ if ($method === "GET" && $action === "admins") {
 if ($method === "POST" && $action === "admins") {
     require_auth();
     $body = body_json();
-    $username = trim($body["username"] ?? "");
-    $password = $body["password"] ?? "";
-    $name = trim($body["name"] ?? "");
-    $email = trim($body["email"] ?? "");
+    $username = clean_str($body["username"] ?? "", 50);
+    $password = is_string($body["password"] ?? null) ? $body["password"] : "";
+    $name = clean_str($body["name"] ?? "", 100);
+    $email = clean_str($body["email"] ?? "", 150);
     if ($username === "" || $password === "" || $name === "") fail("Thiếu thông tin");
+    if (!preg_match("/^[A-Za-z0-9._-]{3,50}$/", $username)) fail("Username chỉ gồm chữ, số, . _ - (3-50 ký tự)");
+    if ($email !== "" && !filter_var($email, FILTER_VALIDATE_EMAIL)) fail("Email không hợp lệ");
     if (strlen($password) < 6) fail("Mật khẩu ít nhất 6 ký tự");
 
     $admins = read_json($adminsFile);

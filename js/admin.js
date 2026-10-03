@@ -1,5 +1,408 @@
-﻿const TOKEN_KEY = "goride_admin_token";
-const CURRENT_ADMIN_KEY = "goride_admin_info";
+/* ================== GoDrive Admin ================== */
+
+const TOKEN_KEY = "godrive_admin_token";
+const CURRENT_ADMIN_KEY = "godrive_admin_info";
+const LANG_KEY = "godrive_lang";
+const THEME_KEY = "godrive_theme";
+const AUTO_REFRESH_MS = 60000;
+
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+
+function store(key, value) {
+    try {
+        if (value === undefined) return localStorage.getItem(key);
+        if (value === null) localStorage.removeItem(key);
+        else localStorage.setItem(key, value);
+    } catch (_) { return null; }
+}
+
+// Escape dữ liệu trước khi chèn vào innerHTML để chống XSS
+const esc = (v) => String(v ?? "").replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+// Chỉ cho phép ảnh http(s)
+const safeUrl = (v) => { const u = String(v ?? "").trim(); return /^https?:\/\//i.test(u) ? u : ""; };
+// Ô CSV: bọc nháy kép, và chặn công thức Excel (=, +, -, @) bằng dấu nháy đơn đứng đầu
+const csvCell = (v) => {
+    let t = String(v ?? "");
+    if (/^[=+\-@\t\r]/.test(t)) t = "'" + t;
+    return '"' + t.replace(/"/g, '""') + '"';
+};
+const toCsv = (rows) => rows.map(r => r.map(csvCell).join(",")).join("\n");
+const icon = (name, cls = "") => `<svg class="i ${cls}"><use href="#i-${name}"/></svg>`;
+
+/* ================== Đa ngôn ngữ ================== */
+
+const EN_STATIC = {
+    "login.artTitle": "Run your fleet professionally, anytime, anywhere",
+    "login.p1": "Track revenue and bookings in real time",
+    "login.p2": "Manage cars, maintenance schedules and customers",
+    "login.p3": "Light/dark themes, Vietnamese and English",
+    "nav.site": "Back to customer site",
+    "lang.switch": "Chuyển sang tiếng Việt",
+    "theme.toggle": "Toggle light/dark mode",
+    "login.title": "Welcome back",
+    "login.subtitle": "Sign in to access the GoDrive dashboard",
+    "login.username": "Username or email",
+    "login.password": "Password",
+    "login.showPwd": "Show password",
+    "login.submit": "Sign in",
+    "login.foot": "Restricted to administrators",
+    "nav.closeMenu": "Close menu",
+    "nav.openMenu": "Open menu",
+    "nav.main": "Management",
+    "nav.dashboard": "Dashboard",
+    "nav.bookings": "Bookings",
+    "nav.fleet": "Fleet",
+    "nav.customers": "Customers",
+    "nav.payments": "Payments",
+    "nav.maintenance": "Maintenance",
+    "nav.system": "System",
+    "nav.admins": "Admin accounts",
+    "nav.password": "Change password",
+    "nav.logout": "Sign out",
+    "action.refresh": "Refresh",
+    "action.close": "Close",
+    "action.cancel": "Cancel",
+    "action.save": "Save",
+    "car.noImage": "No image",
+    "car.imageUrl": "Image URL",
+    "car.imageHint": "Paste an image URL starting with https:// (JPG, PNG, WEBP)",
+    "car.clearImage": "Remove image",
+    "car.name": "Car name *",
+    "car.brand": "Brand",
+    "car.type": "Type",
+    "car.seats": "Seats",
+    "car.price": "Daily rate (₫) *",
+    "car.location": "Location",
+    "car.featured": "Mark as featured on the customer site",
+    "maint.new": "Schedule maintenance",
+    "maint.car": "Car *",
+    "maint.type": "Service *",
+    "maint.start": "Start date",
+    "maint.end": "End date",
+    "maint.cost": "Estimated cost (₫)",
+    "maint.note": "Notes",
+    "maint.save": "Schedule",
+    "pwd.old": "Current password",
+    "pwd.new": "New password (at least 6 characters)",
+    "pwd.confirm": "Confirm new password",
+    "pwd.save": "Update password",
+    "admins.create": "Create new account",
+    "admins.name": "Display name *",
+    "admins.username": "Username *",
+    "admins.password": "Password * (≥ 6 characters)",
+    "admins.submit": "Create account"
+};
+
+// Chuỗi dùng trong JS: [tiếng Việt, tiếng Anh]
+const STR = {
+    title: ["GoDrive Admin", "GoDrive Admin"],
+    "page.dashboard": ["Tổng quan", "Dashboard"],
+    "page.dashboard.sub": ["Theo dõi hoạt động kinh doanh của bạn", "Track your business at a glance"],
+    "page.bookings": ["Đơn đặt xe", "Bookings"],
+    "page.bookings.sub": ["Duyệt, bàn giao và theo dõi các đơn đặt xe", "Approve, hand over and track bookings"],
+    "page.fleet": ["Đội xe", "Fleet"],
+    "page.fleet.sub": ["Quản lý thông tin và trạng thái xe", "Manage car details and status"],
+    "page.customers": ["Khách hàng", "Customers"],
+    "page.customers.sub": ["Danh sách khách hàng và lịch sử chi tiêu", "Customer list and spending history"],
+    "page.payments": ["Thanh toán", "Payments"],
+    "page.payments.sub": ["Theo dõi các giao dịch thanh toán", "Track payment transactions"],
+    "page.maintenance": ["Bảo trì", "Maintenance"],
+    "page.maintenance.sub": ["Lên lịch và theo dõi bảo trì xe", "Schedule and track car maintenance"],
+    updated: ["Cập nhật {time}", "Updated {time}"],
+    justNow: ["vừa xong", "just now"],
+    refreshed: ["Đã làm mới dữ liệu", "Data refreshed"],
+    loginOk: ["Đăng nhập thành công", "Signed in successfully"],
+    loginFail: ["Đăng nhập thất bại", "Sign in failed"],
+    loginMissing: ["Vui lòng nhập tên đăng nhập và mật khẩu", "Please enter your username and password"],
+    loggingIn: ["Đang kiểm tra...", "Signing in..."],
+    sessionExpired: ["Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.", "Session expired. Please sign in again."],
+    loggedOut: ["Đã đăng xuất", "Signed out"],
+    network: ["Không kết nối được máy chủ", "Couldn't reach the server"],
+    httpError: ["Lỗi yêu cầu (HTTP {code})", "Request failed (HTTP {code})"],
+    hidePwd: ["Ẩn mật khẩu", "Hide password"],
+    showPwd: ["Hiện mật khẩu", "Show password"],
+    themeDark: ["Đã bật chế độ tối", "Dark mode on"],
+    themeLight: ["Đã bật chế độ sáng", "Light mode on"],
+
+    revenue: ["Doanh thu đã xác nhận", "Confirmed revenue"],
+    pendingBookings: ["Đơn chờ duyệt", "Pending bookings"],
+    activeRentals: ["Xe đang cho thuê", "Cars on rent"],
+    customersStat: ["Khách hàng", "Customers"],
+    vsPrev: ["so với 30 ngày trước", "vs previous 30 days"],
+    needAction: ["Cần xử lý ngay", "Needs attention"],
+    allClear: ["Không có đơn tồn", "All caught up"],
+    ofCars: ["trên tổng {n} xe", "of {n} cars"],
+    newCustomers: ["+{n} khách mới trong 30 ngày", "+{n} new in 30 days"],
+    revenueChart: ["Doanh thu", "Revenue"],
+    revenueChartSub: ["Doanh thu đơn đã xác nhận theo ngày đặt", "Confirmed booking revenue by booking date"],
+    days7: ["7 ngày", "7 days"],
+    days30: ["30 ngày", "30 days"],
+    rangeTotal: ["Tổng: {v}", "Total: {v}"],
+    bookingStatus: ["Trạng thái đơn", "Booking status"],
+    bookingStatusSub: ["Phân bổ toàn bộ đơn", "Distribution of all bookings"],
+    totalBookings: ["Tổng đơn", "Bookings"],
+    recentBookings: ["Đơn gần đây", "Recent bookings"],
+    recentBookingsSub: ["5 đơn mới nhất", "The 5 latest bookings"],
+    viewAll: ["Xem tất cả", "View all"],
+    fleetStatus: ["Tình trạng đội xe", "Fleet status"],
+    fleetStatusSub: ["Cập nhật trực tiếp", "Live overview"],
+    manage: ["Quản lý", "Manage"],
+    attention: ["Việc cần làm", "To-do"],
+    attentionSub: ["Đơn chờ duyệt và xe đang bảo trì", "Pending bookings and cars in maintenance"],
+    nothingToDo: ["Tuyệt vời! Không có việc nào tồn đọng.", "Great! Nothing pending."],
+    waitingApproval: ["Chờ duyệt · {date}", "Awaiting approval · {date}"],
+    inMaintenance: ["Đang bảo trì · đến {date}", "In maintenance · until {date}"],
+
+    code: ["Mã đơn", "Booking"],
+    customer: ["Khách hàng", "Customer"],
+    car: ["Xe", "Car"],
+    dates: ["Thời gian", "Dates"],
+    total: ["Tổng tiền", "Total"],
+    status: ["Trạng thái", "Status"],
+    actions: ["Thao tác", "Actions"],
+    nDays: ["{n} ngày", "{n} day(s)"],
+    all: ["Tất cả", "All"],
+    searchBookings: ["Tìm mã đơn, khách hàng, xe...", "Search code, customer, car..."],
+    exportCsv: ["Xuất CSV", "Export CSV"],
+    exported: ["Đã xuất file CSV", "CSV exported"],
+    approve: ["Duyệt", "Approve"],
+    handover: ["Bàn giao", "Hand over"],
+    cancel: ["Hủy", "Cancel"],
+    view: ["Chi tiết", "Details"],
+    noBookings: ["Không có đơn phù hợp", "No matching bookings"],
+    noBookingsHint: ["Thử đổi bộ lọc hoặc từ khóa tìm kiếm.", "Try a different filter or search term."],
+    approved: ["Đã duyệt đơn #{id}", "Booking #{id} approved"],
+    cancelledToast: ["Đã hủy đơn #{id}", "Booking #{id} cancelled"],
+    handedOver: ["Đã bàn giao xe cho đơn #{id}", "Car handed over for booking #{id}"],
+    confirmCancelTitle: ["Hủy đơn #{id}?", "Cancel booking #{id}?"],
+    confirmCancelText: ["Khách hàng {name} sẽ không còn giữ xe {car}. Thao tác này không thể hoàn tác.", "{name} will lose the reservation for {car}. This cannot be undone."],
+    confirmCancelOk: ["Hủy đơn", "Cancel booking"],
+    keep: ["Giữ lại", "Keep"],
+    bookingDetail: ["Đơn #{id}", "Booking #{id}"],
+    phone: ["Số điện thoại", "Phone"],
+    pickup: ["Nhận xe", "Pick-up"],
+    return: ["Trả xe", "Return"],
+    location: ["Địa điểm", "Location"],
+    createdAt: ["Ngày đặt", "Booked on"],
+    call: ["Gọi khách", "Call"],
+
+    searchCars: ["Tìm theo tên, hãng xe...", "Search name, brand..."],
+    allStatuses: ["Tất cả trạng thái", "All statuses"],
+    addCar: ["Thêm xe", "Add car"],
+    editCar: ["Chỉnh sửa xe", "Edit car"],
+    newCar: ["Thêm xe mới", "Add a new car"],
+    seats: ["{n} chỗ", "{n} seats"],
+    perDay: ["/ngày", "/day"],
+    edit: ["Sửa", "Edit"],
+    delete: ["Xóa", "Delete"],
+    noCars: ["Không tìm thấy xe", "No cars found"],
+    noCarsHint: ["Thêm xe mới hoặc đổi bộ lọc.", "Add a car or change the filter."],
+    carSaved: ["Đã cập nhật xe", "Car updated"],
+    carAdded: ["Đã thêm xe mới", "Car added"],
+    carDeleted: ["Đã xóa xe", "Car deleted"],
+    carStatusChanged: ["{car}: {status}", "{car}: {status}"],
+    confirmDeleteCar: ["Xóa xe {car}?", "Delete {car}?"],
+    confirmDeleteCarText: ["Xe sẽ bị gỡ khỏi trang khách. Các đơn cũ vẫn được giữ lại.", "The car will be removed from the customer site. Past bookings are kept."],
+    carNameRequired: ["Vui lòng nhập tên xe", "Please enter the car name"],
+    carPriceRequired: ["Giá thuê phải lớn hơn 0", "Daily rate must be greater than 0"],
+    imageInvalid: ["Link ảnh phải bắt đầu bằng http:// hoặc https://", "Image URL must start with http:// or https://"],
+    featured: ["Nổi bật", "Featured"],
+
+    searchCustomers: ["Tìm tên, email, số điện thoại...", "Search name, email, phone..."],
+    joined: ["Tham gia", "Joined"],
+    bookingsCount: ["Số đơn", "Bookings"],
+    spent: ["Tổng chi tiêu", "Total spent"],
+    tier: ["Hạng", "Tier"],
+    noCustomers: ["Không có khách hàng phù hợp", "No matching customers"],
+    customersCount: ["{n} khách hàng", "{n} customers"],
+
+    searchPayments: ["Tìm mã giao dịch, khách hàng...", "Search transaction, customer..."],
+    paidTotal: ["Đã thu", "Collected"],
+    pendingPay: ["Chờ thanh toán", "Awaiting payment"],
+    refundedPay: ["Đã hoàn tiền", "Refunded"],
+    transactions: ["{n} giao dịch", "{n} transactions"],
+    txn: ["Mã giao dịch", "Transaction"],
+    method: ["Phương thức", "Method"],
+    amount: ["Số tiền", "Amount"],
+    time: ["Thời gian", "Time"],
+    orderRef: ["Đơn #{id}", "Booking #{id}"],
+    noPayments: ["Không có giao dịch phù hợp", "No matching transactions"],
+
+    scheduleMaint: ["Lên lịch bảo trì", "Schedule maintenance"],
+    start: ["Bắt đầu", "Start"],
+    complete: ["Hoàn thành", "Complete"],
+    noMaint: ["Chưa có lịch bảo trì", "No maintenance scheduled"],
+    noMaintHint: ["Bấm \"Lên lịch bảo trì\" để thêm mới.", "Click \"Schedule maintenance\" to add one."],
+    maintAdded: ["Đã lên lịch bảo trì", "Maintenance scheduled"],
+    maintUpdated: ["Đã cập nhật: {status}", "Updated: {status}"],
+    maintDeleted: ["Đã xóa lịch bảo trì", "Maintenance deleted"],
+    confirmDeleteMaint: ["Xóa lịch bảo trì này?", "Delete this maintenance record?"],
+    confirmDeleteMaintText: ["{type} cho xe {car}", "{type} for {car}"],
+    maintTypeRequired: ["Vui lòng nhập hạng mục bảo trì", "Please enter the service"],
+    maintDatesInvalid: ["Ngày kết thúc phải sau hoặc bằng ngày bắt đầu", "End date must be on or after the start date"],
+    totalCost: ["Tổng chi phí", "Total cost"],
+    maintTypePh: ["Bảo dưỡng định kỳ 10.000km", "10,000 km scheduled service"],
+
+    you: ["Bạn", "You"],
+    adminCreated: ["Đã tạo tài khoản admin", "Admin account created"],
+    adminDeleted: ["Đã xóa admin", "Admin deleted"],
+    confirmDeleteAdmin: ["Xóa tài khoản {name}?", "Delete {name}?"],
+    confirmDeleteAdminText: ["Người này sẽ không thể đăng nhập nữa.", "This person will no longer be able to sign in."],
+    adminMissing: ["Vui lòng nhập tên, username và mật khẩu (≥ 6 ký tự)", "Please enter name, username and password (≥ 6 characters)"],
+    pwdShort: ["Mật khẩu mới ít nhất 6 ký tự", "New password must be at least 6 characters"],
+    pwdMismatch: ["Xác nhận mật khẩu không khớp", "Passwords don't match"],
+    pwdChanged: ["Đổi mật khẩu thành công", "Password changed"],
+
+    pending: ["Chờ duyệt", "Pending"],
+    confirmed: ["Đã xác nhận", "Confirmed"],
+    cancelled: ["Đã hủy", "Cancelled"],
+    available: ["Sẵn sàng", "Available"],
+    rented: ["Đang thuê", "On rent"],
+    maintenance: ["Bảo trì", "Maintenance"],
+    paid: ["Đã thanh toán", "Paid"],
+    refunded: ["Đã hoàn tiền", "Refunded"],
+    scheduled: ["Đã lên lịch", "Scheduled"],
+    in_progress: ["Đang thực hiện", "In progress"],
+    completed: ["Hoàn thành", "Completed"],
+    bronze: ["Đồng", "Bronze"],
+    silver: ["Bạc", "Silver"],
+    gold: ["Vàng", "Gold"],
+    platinum: ["Bạch kim", "Platinum"]
+};
+
+const SERVER_ERRORS_EN = {
+    "Chưa đăng nhập": "Not signed in",
+    "Token không hợp lệ": "Invalid session",
+    "Thiếu thông tin": "Missing information",
+    "Tài khoản không tồn tại": "Account not found",
+    "Sai mật khẩu": "Wrong password",
+    "Mật khẩu mới ít nhất 6 ký tự": "New password must be at least 6 characters",
+    "Mật khẩu cũ sai": "Current password is incorrect",
+    "Mật khẩu ít nhất 6 ký tự": "Password must be at least 6 characters",
+    "Username đã tồn tại": "Username already exists",
+    "Email đã tồn tại": "Email already exists",
+    "Email không hợp lệ": "Invalid email address",
+    "Username chỉ gồm chữ, số, . _ - (3-50 ký tự)": "Username may contain letters, digits, . _ - (3-50 characters)",
+    "Phải giữ lại ít nhất 1 admin": "At least one admin must remain",
+    "Không thể xóa chính mình": "You can't delete yourself",
+    "Không tìm thấy": "Not found",
+    "Không tìm thấy xe": "Car not found",
+    "Không tìm thấy đơn": "Booking not found",
+    "Thiếu trạng thái": "Missing status",
+    "Trạng thái không hợp lệ": "Invalid status",
+    "Chỉ đơn đã xác nhận mới bàn giao xe được": "Only confirmed bookings can be handed over",
+    "Tên xe không được để trống": "Car name is required",
+    "Loại xe không hợp lệ": "Invalid car type",
+    "Số chỗ không hợp lệ": "Invalid number of seats",
+    "Giá thuê không hợp lệ": "Invalid daily rate",
+    "Địa điểm không được để trống": "Location is required",
+    "Link ảnh phải bắt đầu bằng http:// hoặc https://": "Image URL must start with http:// or https://",
+    "Ngày bảo trì không hợp lệ": "Invalid maintenance dates",
+    "Chi phí không hợp lệ": "Invalid cost",
+    "Không ghi được dữ liệu": "Couldn't save data",
+    "Không hỗ trợ yêu cầu này": "Unsupported request"
+};
+
+const CITY_EN = { "Hà Nội": "Hanoi", "TP. Hồ Chí Minh": "Ho Chi Minh City", "Đà Nẵng": "Da Nang" };
+const METHOD_EN = { "Chuyển khoản": "Bank transfer", "Thẻ tín dụng": "Credit card", "Ví MoMo": "MoMo e-wallet", "Tiền mặt": "Cash", "COD": "Cash on delivery" };
+
+let lang = store(LANG_KEY) === "en" ? "en" : "vi";
+const viOriginal = new Map();
+
+function t(key, vars = {}) {
+    const pair = STR[key];
+    let text = pair ? pair[lang === "en" ? 1 : 0] : key;
+    for (const [k, v] of Object.entries(vars)) text = text.replaceAll(`{${k}}`, v);
+    return text;
+}
+
+const serverMsg = (msg) => (lang === "en" && SERVER_ERRORS_EN[msg]) || msg;
+const city = (name) => (lang === "en" && CITY_EN[name]) || name;
+const methodLabel = (m) => (lang === "en" && METHOD_EN[m]) || m;
+const statusLabel = (s) => (STR[s] ? t(s) : s);
+const locale = () => (lang === "en" ? "en-US" : "vi-VN");
+const money = (v) => new Intl.NumberFormat(locale()).format(Number(v) || 0) + " ₫";
+const shortMoney = (v) => {
+    const n = Number(v) || 0;
+    if (Math.abs(n) >= 1e9) return (n / 1e9).toLocaleString(locale(), { maximumFractionDigits: 1 }) + (lang === "en" ? "B" : " tỷ");
+    if (Math.abs(n) >= 1e6) return (n / 1e6).toLocaleString(locale(), { maximumFractionDigits: 1 }) + (lang === "en" ? "M" : " tr");
+    if (Math.abs(n) >= 1e3) return (n / 1e3).toLocaleString(locale(), { maximumFractionDigits: 0 }) + "K";
+    return String(n);
+};
+
+function parseDate(v) {
+    if (!v) return null;
+    const s = String(v);
+    const d = new Date(s.length === 10 ? s + "T00:00:00" : s.replace(" ", "T"));
+    return isNaN(d) ? null : d;
+}
+
+function fmtDate(v) {
+    const d = parseDate(v);
+    return d ? d.toLocaleDateString(locale(), { day: "2-digit", month: "2-digit", year: "numeric" }) : (v || "—");
+}
+
+function fmtDateTime(v) {
+    const d = parseDate(v);
+    return d ? d.toLocaleString(locale(), { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : (v || "—");
+}
+
+const dayKey = (d) => {
+    const tz = d.getTimezoneOffset() * 60000;
+    return new Date(d - tz).toISOString().slice(0, 10);
+};
+
+function nightCount(start, end) {
+    const a = parseDate(start), b = parseDate(end);
+    return a && b ? Math.max(1, Math.round((b - a) / 86400000)) : 1;
+}
+
+function applyStaticTranslations() {
+    $$("[data-i18n], [data-i18n-aria]").forEach(el => {
+        if (!viOriginal.has(el)) {
+            viOriginal.set(el, {
+                text: el.dataset.i18n ? el.textContent : null,
+                aria: el.dataset.i18nAria ? el.getAttribute("aria-label") : null
+            });
+        }
+        const orig = viOriginal.get(el);
+        if (el.dataset.i18n) el.textContent = lang === "en" ? (EN_STATIC[el.dataset.i18n] ?? orig.text) : orig.text;
+        if (el.dataset.i18nAria) el.setAttribute("aria-label", lang === "en" ? (EN_STATIC[el.dataset.i18nAria] ?? orig.aria) : orig.aria);
+    });
+    $$("#carLocation option").forEach(o => { o.textContent = city(o.value); });
+    $("#m_type").placeholder = t("maintTypePh");
+    $$(".lang-label").forEach(l => { l.textContent = lang === "en" ? "VI" : "EN"; });
+    document.documentElement.lang = lang;
+}
+
+function setLang(next) {
+    lang = next;
+    store(LANG_KEY, lang);
+    applyStaticTranslations();
+    if (!$("#adminAppWrapper").classList.contains("hidden")) {
+        setPageTitle(currentPage);
+        renderEverything();
+        updateSyncLabel();
+    }
+}
+
+/* ================== Chế độ sáng / tối ================== */
+
+function setTheme(theme, persist = true) {
+    const root = document.documentElement;
+    root.classList.add("theme-anim");
+    root.setAttribute("data-theme", theme);
+    $('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#0e0d18" : "#5b3fd9");
+    if (persist) store(THEME_KEY, theme);
+    setTimeout(() => root.classList.remove("theme-anim"), 400);
+    // Biểu đồ cần vẽ lại để lấy màu theo giao diện mới
+    if (!$("#adminAppWrapper").classList.contains("hidden")) renderDashboard();
+}
+
+const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+/* ================== State ================== */
 
 let cars = [];
 let bookings = [];
@@ -8,167 +411,183 @@ let payments = [];
 let maintenance = [];
 let admins = [];
 let currentAdmin = null;
+let currentPage = "dashboard";
 let revenueChart;
-let bookingStatusChart;
+let statusChart;
+let lastSync = null;
+let dataLoaded = false;
 
-const $ = (sel) => document.querySelector(sel);
-const $$ = (sel) => [...document.querySelectorAll(sel)];
+const ui = {
+    revenueRange: 30,
+    bookingTab: "all",
+    bookingSearch: "",
+    fleetSearch: "",
+    fleetStatus: "all",
+    customerSearch: "",
+    paymentTab: "all",
+    paymentSearch: "",
+    maintTab: "all"
+};
 
-const money = (v) => new Intl.NumberFormat("vi-VN").format(v) + " ₫";
-const fmtDate = (d) => d ? new Date(d).toLocaleDateString("vi-VN") : "";
+/* ================== Tiện ích UI ================== */
 
-function showToast(message) {
-    const t = $("#toast");
-    if (!t) return;
-    t.textContent = message;
-    t.classList.add("show");
-    setTimeout(() => t.classList.remove("show"), 2800);
+let toastTimer;
+function showToast(message, type = "info") {
+    const el = $("#toast");
+    el.className = type;
+    el.innerHTML = `${icon(type === "success" ? "check" : "alert")}<span>${esc(message)}</span>`;
+    requestAnimationFrame(() => el.classList.add("show"));
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove("show"), 3500);
 }
 
-function getToken() { return localStorage.getItem(TOKEN_KEY) || ""; }
+let lastFocused = null;
+function openModal(id) {
+    const modal = $("#" + id);
+    lastFocused = document.activeElement;
+    modal.classList.remove("hidden", "closing");
+    document.body.classList.add("no-scroll");
+    setTimeout(() => $("input:not([type=hidden]), select, textarea", modal)?.focus({ preventScroll: true }), 60);
+}
+
+function closeModal(id) {
+    const modal = $("#" + id);
+    if (modal.classList.contains("hidden") || modal.classList.contains("closing")) return;
+    modal.classList.add("closing");
+    setTimeout(() => {
+        modal.classList.add("hidden");
+        modal.classList.remove("closing");
+        if (!$$(".modal:not(.hidden)").length) document.body.classList.remove("no-scroll");
+        lastFocused?.focus?.({ preventScroll: true });
+    }, 170);
+}
+
+// Hộp thoại xác nhận thay cho window.confirm
+function confirmDialog({ title, text = "", okText, danger = true }) {
+    return new Promise(resolve => {
+        $("#confirmTitle").textContent = title;
+        $("#confirmText").textContent = text;
+        $("#confirmOk").textContent = okText || t("delete");
+        $("#confirmOk").className = danger ? "btn btn-danger" : "btn btn-primary";
+        $("#confirmIcon").className = "confirm-icon" + (danger ? "" : " ok");
+        $("#confirmCancel").textContent = t("keep");
+        const done = (val) => {
+            $("#confirmOk").onclick = $("#confirmCancel").onclick = null;
+            closeModal("confirmModal");
+            resolve(val);
+        };
+        $("#confirmOk").onclick = () => done(true);
+        $("#confirmCancel").onclick = () => done(false);
+        openModal("confirmModal");
+        setTimeout(() => $("#confirmCancel").focus(), 80);
+    });
+}
+
+function setLoading(btn, on) {
+    if (!btn) return;
+    btn.classList.toggle("loading", on);
+    btn.disabled = on;
+}
+
+function initials(name) {
+    if (!name) return "AD";
+    return name.split(" ").filter(Boolean).slice(-2).map(s => s[0]).join("").toUpperCase().slice(0, 2);
+}
+
+function emptyState(iconName, title, hint = "") {
+    return `<div class="empty"><div class="stat-icon">${icon(iconName)}</div><strong>${esc(title)}</strong>${hint ? `<span>${esc(hint)}</span>` : ""}</div>`;
+}
+
+function statusBadge(s) {
+    return `<span class="status ${esc(s)}">${esc(statusLabel(s))}</span>`;
+}
+
+function tabsHtml(name, current, items) {
+    return `<div class="tabs" role="tablist" data-tabs="${name}">${items.map(([value, label, count]) =>
+        `<button class="tab ${value === current ? "active" : ""}" role="tab" aria-selected="${value === current}" data-value="${esc(value)}">${esc(label)}${count != null ? `<span class="count">${count}</span>` : ""}</button>`
+    ).join("")}</div>`;
+}
+
+function downloadCsv(filename, rows) {
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(new Blob(["﻿" + toCsv(rows)], { type: "text/csv;charset=utf-8" }));
+    link.download = filename;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+    showToast(t("exported"), "success");
+}
+
+function trendHtml(current, previous) {
+    if (!previous && !current) return `<span class="trend flat">0%</span>`;
+    if (!previous) return `<span class="trend up">${icon("trend-up")} ${lang === "en" ? "new" : "mới"}</span>`;
+    const pct = Math.round(((current - previous) / previous) * 100);
+    const cls = pct > 0 ? "up" : pct < 0 ? "down" : "flat";
+    return `<span class="trend ${cls}">${pct !== 0 ? icon(pct > 0 ? "trend-up" : "trend-down") : ""} ${pct > 0 ? "+" : ""}${pct}%</span>`;
+}
+
+/* ================== API ================== */
+
+function getToken() { return store(TOKEN_KEY) || ""; }
 
 async function api(path, opts = {}) {
     const headers = { "Content-Type": "application/json", ...(opts.headers || {}) };
     const token = getToken();
     if (token) headers.Authorization = `Bearer ${token}`;
-    const res = await fetch(path, { ...opts, headers });
+    let res;
+    try {
+        res = await fetch(path, { ...opts, headers });
+    } catch (_) {
+        throw new Error(t("network"));
+    }
     let body = {};
     try { body = await res.json(); } catch (_) { }
     if (!res.ok) {
-        if (res.status === 401) {
-            logout();
-            throw new Error("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.");
+        if (res.status === 401 && token) {
+            logout(true);
+            throw new Error(t("sessionExpired"));
         }
-        throw new Error(body.error || "Lỗi yêu cầu (HTTP " + res.status + ")");
+        throw new Error(serverMsg(body.error) || t("httpError", { code: res.status }));
     }
     return body;
 }
 
-function carThumbHtml(car, extraClass = "") {
-    const type = (car.type || "").toLowerCase();
-    const img = (car.image || "").trim();
-    if (img) {
-        return `<div class="fleet-car-image has-photo ${extraClass}"><img src="${img}" alt="${car.name || "Xe"}" /></div>`;
-    }
-    return `<div class="fleet-car-image ${type} ${extraClass}"></div>`;
-}
-
-function setCarImagePreview(src) {
-    const img = $("#carImagePreviewImg");
-    const placeholder = $("#carImagePlaceholder");
-    const box = $("#carImagePreview");
-    if (!img || !placeholder || !box) return;
-    if (src) {
-        img.src = src;
-        img.hidden = false;
-        placeholder.hidden = true;
-        box.classList.add("has-photo");
-    } else {
-        img.removeAttribute("src");
-        img.hidden = true;
-        placeholder.hidden = false;
-        box.classList.remove("has-photo");
-    }
-}
-
-function resetCarImageFields() {
-    if ($("#carImage")) $("#carImage").value = "";
-    if ($("#carImageUrl")) $("#carImageUrl").value = "";
-    setCarImagePreview("");
-}
-
-function statusLabel(s) {
-    return {
-        pending: "Chờ duyệt", confirmed: "Đã xác nhận", cancelled: "Đã hủy",
-        available: "Rảnh", rented: "Đã thuê", maintenance: "Bảo trì",
-        paid: "Đã thanh toán", refunded: "Đã hoàn tiền",
-        in_progress: "Đang thực hiện", completed: "Hoàn thành", scheduled: "Đã lên lịch",
-        gold: "Gold", silver: "Silver", platinum: "Platinum", bronze: "Bronze"
-    }[s] || s;
-}
-
-function statusClass(s) {
-    if (["pending", "scheduled", "bronze"].includes(s)) return "pending";
-    if (["confirmed", "available", "paid", "completed", "gold", "platinum"].includes(s)) return "confirmed";
-    if (["cancelled", "refunded"].includes(s)) return "cancelled";
-    if (["rented", "silver"].includes(s)) return "rented";
-    if (["maintenance", "in_progress"].includes(s)) return "maintenance";
-    return "pending";
-}
+/* ================== Đăng nhập ================== */
 
 function showLogin() {
     $("#adminLoginWrapper").classList.remove("hidden");
     $("#adminAppWrapper").classList.add("hidden");
+    setTimeout(() => $("#loginUsername")?.focus(), 50);
 }
+
 function showApp() {
     $("#adminLoginWrapper").classList.add("hidden");
     $("#adminAppWrapper").classList.remove("hidden");
 }
 
-async function login(username, password) {
-    const res = await fetch("/api/login.php", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password })
-    });
-    const body = await res.json();
-    if (!res.ok) throw new Error(body.error || "Đăng nhập thất bại");
-    localStorage.setItem(TOKEN_KEY, body.token);
-    localStorage.setItem(CURRENT_ADMIN_KEY, JSON.stringify(body.admin));
-    currentAdmin = body.admin;
-    return body.admin;
-}
-
-function logout() {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(CURRENT_ADMIN_KEY);
+function logout(silent = false) {
+    store(TOKEN_KEY, null);
+    store(CURRENT_ADMIN_KEY, null);
     currentAdmin = null;
+    dataLoaded = false;
     showLogin();
-}
-
-function avatarInitials(name) {
-    if (!name) return "AD";
-    return name.split(" ").filter(Boolean).slice(-2).map(s => s[0]).join("").toUpperCase().slice(0, 2);
+    if (!silent) showToast(t("loggedOut"));
 }
 
 function updateAdminProfile() {
-    if (!currentAdmin) currentAdmin = JSON.parse(localStorage.getItem(CURRENT_ADMIN_KEY) || "null");
     if (!currentAdmin) return;
     const name = currentAdmin.name || currentAdmin.username || "Admin";
-    $("#adminName") && ($("#adminName").textContent = name);
-    $("#adminRole") && ($("#adminRole").textContent = currentAdmin.email || "Quản trị viên");
-    const avt = avatarInitials(name);
-    if ($("#adminAvatar")) $("#adminAvatar").textContent = avt;
-    if ($("#topAvatar")) $("#topAvatar").textContent = avt;
+    $("#adminName").textContent = name;
+    $("#adminRole").textContent = currentAdmin.email || "@" + currentAdmin.username;
+    $("#adminAvatar").textContent = initials(name);
+    $("#topAvatar").textContent = initials(name);
+    $("#topAvatar").title = name;
 }
 
-/* ===== LOGIN FORM ===== */
-$("#loginForm")?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const btn = $("#loginSubmitBtn");
-    btn.disabled = true;
-    btn.textContent = "Đang kiểm tra...";
-    try {
-        await login($("#loginUsername").value.trim(), $("#loginPassword").value);
-        showToast("Đăng nhập thành công.");
-        await afterLoginInit();
-        showApp();
-    } catch (err) {
-        showToast(err.message);
-    } finally {
-        btn.disabled = false;
-        btn.textContent = "Đăng nhập";
-    }
-});
+/* ================== Tải dữ liệu ================== */
 
-/* ===== APP INIT ===== */
-async function afterLoginInit() {
-    updateAdminProfile();
-    await loadAllData();
-    renderEverything();
-}
-
-async function loadAllData() {
+async function loadAllData(showSpinner = false) {
+    const btn = $("#refreshBtn");
+    if (showSpinner) btn.classList.add("spinning");
     try {
         const [c, b, cu, p, m, a] = await Promise.all([
             api("/api/products.php"),
@@ -179,567 +598,1073 @@ async function loadAllData() {
             api("/api/login.php?action=admins")
         ]);
         cars = c; bookings = b; customers = cu; payments = p; maintenance = m; admins = a;
+        lastSync = new Date();
+        dataLoaded = true;
+        return true;
     } catch (err) {
-        showToast(err.message);
+        showToast(err.message, "error");
+        return false;
+    } finally {
+        btn.classList.remove("spinning");
     }
 }
 
-function calculateStats() {
-    const confirmedRevenue = bookings.filter(b => b.status === "confirmed").reduce((s, b) => s + (Number(b.total) || 0), 0);
-    const rented = cars.filter(c => c.status === "rented").length;
-    const available = cars.filter(c => c.status === "available").length;
-    const maint = cars.filter(c => c.status === "maintenance").length;
-    $("#revenueStat").textContent = money(confirmedRevenue);
-    $("#bookingStat").textContent = bookings.length;
-    $("#rentedStat").textContent = rented;
-    $("#fleetDetail").textContent = `Trên tổng số ${cars.length} xe`;
-    $("#availableCount").textContent = available;
-    $("#rentedCount").textContent = rented;
-    $("#maintenanceCount").textContent = maint;
-    const pct = cars.length ? Math.round((available / cars.length) * 100) : 0;
-    $("#availablePercent").textContent = pct + "%";
-    $("#totalBookingCenter").textContent = bookings.length;
-    $("#customerStat").textContent = customers.length;
-    $("#lastUpdated").textContent = new Date().toLocaleTimeString("vi-VN");
-}
-
-function renderRevenueChart() {
-    const canvas = $("#revenueChart"); if (!canvas) return;
-    if (revenueChart) revenueChart.destroy();
-    const labels = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
-    const values = [3.2, 4.7, 3.9, 6.1, 5.3, 7.4, 8.2];
-    revenueChart = new Chart(canvas, {
-        type: "line",
-        data: { labels, datasets: [{ label: "Doanh thu", data: values, borderColor: "#6046d8", backgroundColor: "rgba(96,70,216,.12)", borderWidth: 3, fill: true, tension: .4, pointRadius: 3, pointBackgroundColor: "#6046d8" }] },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => `${c.raw} triệu ₫` } } },
-            scales: {
-                y: { beginAtZero: true, ticks: { callback: v => `${v}tr` }, grid: { color: "#f0f0f4" } },
-                x: { grid: { display: false } }
-            }
-        }
-    });
-}
-
-function renderBookingStatusChart() {
-    const canvas = $("#bookingStatusChart"); if (!canvas) return;
-    if (bookingStatusChart) bookingStatusChart.destroy();
-    const c = {
-        pending: bookings.filter(b => b.status === "pending").length,
-        confirmed: bookings.filter(b => b.status === "confirmed").length,
-        cancelled: bookings.filter(b => b.status === "cancelled").length
-    };
-    bookingStatusChart = new Chart(canvas, {
-        type: "doughnut",
-        data: { labels: ["Đã xác nhận", "Chờ duyệt", "Đã hủy"], datasets: [{ data: [c.confirmed, c.pending, c.cancelled], backgroundColor: ["#36b673", "#f3a441", "#e56868"], borderWidth: 0 }] },
-        options: { cutout: "74%", responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-    });
-    $("#bookingLegend").innerHTML = `
-        <div class="legend-row"><i style="background:#36b673"></i><span>Đã xác nhận</span><strong>${c.confirmed}</strong></div>
-        <div class="legend-row"><i style="background:#f3a441"></i><span>Chờ duyệt</span><strong>${c.pending}</strong></div>
-        <div class="legend-row"><i style="background:#e56868"></i><span>Đã hủy</span><strong>${c.cancelled}</strong></div>`;
-}
-
-function renderRecentBookings() {
-    const box = $("#recentBookings"); if (!box) return;
-    const recent = [...bookings].sort((a, b) => Number(b.id) - Number(a.id)).slice(0, 5);
-    box.innerHTML = recent.length ? recent.map(b => `
-        <tr>
-            <td><strong>#${String(b.id).slice(-5)}</strong></td>
-            <td>${b.customerName}<div style="font-size:10px;color:var(--muted)">${b.customerPhone || ""}</div></td>
-            <td>${b.carName}</td>
-            <td>${fmtDate(b.startDate)}</td>
-            <td><strong>${money(b.total)}</strong></td>
-            <td><span class="status ${statusClass(b.status)}">${statusLabel(b.status)}</span></td>
-        </tr>`).join("") : `<tr><td colspan="6">Chưa có đơn đặt xe.</td></tr>`;
-}
-
-function renderAllBookings() {
-    const search = ($("#bookingSearch")?.value || "").toLowerCase();
-    const st = $("#bookingStatusFilter")?.value || "all";
-    const res = bookings.filter(b => {
-        const sMatch = String(b.id).includes(search) || (b.customerName || "").toLowerCase().includes(search) || (b.carName || "").toLowerCase().includes(search);
-        return sMatch && (st === "all" || b.status === st);
-    }).sort((a, b) => Number(b.id) - Number(a.id));
-    $("#bookingResultCount") && ($("#bookingResultCount").textContent = `${res.length} đơn`);
-    const box = $("#allBookings"); if (!box) return;
-    box.innerHTML = res.length ? res.map(b => `
-        <tr>
-            <td><strong>#${String(b.id).slice(-5)}</strong></td>
-            <td><strong>${b.customerName}</strong><div style="font-size:10px;color:var(--muted)">${b.customerEmail || ""} · ${b.customerPhone || ""}</div></td>
-            <td>${b.carName}</td>
-            <td>${fmtDate(b.startDate)} → ${fmtDate(b.endDate)}</td>
-            <td><strong>${money(b.total)}</strong></td>
-            <td><span class="status ${statusClass(b.status)}">${statusLabel(b.status)}</span></td>
-            <td style="display:flex;gap:6px;flex-wrap:wrap">
-                ${b.status === "pending" ? `<button class="small-btn" onclick="confirmBooking(${b.id})">Duyệt</button>` : ""}
-                ${b.status === "confirmed" ? `<button class="small-btn" onclick="markRented(${b.id})">Nhận xe</button>` : ""}
-                ${b.status !== "cancelled" ? `<button class="small-btn" style="background:#ffeded;color:#c04b4b" onclick="cancelBooking(${b.id})">Hủy</button>` : ""}
-            </td>
-        </tr>`).join("") : `<tr><td colspan="7">Không tìm thấy đơn phù hợp.</td></tr>`;
-}
-
-function renderFleet() {
-    const search = ($("#fleetSearch")?.value || "").toLowerCase();
-    const st = $("#fleetStatusFilter")?.value || "all";
-    const res = cars.filter(c => {
-        const sm = (c.name || "").toLowerCase().includes(search) || (c.brand || "").toLowerCase().includes(search);
-        return sm && (st === "all" || c.status === st);
-    });
-    const box = $("#fleetCards"); if (!box) return;
-    box.innerHTML = res.map(c => `
-        <article class="fleet-car-card">
-            ${carThumbHtml(c)}
-            <h3>${c.name}</h3>
-            <p>${c.brand} · ${c.type} · ${c.seats} chỗ · ${c.location}</p>
-            <div class="car-card-row">
-                <span class="car-price">${money(c.price)}/ngày</span>
-                <span class="status ${statusClass(c.status)}">${statusLabel(c.status)}</span>
-            </div>
-            <div class="car-actions">
-                <button class="small-btn" onclick="changeCarStatus(${c.id})">Đổi trạng thái</button>
-                <button class="small-btn" onclick="editCar(${c.id})">Chỉnh sửa</button>
-                <button class="small-btn" style="background:#ffeded;color:#c04b4b" onclick="deleteCar(${c.id})">Xóa</button>
-            </div>
-        </article>`).join("") || `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Không tìm thấy xe phù hợp.</div>`;
-}
-
-function renderCustomers() {
-    const host = $("#customersPage"); if (!host) return;
-    const search = ($("#customerSearch")?.value || "").toLowerCase();
-    const res = customers.filter(c =>
-        (c.name || "").toLowerCase().includes(search) ||
-        (c.email || "").toLowerCase().includes(search) ||
-        (c.phone || "").includes(search)
-    );
-    host.innerHTML = `
-        <div class="page-toolbar">
-            <div class="filter-group"><input type="search" id="customerSearch" placeholder="Tìm khách hàng..." value="${search || ""}"/></div>
-        </div>
-        <div class="panel">
-            <div class="panel-header">
-                <div><h2>Danh sách khách hàng</h2><p>${res.length} / ${customers.length} khách hàng</p></div>
-                <span class="realtime-label"><span class="live-dot"></span> Live</span>
-            </div>
-            <div class="table-scroll">
-                <table>
-                    <thead><tr><th>Khách hàng</th><th>Thông tin</th><th>Tham gia</th><th>Tổng đơn</th><th>Tổng chi tiêu</th><th>Hạng</th></tr></thead>
-                    <tbody>${res.map(c => `
-                        <tr>
-                            <td><div style="display:flex;align-items:center;gap:10px">
-                                <div class="profile-avatar" style="width:32px;height:32px;font-size:9px">${avatarInitials(c.name)}</div>
-                                <strong>${c.name}</strong>
-                            </div></td>
-                            <td>${c.email}<div style="font-size:10px;color:var(--muted)">${c.phone || ""}</div></td>
-                            <td>${fmtDate(c.joinedAt)}</td>
-                            <td><strong>${c.totalBookings || 0}</strong> đơn</td>
-                            <td><strong>${money(c.totalSpent || 0)}</strong></td>
-                            <td><span class="status ${statusClass(c.tier)}">${statusLabel(c.tier)}</span></td>
-                        </tr>`).join("")}</tbody>
-                </table>
-            </div>
-        </div>`;
-    $("#customerSearch")?.addEventListener("input", renderCustomers);
-}
-
-function renderPayments() {
-    const host = $("#paymentsPage"); if (!host) return;
-    const search = ($("#paymentSearch")?.value || "").toLowerCase();
-    const st = $("#paymentStatusFilter")?.value || "all";
-    const res = payments.filter(p => {
-        const sm = String(p.id).includes(search) || (p.customerName || "").toLowerCase().includes(search) || (p.txnCode || "").toLowerCase().includes(search);
-        return sm && (st === "all" || p.status === st);
-    });
-    const paid = payments.filter(p => p.status === "paid").reduce((s, p) => s + (Number(p.amount) || 0), 0);
-    const pending = payments.filter(p => p.status === "pending");
-    const refund = payments.filter(p => p.status === "refunded");
-    host.innerHTML = `
-        <div class="page-toolbar">
-            <div class="filter-group">
-                <input type="search" id="paymentSearch" placeholder="Tìm mã GD, khách..." value="${search || ""}"/>
-                <select id="paymentStatusFilter">
-                    <option value="all">Tất cả trạng thái</option><option value="paid">Đã thanh toán</option>
-                    <option value="pending">Chờ thanh toán</option><option value="refunded">Đã hoàn tiền</option>
-                </select>
-            </div>
-            <button class="btn btn-primary" id="exportPayBtn">↓ Xuất CSV</button>
-        </div>
-        <div class="stat-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
-            <div class="stat-card green-card"><div class="stat-icon">₫</div><span>Đã thu (tháng)</span><strong>${money(paid)}</strong><small class="positive">↑ 9.3%</small></div>
-            <div class="stat-card orange-card"><div class="stat-icon">⧗</div><span>Chờ thanh toán</span><strong>${pending.length}</strong><small>${money(pending.reduce((s,p)=>s+(Number(p.amount)||0),0))}</small></div>
-            <div class="stat-card purple-card"><div class="stat-icon">↺</div><span>Đã hoàn tiền</span><strong>${refund.length}</strong><small>${money(refund.reduce((s,p)=>s+(Number(p.amount)||0),0))}</small></div>
-        </div>
-        <div class="panel">
-            <div class="panel-header"><div><h2>Lịch sử thanh toán</h2><p>${res.length} giao dịch</p></div></div>
-            <div class="table-scroll">
-                <table>
-                    <thead><tr><th>Mã giao dịch</th><th>Khách hàng</th><th>Phương thức</th><th>Số tiền</th><th>Thời gian</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
-                    <tbody>${res.map(p => `
-                        <tr>
-                            <td><strong>${p.txnCode}</strong><div style="font-size:10px;color:var(--muted)">#${p.id}</div></td>
-                            <td><strong>${p.customerName}</strong><div style="font-size:10px;color:var(--muted)">Đơn #${p.bookingId || "-"}</div></td>
-                            <td>${p.method}</td>
-                            <td><strong>${money(p.amount)}</strong></td>
-                            <td>${p.paidAt || "—"}</td>
-                            <td><span class="status ${statusClass(p.status)}">${statusLabel(p.status)}</span></td>
-                            <td>${p.status === "pending" ? `<button class="small-btn">Xác nhận</button>` : `<button class="small-btn">Chi tiết</button>`}</td>
-                        </tr>`).join("")}</tbody>
-                </table>
-            </div>
-        </div>`;
-    $("#paymentSearch")?.addEventListener("input", renderPayments);
-    $("#paymentStatusFilter")?.addEventListener("change", renderPayments);
-    $("#paymentStatusFilter").value = st;
-    $("#exportPayBtn")?.addEventListener("click", exportPayCsv);
-}
-
-function exportPayCsv() {
-    const header = ["Mã GD", "Khách hàng", "Phương thức", "Số tiền", "Trạng thái", "Thời gian"];
-    const rows = payments.map(p => [p.txnCode, p.customerName, p.method, p.amount, statusLabel(p.status), p.paidAt || ""]);
-    const csv = [header, ...rows].map(r => r.join(",")).join("\n");
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" }));
-    link.download = "goride-payments.csv"; link.click();
-    showToast("Đã xuất thanh toán CSV.");
-}
-
-function renderMaintenancePage() {
-    const host = $("#maintenancePage"); if (!host) return;
-    const st = $("#maintStatusFilter")?.value || "all";
-    const res = maintenance.filter(m => st === "all" || m.status === st);
-    const totalCost = maintenance.reduce((s, m) => s + (Number(m.cost) || 0), 0);
-    const inp = maintenance.filter(m => m.status === "in_progress");
-    const sch = maintenance.filter(m => m.status === "scheduled");
-    host.innerHTML = `
-        <div class="page-toolbar">
-            <div class="filter-group">
-                <select id="maintStatusFilter">
-                    <option value="all">Tất cả trạng thái</option><option value="scheduled">Đã lên lịch</option>
-                    <option value="in_progress">Đang thực hiện</option><option value="completed">Hoàn thành</option>
-                </select>
-            </div>
-            <button class="btn btn-primary" id="addMaintBtn">+ Lên lịch bảo trì</button>
-        </div>
-        <div class="stat-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
-            <div class="stat-card blue-card"><div class="stat-icon">⚙</div><span>Tổng chi phí bảo trì</span><strong>${money(totalCost)}</strong><small>${maintenance.length} lượt</small></div>
-            <div class="stat-card orange-card"><div class="stat-icon">⧗</div><span>Đang thực hiện</span><strong>${inp.length}</strong><small>${money(inp.reduce((s,m)=>s+(Number(m.cost)||0),0))}</small></div>
-            <div class="stat-card green-card"><div class="stat-icon">📅</div><span>Sắp tới (đã lịch)</span><strong>${sch.length}</strong><small>${money(sch.reduce((s,m)=>s+(Number(m.cost)||0),0))}</small></div>
-        </div>
-        <div class="fleet-card-grid">
-            ${res.map(m => `
-                <article class="fleet-car-card">
-                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-                        <div class="stat-icon" style="background:#fff4e1;color:#f3a441;width:36px;height:36px;margin:0;border-radius:9px">⚙</div>
-                        <div><h3 style="font-size:13px;margin:0">${m.carName}</h3><p style="font-size:10px;color:var(--muted);margin:2px 0 0">${m.type}</p></div>
-                    </div>
-                    <p style="font-size:11px;line-height:1.6;margin-bottom:14px;color:#555">${m.note || "—"}</p>
-                    <div class="car-card-row" style="margin-bottom:10px">
-                        <span class="car-price">${money(m.cost)}</span>
-                        <span class="status ${statusClass(m.status)}">${statusLabel(m.status)}</span>
-                    </div>
-                    <div class="car-card-row" style="font-size:10px;color:var(--muted);margin-bottom:14px">
-                        <span>📅 ${fmtDate(m.startDate)}</span><span>→ ${fmtDate(m.endDate)}</span>
-                    </div>
-                    <div class="car-actions">
-                        ${m.status === "scheduled" ? `<button class="small-btn" onclick="updateMaint(${m.id},'in_progress')">Bắt đầu</button>` : ""}
-                        ${m.status === "in_progress" ? `<button class="small-btn" onclick="updateMaint(${m.id},'completed')">Hoàn thành</button>` : ""}
-                        <button class="small-btn" style="background:#ffeded;color:#c04b4b" onclick="deleteMaint(${m.id})">Xóa</button>
-                    </div>
-                </article>`).join("") || `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Không có lịch bảo trì nào.</div>`}
-        </div>`;
-    $("#maintStatusFilter")?.addEventListener("change", renderMaintenancePage);
-    $("#maintStatusFilter").value = st;
-    $("#addMaintBtn")?.addEventListener("click", async () => {
-        if (!cars.length) return showToast("Chưa có xe trong hệ thống.");
-        const car = cars[0];
-        try {
-            const m = await api("/api/users.php?action=maintenance", { method: "POST", body: JSON.stringify({
-                carId: car.id, carName: car.name, type: "Bảo dưỡng định kỳ",
-                cost: 500000, startDate: new Date().toISOString().slice(0, 10),
-                endDate: new Date().toISOString().slice(0, 10), status: "scheduled", note: "Được tạo từ dashboard"
-            }) });
-            maintenance.push(m);
-            showToast("Đã thêm lịch bảo trì mẫu.");
-            renderEverything();
-        } catch (e) { showToast(e.message); }
-    });
-}
-
-function renderAdminsList() {
-    const box = $("#adminsList"); if (!box) return;
-    box.innerHTML = `
-        <h3 style="font-size:14px;margin:0 0 10px">Danh sách admin (${admins.length})</h3>
-        <div style="display:flex;flex-direction:column;gap:8px">
-            ${admins.map(a => `
-                <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border:1px solid #eee;border-radius:10px">
-                    <div><strong style="font-size:13px">${a.name}</strong>
-                        <div style="font-size:10px;color:var(--muted)">@${a.username}${a.email ? " · " + a.email : ""}</div>
-                    </div>
-                    ${(currentAdmin && Number(a.id) !== Number(currentAdmin.id))
-                        ? `<button class="small-btn" style="background:#ffeded;color:#c04b4b" onclick="deleteAdmin(${a.id})">Xóa</button>`
-                        : `<span style="font-size:10px;color:#6046d8;font-weight:600">⦿ Bạn đang đăng nhập</span>`}
-                </div>`).join("")}
-        </div>`;
+function updateSyncLabel() {
+    if (!lastSync) return;
+    const secs = Math.round((Date.now() - lastSync) / 1000);
+    const time = secs < 30 ? t("justNow") : lastSync.toLocaleTimeString(locale(), { hour: "2-digit", minute: "2-digit" });
+    $("#lastUpdated").textContent = t("updated", { time });
 }
 
 function renderEverything() {
-    calculateStats();
-    renderRevenueChart();
-    renderBookingStatusChart();
-    renderRecentBookings();
-    renderAllBookings();
+    const pending = bookings.filter(b => b.status === "pending").length;
+    const badge = $("#pendingBadge");
+    badge.textContent = pending;
+    badge.classList.toggle("hidden", pending === 0);
+    renderDashboard();
+    renderBookings();
     renderFleet();
     renderCustomers();
     renderPayments();
-    renderMaintenancePage();
-    renderAdminsList();
+    renderMaintenance();
+    if (!$("#adminsModal").classList.contains("hidden")) renderAdminsList();
 }
 
-/* ===== ACTIONS ===== */
-window.confirmBooking = async (id) => {
-    try { const b = await api(`/api/orders.php?id=${id}`, { method: "PATCH", body: JSON.stringify({ status: "confirmed" }) });
-        const idx = bookings.findIndex(x => x.id === id); if (idx >= 0) bookings[idx] = b;
-        renderEverything(); showToast("Đã xác nhận đơn.");
-    } catch (e) { showToast(e.message); }
-};
-window.cancelBooking = async (id) => {
-    try { const b = await api(`/api/orders.php?id=${id}`, { method: "PATCH", body: JSON.stringify({ status: "cancelled" }) });
-        const idx = bookings.findIndex(x => x.id === id); if (idx >= 0) bookings[idx] = b;
-        renderEverything(); showToast("Đã hủy đơn.");
-    } catch (e) { showToast(e.message); }
-};
-window.markRented = async (id) => {
-    try { await api(`/api/orders.php?action=mark-rented&id=${id}`, { method: "PATCH" });
-        const idx = bookings.findIndex(b => b.id === id); if (idx >= 0) {
-            const c = cars.find(c => c.id === bookings[idx].carId);
-            if (c) c.status = "rented";
-        }
-        renderEverything(); showToast("Xe đã được bàn giao.");
-    } catch (e) { showToast(e.message); }
-};
-window.changeCarStatus = async (id) => {
-    const car = cars.find(c => c.id === id); if (!car) return;
-    const list = ["available", "rented", "maintenance"];
-    const next = list[(list.indexOf(car.status) + 1) % list.length];
-    try { const c = await api(`/api/products.php?action=status&id=${id}`, { method: "PATCH", body: JSON.stringify({ status: next }) });
-        const idx = cars.findIndex(x => x.id === id); if (idx >= 0) cars[idx] = c;
-        renderEverything(); showToast(`Xe chuyển sang ${statusLabel(next)}`);
-    } catch (e) { showToast(e.message); }
-};
-window.editCar = (id) => {
-    const car = cars.find(c => c.id === id); if (!car) return;
-    $("#carModalTitle").textContent = "Chỉnh sửa xe";
-    $("#carId").value = car.id; $("#carName").value = car.name; $("#carBrand").value = car.brand;
-    $("#carType").value = car.type || "Sedan"; $("#carSeats").value = car.seats || 5;
-    $("#carPrice").value = car.price || 0; $("#carLocation").value = car.location || "Hà Nội";
-    const image = (car.image || "").trim();
-    $("#carImage").value = image;
-    $("#carImageUrl").value = image;
-    setCarImagePreview(image);
-    $("#carModal").classList.remove("hidden");
-};
-window.deleteCar = async (id) => {
-    if (!confirm("Bạn có chắc muốn xóa xe này?")) return;
-    try { await api(`/api/products.php?id=${id}`, { method: "DELETE" });
-        cars = cars.filter(c => c.id !== id); renderEverything(); showToast("Đã xóa xe.");
-    } catch (e) { showToast(e.message); }
-};
-window.updateMaint = async (id, st) => {
-    try { const m = await api(`/api/users.php?action=maintenance&id=${id}`, { method: "PATCH", body: JSON.stringify({ status: st }) });
-        const idx = maintenance.findIndex(x => x.id === id); if (idx >= 0) maintenance[idx] = m;
-        if (m.carId) {
-            const cIdx = cars.findIndex(c => c.id === m.carId);
-            if (cIdx >= 0) {
-                if (st === "in_progress") cars[cIdx].status = "maintenance";
-                else if (st === "completed" && cars[cIdx].status === "maintenance") cars[cIdx].status = "available";
+/* ================== Dashboard ================== */
+
+function inRange(dateValue, fromDays, toDays) {
+    const d = parseDate(dateValue);
+    if (!d) return false;
+    const now = Date.now();
+    return d.getTime() <= now - toDays * 86400000 && d.getTime() > now - fromDays * 86400000;
+}
+
+function renderDashboard() {
+    const host = $("#dashboardPage");
+    if (!dataLoaded) {
+        host.innerHTML = `<div class="stat-grid">${Array.from({ length: 4 }, () => `<div class="stat-card"><span class="sk" style="height:14px;width:50%"></span><span class="sk" style="height:28px;width:70%;margin-top:18px"></span><span class="sk" style="height:12px;width:40%;margin-top:12px"></span></div>`).join("")}</div>`;
+        return;
+    }
+
+    const confirmed = bookings.filter(b => b.status === "confirmed");
+    const revenue = confirmed.reduce((s, b) => s + (Number(b.total) || 0), 0);
+    const revCur = confirmed.filter(b => inRange(b.createdAt, 30, 0)).reduce((s, b) => s + (Number(b.total) || 0), 0);
+    const revPrev = confirmed.filter(b => inRange(b.createdAt, 60, 30)).reduce((s, b) => s + (Number(b.total) || 0), 0);
+    const pending = bookings.filter(b => b.status === "pending");
+    const rented = cars.filter(c => c.status === "rented").length;
+    const available = cars.filter(c => c.status === "available").length;
+    const inMaint = cars.filter(c => c.status === "maintenance").length;
+    const newCustomers = customers.filter(c => inRange(c.joinedAt, 30, 0)).length;
+
+    const statCard = (i, tone, ico, label, value, foot, attrs = "") => `
+        <div class="stat-card tone-${tone}${attrs ? " clickable" : ""}" style="--i:${i}" ${attrs}>
+            <div class="stat-top"><span class="stat-label">${esc(label)}</span><span class="stat-icon">${icon(ico)}</span></div>
+            <div class="stat-value">${value}</div>
+            <div class="stat-foot">${foot}</div>
+        </div>`;
+
+    const statusCounts = ["confirmed", "pending", "cancelled"].map(s => bookings.filter(b => b.status === s).length);
+    const statusColors = [cssVar("--green"), cssVar("--orange"), cssVar("--red")];
+    const totalB = bookings.length || 1;
+
+    const recent = [...bookings].sort((a, b) => Number(b.id) - Number(a.id)).slice(0, 5);
+    const maintActive = maintenance.filter(m => m.status === "in_progress");
+    const todo = [
+        ...pending.slice(0, 4).map(b => `
+            <div class="attention-item">
+                <span class="stat-icon" style="color:var(--orange);background:var(--orange-50)">${icon("clipboard")}</span>
+                <div><strong>#${esc(String(b.id).slice(-5))} · ${esc(b.customerName)}</strong><small>${esc(b.carName)} · ${esc(t("waitingApproval", { date: fmtDate(b.startDate) }))}</small></div>
+                <button class="act ok" data-act="approve" data-id="${Number(b.id)}">${icon("check")} ${esc(t("approve"))}</button>
+            </div>`),
+        ...maintActive.slice(0, 2).map(m => `
+            <div class="attention-item">
+                <span class="stat-icon" style="color:var(--violet);background:var(--violet-50)">${icon("wrench")}</span>
+                <div><strong>${esc(m.carName)}</strong><small>${esc(t("inMaintenance", { date: fmtDate(m.endDate) }))}</small></div>
+                <button class="act" data-go="maintenance">${icon("arrow")}</button>
+            </div>`)
+    ];
+
+    host.innerHTML = `
+        <div class="stat-grid">
+            ${statCard(0, "violet", "wallet", t("revenue"), esc(shortMoney(revenue)) + " ₫", `${trendHtml(revCur, revPrev)} ${esc(t("vsPrev"))}`)}
+            ${statCard(1, "orange", "clipboard", t("pendingBookings"), pending.length, esc(pending.length ? t("needAction") : t("allClear")), `data-go="bookings" data-tab="pending"`)}
+            ${statCard(2, "blue", "car", t("activeRentals"), rented, esc(t("ofCars", { n: cars.length })))}
+            ${statCard(3, "green", "users", t("customersStat"), customers.length, esc(t("newCustomers", { n: newCustomers })))}
+        </div>
+
+        <div class="dash-grid">
+            <div class="panel">
+                <div class="panel-header">
+                    <div><h2>${esc(t("revenueChart"))}</h2><p id="rangeTotal">${esc(t("revenueChartSub"))}</p></div>
+                    ${tabsHtml("revenueRange", String(ui.revenueRange), [["7", t("days7")], ["30", t("days30")]])}
+                </div>
+                <div class="chart-box"><canvas id="revenueChart"></canvas></div>
+            </div>
+            <div class="panel">
+                <div class="panel-header"><div><h2>${esc(t("bookingStatus"))}</h2><p>${esc(t("bookingStatusSub"))}</p></div></div>
+                <div class="donut-box">
+                    <canvas id="statusChart"></canvas>
+                    <div class="donut-center"><strong>${bookings.length}</strong><span>${esc(t("totalBookings"))}</span></div>
+                </div>
+                <div class="legend">
+                    ${["confirmed", "pending", "cancelled"].map((s, i) => `
+                        <div class="legend-row"><i style="background:${statusColors[i]}"></i><span>${esc(statusLabel(s))}</span><strong>${statusCounts[i]}</strong><em>${Math.round(statusCounts[i] / totalB * 100)}%</em></div>`).join("")}
+                </div>
+            </div>
+        </div>
+
+        <div class="dash-grid" style="align-items:start">
+            <div class="panel">
+                <div class="panel-header">
+                    <div><h2>${esc(t("recentBookings"))}</h2><p>${esc(t("recentBookingsSub"))}</p></div>
+                    <button class="text-btn" data-go="bookings">${esc(t("viewAll"))} ${icon("arrow")}</button>
+                </div>
+                <div class="table-scroll">
+                    ${recent.length ? `<table>
+                        <thead><tr><th>${esc(t("code"))}</th><th>${esc(t("customer"))}</th><th>${esc(t("car"))}</th><th>${esc(t("total"))}</th><th>${esc(t("status"))}</th></tr></thead>
+                        <tbody>${recent.map(b => `
+                            <tr class="clickable" data-detail="${Number(b.id)}">
+                                <td><span class="code">#${esc(String(b.id).slice(-5))}</span></td>
+                                <td><span class="cell-main">${esc(b.customerName)}</span><span class="cell-sub">${esc(fmtDate(b.startDate))}</span></td>
+                                <td>${esc(b.carName)}</td>
+                                <td class="money">${esc(money(b.total))}</td>
+                                <td>${statusBadge(b.status)}</td>
+                            </tr>`).join("")}</tbody>
+                    </table>` : emptyState("clipboard", t("noBookings"))}
+                </div>
+            </div>
+            <div style="display:grid;gap:16px;align-content:start">
+                <div class="panel">
+                    <div class="panel-header">
+                        <div><h2>${esc(t("fleetStatus"))}</h2><p>${esc(t("fleetStatusSub"))}</p></div>
+                        <button class="text-btn" data-go="fleet">${esc(t("manage"))} ${icon("arrow")}</button>
+                    </div>
+                    <div class="fleet-bars">
+                        ${[["available", available, "--green"], ["rented", rented, "--blue"], ["maintenance", inMaint, "--violet"]].map(([s, n, c]) => `
+                            <div class="fleet-bar-row">
+                                <div class="row-head"><span>${esc(statusLabel(s))}</span><strong>${n} / ${cars.length}</strong></div>
+                                <div class="bar"><span data-w="${cars.length ? (n / cars.length * 100).toFixed(1) : 0}" style="background:var(${c})"></span></div>
+                            </div>`).join("")}
+                    </div>
+                </div>
+                <div class="panel">
+                    <div class="panel-header"><div><h2>${esc(t("attention"))}</h2><p>${esc(t("attentionSub"))}</p></div></div>
+                    <div class="attention">${todo.length ? todo.join("") : `<p class="muted" style="padding:4px 0 6px">${esc(t("nothingToDo"))}</p>`}</div>
+                </div>
+            </div>
+        </div>`;
+
+    requestAnimationFrame(() => $$(".bar > span", host).forEach(s => { s.style.width = s.dataset.w + "%"; }));
+    renderCharts(statusCounts, statusColors);
+}
+
+function renderCharts(statusCounts, statusColors) {
+    if (typeof Chart === "undefined") return;
+    const text = cssVar("--muted");
+    const grid = cssVar("--line");
+    const primary = cssVar("--primary");
+
+    // Doanh thu theo ngày đặt của các đơn đã xác nhận
+    const days = ui.revenueRange;
+    const labels = [], keys = [];
+    for (let i = days - 1; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        keys.push(dayKey(d));
+        labels.push(d.toLocaleDateString(locale(), { day: "2-digit", month: "2-digit" }));
+    }
+    const sums = Object.fromEntries(keys.map(k => [k, 0]));
+    bookings.filter(b => b.status === "confirmed").forEach(b => {
+        const d = parseDate(b.createdAt);
+        if (!d) return;
+        const k = dayKey(d);
+        if (k in sums) sums[k] += Number(b.total) || 0;
+    });
+    const values = keys.map(k => sums[k]);
+    const rangeTotal = values.reduce((a, b) => a + b, 0);
+    const totalEl = $("#rangeTotal");
+    if (totalEl) totalEl.textContent = `${t("revenueChartSub")} · ${t("rangeTotal", { v: money(rangeTotal) })}`;
+
+    revenueChart?.destroy();
+    const canvas = $("#revenueChart");
+    if (canvas) {
+        const ctx = canvas.getContext("2d");
+        const gradient = ctx.createLinearGradient(0, 0, 0, 260);
+        gradient.addColorStop(0, primary + "55");
+        gradient.addColorStop(1, primary + "00");
+        revenueChart = new Chart(canvas, {
+            type: days > 7 ? "bar" : "line",
+            data: {
+                labels,
+                datasets: [{
+                    label: t("revenueChart"),
+                    data: values,
+                    borderColor: primary,
+                    backgroundColor: days > 7 ? primary : gradient,
+                    borderWidth: days > 7 ? 0 : 3,
+                    borderRadius: 6,
+                    fill: true,
+                    tension: .4,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: cssVar("--surface"),
+                    pointBorderColor: primary,
+                    pointBorderWidth: 2,
+                    maxBarThickness: 18
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { intersect: false, mode: "index" },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: c => " " + money(c.raw) } }
+                },
+                scales: {
+                    y: { beginAtZero: true, suggestedMax: Math.max(...values) > 0 ? undefined : 1000000, border: { display: false }, grid: { color: grid }, ticks: { color: text, maxTicksLimit: 6, callback: v => shortMoney(v) } },
+                    x: { grid: { display: false }, border: { display: false }, ticks: { color: text, maxRotation: 0, autoSkipPadding: 12 } }
+                }
             }
-        }
-        renderEverything(); showToast(`Cập nhật: ${statusLabel(st)}`);
-    } catch (e) { showToast(e.message); }
-};
-window.deleteMaint = async (id) => {
-    if (!confirm("Xóa lịch bảo trì này?")) return;
-    try { await api(`/api/users.php?action=maintenance&id=${id}`, { method: "DELETE" });
-        maintenance = maintenance.filter(m => m.id !== id); renderEverything(); showToast("Đã xóa lịch bảo trì.");
-    } catch (e) { showToast(e.message); }
-};
-window.deleteAdmin = async (id) => {
-    if (!confirm("Bạn có chắc muốn xóa admin này?")) return;
-    try { await api(`/api/login.php?action=admins&id=${id}`, { method: "DELETE" });
-        admins = admins.filter(a => Number(a.id) !== Number(id)); renderAdminsList(); showToast("Đã xóa admin.");
-    } catch (e) { showToast(e.message); }
-};
+        });
+    }
 
-/* ===== CAR MODAL ===== */
-$("#addCarBtn")?.addEventListener("click", () => {
-    $("#carModalTitle").textContent = "Thêm xe mới";
-    $("#carForm").reset(); $("#carId").value = ""; $("#carSeats").value = 5; $("#carLocation").value = "Hà Nội";
-    resetCarImageFields();
-    $("#carModal").classList.remove("hidden");
-});
+    statusChart?.destroy();
+    const donut = $("#statusChart");
+    if (donut) {
+        statusChart = new Chart(donut, {
+            type: "doughnut",
+            data: {
+                labels: ["confirmed", "pending", "cancelled"].map(statusLabel),
+                datasets: [{ data: statusCounts, backgroundColor: statusColors, borderWidth: 0, hoverOffset: 6 }]
+            },
+            options: { cutout: "76%", responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+    }
+}
 
-$("#carImageUrl")?.addEventListener("input", () => {
-    const url = $("#carImageUrl").value.trim();
-    $("#carImage").value = url;
-    setCarImagePreview(url);
-});
+/* ================== Đơn đặt xe ================== */
 
-$("#carImageClearBtn")?.addEventListener("click", () => {
-    resetCarImageFields();
-});
+function bookingActions(b) {
+    const id = Number(b.id);
+    return `
+        ${b.status === "pending" ? `<button class="act ok" data-act="approve" data-id="${id}">${icon("check")} ${esc(t("approve"))}</button>` : ""}
+        ${b.status === "confirmed" ? `<button class="act" data-act="handover" data-id="${id}">${icon("key-round")} ${esc(t("handover"))}</button>` : ""}
+        ${b.status !== "cancelled" ? `<button class="act danger icon-only" data-act="cancel" data-id="${id}" title="${esc(t("cancel"))}" aria-label="${esc(t("cancel"))}">${icon("x")}</button>` : ""}`;
+}
 
-$("#carForm")?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const btn = $("#carSaveBtn");
-    if (btn) { btn.disabled = true; btn.textContent = "Đang lưu..."; }
+function renderBookings() {
+    const host = $("#bookingsPage");
+    const q = ui.bookingSearch.toLowerCase();
+    const counts = { all: bookings.length };
+    ["pending", "confirmed", "cancelled"].forEach(s => { counts[s] = bookings.filter(b => b.status === s).length; });
+    const rows = bookings.filter(b => {
+        const match = !q || String(b.id).includes(q) || (b.customerName || "").toLowerCase().includes(q)
+            || (b.carName || "").toLowerCase().includes(q) || (b.customerPhone || "").replace(/\s/g, "").includes(q.replace(/\s/g, ""))
+            || (b.customerEmail || "").toLowerCase().includes(q);
+        return match && (ui.bookingTab === "all" || b.status === ui.bookingTab);
+    }).sort((a, b) => Number(b.id) - Number(a.id));
+
+    const focused = document.activeElement?.id === "bookingSearch";
+    host.innerHTML = `
+        <div class="toolbar">
+            <div class="toolbar-left">
+                ${tabsHtml("bookingTab", ui.bookingTab, [["all", t("all"), counts.all], ["pending", t("pending"), counts.pending], ["confirmed", t("confirmed"), counts.confirmed], ["cancelled", t("cancelled"), counts.cancelled]])}
+                <label class="search-input">${icon("search")}<input type="search" id="bookingSearch" placeholder="${esc(t("searchBookings"))}" value="${esc(ui.bookingSearch)}" /><kbd>/</kbd></label>
+            </div>
+            <button class="btn btn-outline" id="exportBookings">${icon("download")} ${esc(t("exportCsv"))}</button>
+        </div>
+        <div class="panel">
+            <div class="table-scroll">
+                ${rows.length ? `<table>
+                    <thead><tr><th>${esc(t("code"))}</th><th>${esc(t("customer"))}</th><th>${esc(t("car"))}</th><th>${esc(t("dates"))}</th><th>${esc(t("total"))}</th><th>${esc(t("status"))}</th><th>${esc(t("actions"))}</th></tr></thead>
+                    <tbody>${rows.map(b => `
+                        <tr class="clickable" data-detail="${Number(b.id)}">
+                            <td><span class="code">#${esc(String(b.id).slice(-5))}</span><span class="cell-sub">${esc(fmtDate(b.createdAt))}</span></td>
+                            <td><span class="cell-main">${esc(b.customerName)}</span><span class="cell-sub">${esc(b.customerPhone || "")}</span></td>
+                            <td><span class="cell-main">${esc(b.carName)}</span><span class="cell-sub">${esc(city(b.location))}</span></td>
+                            <td>${esc(fmtDate(b.startDate))} → ${esc(fmtDate(b.endDate))}<span class="cell-sub">${esc(t("nDays", { n: nightCount(b.startDate, b.endDate) }))}</span></td>
+                            <td class="money">${esc(money(b.total))}</td>
+                            <td>${statusBadge(b.status)}</td>
+                            <td><div class="actions">${bookingActions(b)}</div></td>
+                        </tr>`).join("")}</tbody>
+                </table>` : emptyState("clipboard", t("noBookings"), t("noBookingsHint"))}
+            </div>
+        </div>`;
+    if (focused) {
+        const inp = $("#bookingSearch");
+        inp.focus();
+        inp.setSelectionRange(inp.value.length, inp.value.length);
+    }
+}
+
+function openBookingDetail(id) {
+    const b = bookings.find(x => Number(x.id) === Number(id));
+    if (!b) return;
+    $("#bookingModalTitle").textContent = t("bookingDetail", { id: String(b.id).slice(-5) });
+    const phoneHref = String(b.customerPhone || "").replace(/[^\d+]/g, "");
+    $("#bookingDetail").innerHTML = `
+        <div style="margin-bottom:10px">${statusBadge(b.status)}</div>
+        <div class="detail-list">
+            <div class="detail-row"><span>${esc(t("customer"))}</span><strong>${esc(b.customerName)}</strong></div>
+            <div class="detail-row"><span>${esc(t("phone"))}</span><a href="tel:${esc(phoneHref)}">${esc(b.customerPhone)}</a></div>
+            <div class="detail-row"><span>Email</span><a href="mailto:${esc(b.customerEmail)}">${esc(b.customerEmail)}</a></div>
+            <div class="detail-row"><span>${esc(t("car"))}</span><strong>${esc(b.carName)}</strong></div>
+            <div class="detail-row"><span>${esc(t("pickup"))}</span><strong>${esc(fmtDate(b.startDate))}</strong></div>
+            <div class="detail-row"><span>${esc(t("return"))}</span><strong>${esc(fmtDate(b.endDate))} · ${esc(t("nDays", { n: nightCount(b.startDate, b.endDate) }))}</strong></div>
+            <div class="detail-row"><span>${esc(t("location"))}</span><strong>${esc(city(b.location))}</strong></div>
+            <div class="detail-row"><span>${esc(t("createdAt"))}</span><strong>${esc(fmtDateTime(b.createdAt))}</strong></div>
+        </div>
+        <div class="detail-total"><span>${esc(t("total"))}</span><strong>${esc(money(b.total))}</strong></div>
+        <div class="modal-actions">
+            <a class="btn btn-outline" href="tel:${esc(phoneHref)}">${icon("phone")} ${esc(t("call"))}</a>
+            ${b.status !== "cancelled" ? `<button class="btn btn-ghost" data-act="cancel" data-id="${Number(b.id)}" style="color:var(--red)">${esc(t("cancel"))}</button>` : ""}
+            ${b.status === "pending" ? `<button class="btn btn-primary" data-act="approve" data-id="${Number(b.id)}">${icon("check")} ${esc(t("approve"))}</button>` : ""}
+            ${b.status === "confirmed" ? `<button class="btn btn-primary" data-act="handover" data-id="${Number(b.id)}">${icon("key-round")} ${esc(t("handover"))}</button>` : ""}
+        </div>`;
+    openModal("bookingModal");
+}
+
+async function bookingAction(act, id) {
+    const b = bookings.find(x => Number(x.id) === Number(id));
+    if (!b) return;
+    const short = String(b.id).slice(-5);
     try {
-        const image = ($("#carImageUrl").value || $("#carImage").value || "").trim();
-        const data = {
-            name: $("#carName").value, brand: $("#carBrand").value, type: $("#carType").value,
-            seats: Number($("#carSeats").value), price: Number($("#carPrice").value),
-            location: $("#carLocation").value, image
-        };
+        if (act === "approve") {
+            const updated = await api(`/api/orders.php?id=${Number(id)}`, { method: "PATCH", body: JSON.stringify({ status: "confirmed" }) });
+            Object.assign(b, updated);
+            showToast(t("approved", { id: short }), "success");
+        } else if (act === "cancel") {
+            const ok = await confirmDialog({
+                title: t("confirmCancelTitle", { id: short }),
+                text: t("confirmCancelText", { name: b.customerName, car: b.carName }),
+                okText: t("confirmCancelOk")
+            });
+            if (!ok) return;
+            const updated = await api(`/api/orders.php?id=${Number(id)}`, { method: "PATCH", body: JSON.stringify({ status: "cancelled" }) });
+            Object.assign(b, updated);
+            const car = cars.find(c => c.id === b.carId);
+            if (car && car.status === "rented") car.status = "available";
+            showToast(t("cancelledToast", { id: short }), "success");
+        } else if (act === "handover") {
+            await api(`/api/orders.php?action=mark-rented&id=${Number(id)}`, { method: "PATCH" });
+            const car = cars.find(c => c.id === b.carId);
+            if (car) car.status = "rented";
+            showToast(t("handedOver", { id: short }), "success");
+        }
+        closeModal("bookingModal");
+        renderEverything();
+    } catch (e) {
+        showToast(e.message, "error");
+    }
+}
+
+/* ================== Đội xe ================== */
+
+function renderFleet() {
+    const host = $("#fleetPage");
+    const q = ui.fleetSearch.toLowerCase();
+    const list = cars.filter(c => {
+        const match = !q || (c.name || "").toLowerCase().includes(q) || (c.brand || "").toLowerCase().includes(q);
+        return match && (ui.fleetStatus === "all" || c.status === ui.fleetStatus);
+    });
+    const counts = { all: cars.length };
+    ["available", "rented", "maintenance"].forEach(s => { counts[s] = cars.filter(c => c.status === s).length; });
+    const focused = document.activeElement?.id === "fleetSearch";
+
+    host.innerHTML = `
+        <div class="toolbar">
+            <div class="toolbar-left">
+                ${tabsHtml("fleetStatus", ui.fleetStatus, [["all", t("all"), counts.all], ["available", t("available"), counts.available], ["rented", t("rented"), counts.rented], ["maintenance", t("maintenance"), counts.maintenance]])}
+                <label class="search-input">${icon("search")}<input type="search" id="fleetSearch" placeholder="${esc(t("searchCars"))}" value="${esc(ui.fleetSearch)}" /><kbd>/</kbd></label>
+            </div>
+            <button class="btn btn-primary" id="addCarBtn">${icon("plus")} ${esc(t("addCar"))}</button>
+        </div>
+        ${list.length ? `<div class="fleet-grid">${list.map((c, i) => {
+        const img = safeUrl(c.image);
+        const type = (c.type || "").toLowerCase();
+        return `
+            <article class="fleet-card" style="--i:${i}">
+                <div class="fleet-thumb ${esc(type)}">
+                    ${img ? `<img src="${esc(img)}" alt="${esc(c.name)}" loading="lazy" />` : icon("car")}
+                    ${statusBadge(c.status)}
+                    ${c.featured ? `<span class="featured-mark" title="${esc(t("featured"))}">${icon("star")}</span>` : ""}
+                </div>
+                <div class="fleet-body">
+                    <h3>${esc(c.name)}</h3>
+                    <div class="fleet-meta">
+                        <span>${esc(c.brand)} · ${esc(c.type)}</span>
+                        <span>${icon("users")} ${esc(t("seats", { n: c.seats }))}</span>
+                        <span>${icon("pin")} ${esc(city(c.location))}</span>
+                    </div>
+                    <div class="fleet-price">${esc(money(c.price))}<small>${esc(t("perDay"))}</small></div>
+                    <div class="fleet-foot">
+                        <select data-car-status="${Number(c.id)}" aria-label="${esc(t("status"))}">
+                            ${["available", "rented", "maintenance"].map(s => `<option value="${s}" ${s === c.status ? "selected" : ""}>${esc(statusLabel(s))}</option>`).join("")}
+                        </select>
+                        <button class="act icon-only" data-car-edit="${Number(c.id)}" title="${esc(t("edit"))}" aria-label="${esc(t("edit"))}">${icon("edit")}</button>
+                        <button class="act danger icon-only" data-car-delete="${Number(c.id)}" title="${esc(t("delete"))}" aria-label="${esc(t("delete"))}">${icon("trash")}</button>
+                    </div>
+                </div>
+            </article>`;
+    }).join("")}</div>` : `<div class="panel">${emptyState("car", t("noCars"), t("noCarsHint"))}</div>`}`;
+
+    if (focused) {
+        const inp = $("#fleetSearch");
+        inp.focus();
+        inp.setSelectionRange(inp.value.length, inp.value.length);
+    }
+}
+
+function setCarImagePreview(src) {
+    const img = $("#carImagePreviewImg");
+    const url = safeUrl(src);
+    if (url) {
+        img.src = url;
+        img.hidden = false;
+        $("#carImagePlaceholder").hidden = true;
+        $("#carImagePreview").classList.add("has-photo");
+    } else {
+        img.removeAttribute("src");
+        img.hidden = true;
+        $("#carImagePlaceholder").hidden = false;
+        $("#carImagePreview").classList.remove("has-photo");
+    }
+}
+
+function openCarModal(car = null) {
+    $("#carForm").reset();
+    $("#carModalTitle").textContent = car ? t("editCar") : t("newCar");
+    $("#carId").value = car ? car.id : "";
+    $("#carName").value = car?.name || "";
+    $("#carBrand").value = car?.brand || "";
+    $("#carType").value = car?.type || "Sedan";
+    $("#carSeats").value = car?.seats || 5;
+    $("#carPrice").value = car?.price || "";
+    const loc = car?.location || "Hà Nội";
+    if (![...$("#carLocation").options].some(o => o.value === loc)) {
+        $("#carLocation").add(new Option(loc, loc));
+    }
+    $("#carLocation").value = loc;
+    $("#carFeatured").checked = !!car?.featured;
+    $("#carImageUrl").value = car?.image || "";
+    setCarImagePreview(car?.image || "");
+    openModal("carModal");
+}
+
+async function saveCar(e) {
+    e.preventDefault();
+    const name = $("#carName").value.trim();
+    const price = Number($("#carPrice").value);
+    const image = $("#carImageUrl").value.trim();
+    if (!name) { $("#carName").focus(); return showToast(t("carNameRequired"), "error"); }
+    if (!(price > 0)) { $("#carPrice").focus(); return showToast(t("carPriceRequired"), "error"); }
+    if (image && !safeUrl(image)) { $("#carImageUrl").focus(); return showToast(t("imageInvalid"), "error"); }
+
+    const data = {
+        name, price, image,
+        brand: $("#carBrand").value.trim(),
+        type: $("#carType").value,
+        seats: Number($("#carSeats").value) || 5,
+        location: $("#carLocation").value,
+        featured: $("#carFeatured").checked
+    };
+    const btn = $("#carSaveBtn");
+    setLoading(btn, true);
+    try {
         const id = $("#carId").value;
         if (id) {
-            const c = await api(`/api/products.php?id=${id}`, { method: "PUT", body: JSON.stringify(data) });
-            const idx = cars.findIndex(x => x.id === c.id); if (idx >= 0) cars[idx] = c;
-            showToast("Đã cập nhật xe.");
+            const c = await api(`/api/products.php?id=${Number(id)}`, { method: "PUT", body: JSON.stringify(data) });
+            const idx = cars.findIndex(x => x.id === c.id);
+            if (idx >= 0) cars[idx] = c;
+            showToast(t("carSaved"), "success");
         } else {
             const c = await api("/api/products.php", { method: "POST", body: JSON.stringify(data) });
-            cars.push(c); showToast("Đã thêm xe mới.");
+            cars.push(c);
+            showToast(t("carAdded"), "success");
         }
-        $("#carModal").classList.add("hidden"); renderEverything();
-    } catch (err) { showToast(err.message); }
-    finally {
-        if (btn) { btn.disabled = false; btn.textContent = "Lưu thông tin"; }
+        closeModal("carModal");
+        renderEverything();
+    } catch (err) {
+        showToast(err.message, "error");
+    } finally {
+        setLoading(btn, false);
     }
-});
+}
 
-/* ===== CHANGE PASSWORD ===== */
-function openChangePwd() { $("#changePwdForm").reset(); $("#changePwdModal").classList.remove("hidden"); }
-$("#changePwdBtn")?.addEventListener("click", openChangePwd);
-$("#changePwdSideBtn")?.addEventListener("click", openChangePwd);
-$("#changePwdForm")?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const oldP = $("#pwdOld").value, newP = $("#pwdNew").value, newP2 = $("#pwdNew2").value;
-    if (newP.length < 6) return showToast("Mật khẩu mới ít nhất 6 ký tự");
-    if (newP !== newP2) return showToast("Xác nhận mật khẩu không khớp");
+async function changeCarStatus(id, status) {
+    const car = cars.find(c => c.id === id);
+    if (!car) return;
     try {
-        await api("/api/login.php?action=change-password", { method: "POST", body: JSON.stringify({ oldPassword: oldP, newPassword: newP }) });
-        $("#changePwdModal").classList.add("hidden");
-        showToast("Đổi mật khẩu thành công.");
-    } catch (e) { showToast(e.message); }
-});
+        const c = await api(`/api/products.php?action=status&id=${Number(id)}`, { method: "PATCH", body: JSON.stringify({ status }) });
+        Object.assign(car, c);
+        showToast(t("carStatusChanged", { car: car.name, status: statusLabel(status) }), "success");
+        renderEverything();
+    } catch (e) {
+        showToast(e.message, "error");
+        renderFleet();
+    }
+}
 
-/* ===== NEW ADMIN ===== */
-function openNewAdmin() { $("#newAdminForm").reset(); renderAdminsList(); $("#newAdminModal").classList.remove("hidden"); }
-$("#newAdminBtn")?.addEventListener("click", openNewAdmin);
-$("#newAdminSideBtn")?.addEventListener("click", openNewAdmin);
-$("#newAdminForm")?.addEventListener("submit", async (e) => {
+async function deleteCar(id) {
+    const car = cars.find(c => c.id === id);
+    if (!car) return;
+    const ok = await confirmDialog({ title: t("confirmDeleteCar", { car: car.name }), text: t("confirmDeleteCarText"), okText: t("delete") });
+    if (!ok) return;
+    try {
+        await api(`/api/products.php?id=${Number(id)}`, { method: "DELETE" });
+        cars = cars.filter(c => c.id !== id);
+        showToast(t("carDeleted"), "success");
+        renderEverything();
+    } catch (e) {
+        showToast(e.message, "error");
+    }
+}
+
+/* ================== Khách hàng ================== */
+
+function renderCustomers() {
+    const host = $("#customersPage");
+    const q = ui.customerSearch.toLowerCase();
+    const list = customers.filter(c => !q
+        || (c.name || "").toLowerCase().includes(q)
+        || (c.email || "").toLowerCase().includes(q)
+        || (c.phone || "").replace(/\s/g, "").includes(q.replace(/\s/g, ""))
+    ).sort((a, b) => (Number(b.totalSpent) || 0) - (Number(a.totalSpent) || 0));
+    const focused = document.activeElement?.id === "customerSearch";
+
+    host.innerHTML = `
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <label class="search-input">${icon("search")}<input type="search" id="customerSearch" placeholder="${esc(t("searchCustomers"))}" value="${esc(ui.customerSearch)}" /><kbd>/</kbd></label>
+                <span class="muted">${esc(t("customersCount", { n: list.length }))}</span>
+            </div>
+            <button class="btn btn-outline" id="exportCustomers">${icon("download")} ${esc(t("exportCsv"))}</button>
+        </div>
+        <div class="panel">
+            <div class="table-scroll">
+                ${list.length ? `<table>
+                    <thead><tr><th>${esc(t("customer"))}</th><th>${esc(t("phone"))}</th><th>${esc(t("joined"))}</th><th>${esc(t("bookingsCount"))}</th><th>${esc(t("spent"))}</th><th>${esc(t("tier"))}</th></tr></thead>
+                    <tbody>${list.map(c => `
+                        <tr>
+                            <td><div class="cell-user"><span class="avatar round">${esc(initials(c.name))}</span><div><span class="cell-main">${esc(c.name)}</span><span class="cell-sub">${esc(c.email)}</span></div></div></td>
+                            <td>${esc(c.phone || "—")}</td>
+                            <td>${esc(fmtDate(c.joinedAt))}</td>
+                            <td><strong>${Number(c.totalBookings) || 0}</strong></td>
+                            <td class="money">${esc(money(c.totalSpent || 0))}</td>
+                            <td><span class="tier ${esc(c.tier)}">${icon("star")} ${esc(statusLabel(c.tier))}</span></td>
+                        </tr>`).join("")}</tbody>
+                </table>` : emptyState("users", t("noCustomers"))}
+            </div>
+        </div>`;
+    if (focused) {
+        const inp = $("#customerSearch");
+        inp.focus();
+        inp.setSelectionRange(inp.value.length, inp.value.length);
+    }
+}
+
+/* ================== Thanh toán ================== */
+
+function renderPayments() {
+    const host = $("#paymentsPage");
+    const q = ui.paymentSearch.toLowerCase();
+    const list = payments.filter(p => {
+        const match = !q || String(p.id).includes(q) || (p.customerName || "").toLowerCase().includes(q) || (p.txnCode || "").toLowerCase().includes(q);
+        return match && (ui.paymentTab === "all" || p.status === ui.paymentTab);
+    });
+    const sum = (s) => payments.filter(p => p.status === s).reduce((a, p) => a + (Number(p.amount) || 0), 0);
+    const cnt = (s) => payments.filter(p => p.status === s).length;
+    const focused = document.activeElement?.id === "paymentSearch";
+    const card = (i, tone, ico, label, value, foot) => `
+        <div class="stat-card tone-${tone}" style="--i:${i}">
+            <div class="stat-top"><span class="stat-label">${esc(label)}</span><span class="stat-icon">${icon(ico)}</span></div>
+            <div class="stat-value">${esc(value)}</div><div class="stat-foot">${esc(foot)}</div>
+        </div>`;
+
+    host.innerHTML = `
+        <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
+            ${card(0, "green", "wallet", t("paidTotal"), money(sum("paid")), t("transactions", { n: cnt("paid") }))}
+            ${card(1, "orange", "clock", t("pendingPay"), money(sum("pending")), t("transactions", { n: cnt("pending") }))}
+            ${card(2, "violet", "refresh", t("refundedPay"), money(sum("refunded")), t("transactions", { n: cnt("refunded") }))}
+        </div>
+        <div class="toolbar">
+            <div class="toolbar-left">
+                ${tabsHtml("paymentTab", ui.paymentTab, [["all", t("all"), payments.length], ["paid", t("paid"), cnt("paid")], ["pending", t("pending"), cnt("pending")], ["refunded", t("refunded"), cnt("refunded")]])}
+                <label class="search-input">${icon("search")}<input type="search" id="paymentSearch" placeholder="${esc(t("searchPayments"))}" value="${esc(ui.paymentSearch)}" /><kbd>/</kbd></label>
+            </div>
+            <button class="btn btn-outline" id="exportPayments">${icon("download")} ${esc(t("exportCsv"))}</button>
+        </div>
+        <div class="panel">
+            <div class="table-scroll">
+                ${list.length ? `<table>
+                    <thead><tr><th>${esc(t("txn"))}</th><th>${esc(t("customer"))}</th><th>${esc(t("method"))}</th><th>${esc(t("amount"))}</th><th>${esc(t("time"))}</th><th>${esc(t("status"))}</th></tr></thead>
+                    <tbody>${list.map(p => `
+                        <tr>
+                            <td><span class="code">${esc(p.txnCode)}</span><span class="cell-sub">#${esc(p.id)}</span></td>
+                            <td><span class="cell-main">${esc(p.customerName)}</span><span class="cell-sub">${p.bookingId ? esc(t("orderRef", { id: String(p.bookingId).slice(-5) })) : "—"}</span></td>
+                            <td>${esc(methodLabel(p.method))}</td>
+                            <td class="money">${esc(money(p.amount))}</td>
+                            <td>${esc(p.paidAt ? fmtDateTime(p.paidAt) : "—")}</td>
+                            <td>${statusBadge(p.status)}</td>
+                        </tr>`).join("")}</tbody>
+                </table>` : emptyState("wallet", t("noPayments"))}
+            </div>
+        </div>`;
+    if (focused) {
+        const inp = $("#paymentSearch");
+        inp.focus();
+        inp.setSelectionRange(inp.value.length, inp.value.length);
+    }
+}
+
+/* ================== Bảo trì ================== */
+
+function renderMaintenance() {
+    const host = $("#maintenancePage");
+    const list = maintenance.filter(m => ui.maintTab === "all" || m.status === ui.maintTab)
+        .sort((a, b) => String(b.startDate).localeCompare(String(a.startDate)));
+    const cnt = (s) => maintenance.filter(m => m.status === s).length;
+    const totalCost = maintenance.reduce((s, m) => s + (Number(m.cost) || 0), 0);
+
+    host.innerHTML = `
+        <div class="toolbar">
+            <div class="toolbar-left">
+                ${tabsHtml("maintTab", ui.maintTab, [["all", t("all"), maintenance.length], ["scheduled", t("scheduled"), cnt("scheduled")], ["in_progress", t("in_progress"), cnt("in_progress")], ["completed", t("completed"), cnt("completed")]])}
+                <span class="muted">${esc(t("totalCost"))}: <strong>${esc(money(totalCost))}</strong></span>
+            </div>
+            <button class="btn btn-primary" id="addMaintBtn">${icon("plus")} ${esc(t("scheduleMaint"))}</button>
+        </div>
+        ${list.length ? `<div class="maint-grid">${list.map((m, i) => `
+            <article class="maint-card" style="--i:${i}">
+                <div class="maint-head">
+                    <span class="stat-icon">${icon("wrench")}</span>
+                    <div><h3>${esc(m.carName)}</h3><p>${esc(m.type)}</p></div>
+                    ${statusBadge(m.status)}
+                </div>
+                ${m.note ? `<p class="maint-note">${esc(m.note)}</p>` : ""}
+                <div class="maint-info">
+                    <span>${icon("calendar")} ${esc(fmtDate(m.startDate))} → ${esc(fmtDate(m.endDate))}</span>
+                    <strong>${esc(money(m.cost))}</strong>
+                </div>
+                <div class="actions">
+                    ${m.status === "scheduled" ? `<button class="act" data-maint="in_progress" data-id="${Number(m.id)}">${icon("play")} ${esc(t("start"))}</button>` : ""}
+                    ${m.status === "in_progress" ? `<button class="act ok" data-maint="completed" data-id="${Number(m.id)}">${icon("check")} ${esc(t("complete"))}</button>` : ""}
+                    <button class="act danger icon-only" data-maint-delete="${Number(m.id)}" title="${esc(t("delete"))}" aria-label="${esc(t("delete"))}" style="margin-left:auto">${icon("trash")}</button>
+                </div>
+            </article>`).join("")}</div>` : `<div class="panel">${emptyState("wrench", t("noMaint"), t("noMaintHint"))}</div>`}`;
+}
+
+function openMaintModal() {
+    $("#maintForm").reset();
+    $("#m_car").innerHTML = cars.map(c => `<option value="${Number(c.id)}">${esc(c.name)} · ${esc(statusLabel(c.status))}</option>`).join("");
+    const today = dayKey(new Date());
+    $("#m_start").value = today;
+    $("#m_end").value = today;
+    $("#m_cost").value = 0;
+    openModal("maintModal");
+}
+
+async function saveMaint(e) {
     e.preventDefault();
-    const data = { name: $("#a_name").value.trim(), username: $("#a_user").value.trim(), email: ($("#a_email").value || "").trim(), password: $("#a_pwd").value };
+    const type = $("#m_type").value.trim();
+    const start = $("#m_start").value, end = $("#m_end").value;
+    if (!type) { $("#m_type").focus(); return showToast(t("maintTypeRequired"), "error"); }
+    if (!start || !end || end < start) return showToast(t("maintDatesInvalid"), "error");
+    const btn = $("#maintSaveBtn");
+    setLoading(btn, true);
+    try {
+        const m = await api("/api/users.php?action=maintenance", {
+            method: "POST",
+            body: JSON.stringify({
+                carId: Number($("#m_car").value), type, startDate: start, endDate: end,
+                cost: Number($("#m_cost").value) || 0, note: $("#m_note").value.trim(), status: "scheduled"
+            })
+        });
+        maintenance.push(m);
+        closeModal("maintModal");
+        showToast(t("maintAdded"), "success");
+        renderEverything();
+    } catch (err) {
+        showToast(err.message, "error");
+    } finally {
+        setLoading(btn, false);
+    }
+}
+
+async function updateMaint(id, status) {
+    try {
+        const m = await api(`/api/users.php?action=maintenance&id=${Number(id)}`, { method: "PATCH", body: JSON.stringify({ status }) });
+        const idx = maintenance.findIndex(x => x.id === id);
+        if (idx >= 0) maintenance[idx] = m;
+        const car = cars.find(c => c.id === m.carId);
+        if (car) {
+            if (status === "in_progress") car.status = "maintenance";
+            else if (status === "completed" && car.status === "maintenance") car.status = "available";
+        }
+        showToast(t("maintUpdated", { status: statusLabel(status) }), "success");
+        renderEverything();
+    } catch (e) {
+        showToast(e.message, "error");
+    }
+}
+
+async function deleteMaint(id) {
+    const m = maintenance.find(x => x.id === id);
+    if (!m) return;
+    const ok = await confirmDialog({ title: t("confirmDeleteMaint"), text: t("confirmDeleteMaintText", { type: m.type, car: m.carName }), okText: t("delete") });
+    if (!ok) return;
+    try {
+        await api(`/api/users.php?action=maintenance&id=${Number(id)}`, { method: "DELETE" });
+        maintenance = maintenance.filter(x => x.id !== id);
+        showToast(t("maintDeleted"), "success");
+        renderEverything();
+    } catch (e) {
+        showToast(e.message, "error");
+    }
+}
+
+/* ================== Admin & mật khẩu ================== */
+
+function renderAdminsList() {
+    $("#adminsList").innerHTML = admins.map(a => {
+        const isMe = currentAdmin && Number(a.id) === Number(currentAdmin.id);
+        return `
+        <div class="admin-row">
+            <span class="avatar round">${esc(initials(a.name))}</span>
+            <div><strong>${esc(a.name)}</strong><small>@${esc(a.username)}${a.email ? " · " + esc(a.email) : ""}</small></div>
+            ${isMe ? `<span class="you-tag">${esc(t("you"))}</span>`
+                : `<button class="act danger icon-only" data-admin-delete="${Number(a.id)}" title="${esc(t("delete"))}" aria-label="${esc(t("delete"))}">${icon("trash")}</button>`}
+        </div>`;
+    }).join("");
+}
+
+async function createAdmin(e) {
+    e.preventDefault();
+    const data = { name: $("#a_name").value.trim(), username: $("#a_user").value.trim(), email: $("#a_email").value.trim(), password: $("#a_pwd").value };
+    if (!data.name || !data.username || data.password.length < 6) return showToast(t("adminMissing"), "error");
+    const btn = $("#adminSaveBtn");
+    setLoading(btn, true);
     try {
         const a = await api("/api/login.php?action=admins", { method: "POST", body: JSON.stringify(data) });
         admins.push(a);
         $("#newAdminForm").reset();
         renderAdminsList();
-        showToast("Tạo admin thành công.");
-    } catch (e) { showToast(e.message); }
-});
-
-/* ===== NAV ===== */
-function isMobileSidebar() {
-    return window.matchMedia("(max-width: 750px)").matches;
+        showToast(t("adminCreated"), "success");
+    } catch (err) {
+        showToast(err.message, "error");
+    } finally {
+        setLoading(btn, false);
+    }
 }
 
-function openSidebar() {
-    const sidebar = $("#adminSidebar") || $(".sidebar");
-    const overlay = $("#sidebarOverlay");
-    if (!sidebar) return;
-    sidebar.classList.add("open");
-    if (overlay) {
-        overlay.hidden = false;
-        requestAnimationFrame(() => overlay.classList.add("show"));
+async function deleteAdmin(id) {
+    const a = admins.find(x => Number(x.id) === Number(id));
+    if (!a) return;
+    const ok = await confirmDialog({ title: t("confirmDeleteAdmin", { name: a.name }), text: t("confirmDeleteAdminText"), okText: t("delete") });
+    if (!ok) return;
+    try {
+        await api(`/api/login.php?action=admins&id=${Number(id)}`, { method: "DELETE" });
+        admins = admins.filter(x => Number(x.id) !== Number(id));
+        renderAdminsList();
+        showToast(t("adminDeleted"), "success");
+    } catch (err) {
+        showToast(err.message, "error");
     }
-    document.body.style.overflow = isMobileSidebar() ? "hidden" : "";
+}
+
+function passwordStrength(p) {
+    let score = 0;
+    if (p.length >= 6) score++;
+    if (p.length >= 10) score++;
+    if (/[A-Z]/.test(p) && /[a-z]/.test(p)) score++;
+    if (/\d/.test(p)) score++;
+    if (/[^A-Za-z0-9]/.test(p)) score++;
+    return Math.min(score, 4);
+}
+
+async function changePassword(e) {
+    e.preventDefault();
+    const oldP = $("#pwdOld").value, newP = $("#pwdNew").value, newP2 = $("#pwdNew2").value;
+    if (newP.length < 6) return showToast(t("pwdShort"), "error");
+    if (newP !== newP2) return showToast(t("pwdMismatch"), "error");
+    const btn = $("#pwdSaveBtn");
+    setLoading(btn, true);
+    try {
+        await api("/api/login.php?action=change-password", { method: "POST", body: JSON.stringify({ oldPassword: oldP, newPassword: newP }) });
+        closeModal("changePwdModal");
+        showToast(t("pwdChanged"), "success");
+    } catch (err) {
+        showToast(err.message, "error");
+    } finally {
+        setLoading(btn, false);
+    }
+}
+
+/* ================== Điều hướng ================== */
+
+const isMobile = () => window.matchMedia("(max-width: 960px)").matches;
+
+function openSidebar() {
+    $("#adminSidebar").classList.add("open");
+    const overlay = $("#sidebarOverlay");
+    overlay.hidden = false;
+    requestAnimationFrame(() => overlay.classList.add("show"));
+    document.body.classList.add("no-scroll");
 }
 
 function closeSidebar() {
-    const sidebar = $("#adminSidebar") || $(".sidebar");
+    $("#adminSidebar").classList.remove("open");
     const overlay = $("#sidebarOverlay");
-    if (!sidebar) return;
-    sidebar.classList.remove("open");
-    if (overlay) {
-        overlay.classList.remove("show");
-        const hide = () => { if (!overlay.classList.contains("show")) overlay.hidden = true; };
-        overlay.addEventListener("transitionend", hide, { once: true });
-        setTimeout(hide, 300);
-    }
-    document.body.style.overflow = "";
+    overlay.classList.remove("show");
+    setTimeout(() => { if (!overlay.classList.contains("show")) overlay.hidden = true; }, 300);
+    if (!$$(".modal:not(.hidden)").length) document.body.classList.remove("no-scroll");
 }
 
-function toggleSidebar() {
-    const sidebar = $("#adminSidebar") || $(".sidebar");
-    if (!sidebar) return;
-    if (sidebar.classList.contains("open")) closeSidebar();
-    else openSidebar();
+function setPageTitle(name) {
+    $("#pageTitle").textContent = t("page." + name);
+    $("#pageSubtitle").textContent = t("page." + name + ".sub");
+    document.title = `${t("page." + name)} · ${t("title")}`;
 }
 
 function openPage(name) {
-    $$(".page").forEach(p => p.classList.remove("page-active"));
-    $$(".side-link").forEach(l => l.classList.remove("active"));
-    const pg = document.getElementById(name + "Page");
-    if (pg) pg.classList.add("page-active");
-    const lnk = document.querySelector(`.side-link[data-page="${name}"]`);
-    if (lnk) lnk.classList.add("active");
-    const t = { dashboard: ["Tổng quan", "Theo dõi hoạt động kinh doanh của bạn"], bookings: ["Quản lý đơn", "Theo dõi và xử lý các đơn đặt xe"], fleet: ["Đội xe", "Quản lý trạng thái và thông tin xe"], customers: ["Khách hàng", "Quản lý tài khoản khách hàng"], payments: ["Thanh toán", "Theo dõi các giao dịch thanh toán"], maintenance: ["Bảo trì", "Quản lý lịch bảo trì xe"] };
-    $("#pageTitle") && ($("#pageTitle").textContent = (t[name] || ["", ""])[0]);
-    $("#pageSubtitle") && ($("#pageSubtitle").textContent = (t[name] || ["", ""])[1]);
-    if (name === "customers") renderCustomers();
-    if (name === "payments") renderPayments();
-    if (name === "maintenance") renderMaintenancePage();
-    closeSidebar();
+    if (!$("#" + name + "Page")) return;
+    currentPage = name;
+    $$(".page").forEach(p => p.classList.toggle("page-active", p.id === name + "Page"));
+    $$(".side-link[data-page]").forEach(l => l.classList.toggle("active", l.dataset.page === name));
+    setPageTitle(name);
+    if (name === "dashboard") renderDashboard();
+    if (location.hash !== "#" + name) history.replaceState(null, "", "#" + name);
+    window.scrollTo({ top: 0 });
+    if (isMobile()) closeSidebar();
 }
-$$(".side-link").forEach(l => l.addEventListener("click", () => openPage(l.dataset.page)));
-$$("[data-go]").forEach(b => b.addEventListener("click", () => openPage(b.dataset.go)));
 
-/* ===== TOOLBAR ===== */
-$("#refreshBtn")?.addEventListener("click", async () => { await loadAllData(); renderEverything(); showToast("Đã làm mới dữ liệu."); });
-$("#bookingSearch")?.addEventListener("input", renderAllBookings);
-$("#bookingStatusFilter")?.addEventListener("change", renderAllBookings);
-$("#fleetSearch")?.addEventListener("input", renderFleet);
-$("#fleetStatusFilter")?.addEventListener("change", renderFleet);
-$("#mobileMenu")?.addEventListener("click", toggleSidebar);
-$("#sidebarClose")?.addEventListener("click", closeSidebar);
-$("#sidebarOverlay")?.addEventListener("click", closeSidebar);
-document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") closeSidebar();
-});
-window.addEventListener("resize", () => {
-    if (!isMobileSidebar()) closeSidebar();
-});
-$$("[data-close]").forEach(b => b.addEventListener("click", () => $(`#${b.dataset.close}`).classList.add("hidden")));
-window.addEventListener("click", e => { if (e.target.classList.contains("modal")) e.target.classList.add("hidden"); });
-$("#logoutBtn")?.addEventListener("click", () => { logout(); showToast("Đã đăng xuất."); });
-$("#exportBookings")?.addEventListener("click", () => {
-    const header = ["Mã đơn", "Khách hàng", "Email", "SĐT", "Xe", "Ngày nhận", "Ngày trả", "Tổng tiền", "Trạng thái"];
-    const rows = bookings.map(b => [b.id, b.customerName, b.customerEmail || "", b.customerPhone || "", b.carName, b.startDate, b.endDate, b.total, statusLabel(b.status)]);
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(new Blob(["\ufeff" + [header, ...rows].map(r => r.join(",")).join("\n")], { type: "text/csv;charset=utf-8" }));
-    link.download = "goride-bookings.csv"; link.click(); showToast("Đã xuất báo cáo CSV.");
-});
+/* ================== Sự kiện ================== */
 
-/* ===== STARTUP ===== */
+function bindEvents() {
+    // Đăng nhập
+    $("#loginForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const username = $("#loginUsername").value.trim();
+        const password = $("#loginPassword").value;
+        const errBox = $("#loginError");
+        errBox.classList.add("hidden");
+        if (!username || !password) {
+            errBox.innerHTML = `${icon("alert")}<span>${esc(t("loginMissing"))}</span>`;
+            errBox.classList.remove("hidden");
+            return;
+        }
+        const btn = $("#loginSubmitBtn");
+        setLoading(btn, true);
+        try {
+            const res = await fetch("/api/login.php", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, password })
+            });
+            const body = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(serverMsg(body.error) || t("loginFail"));
+            store(TOKEN_KEY, body.token);
+            store(CURRENT_ADMIN_KEY, JSON.stringify(body.admin));
+            currentAdmin = body.admin;
+            $("#loginPassword").value = "";
+            await startApp();
+            showToast(t("loginOk"), "success");
+        } catch (err) {
+            errBox.innerHTML = `${icon("alert")}<span>${esc(err.message === "Failed to fetch" ? t("network") : err.message)}</span>`;
+            errBox.classList.remove("hidden");
+        } finally {
+            setLoading(btn, false);
+        }
+    });
+
+    $("#pwdToggle").onclick = () => {
+        const inp = $("#loginPassword");
+        const show = inp.type === "password";
+        inp.type = show ? "text" : "password";
+        $("#pwdToggle").innerHTML = icon(show ? "eye-off" : "eye");
+        $("#pwdToggle").setAttribute("aria-label", show ? t("hidePwd") : t("showPwd"));
+    };
+
+    // Ngôn ngữ & giao diện
+    $$("[data-lang-toggle]").forEach(b => b.onclick = () => setLang(lang === "en" ? "vi" : "en"));
+    $$("[data-theme-toggle]").forEach(b => b.onclick = () => {
+        const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+        setTheme(next);
+        showToast(next === "dark" ? t("themeDark") : t("themeLight"));
+    });
+    window.matchMedia?.("(prefers-color-scheme: dark)").addEventListener?.("change", e => {
+        if (!store(THEME_KEY)) setTheme(e.matches ? "dark" : "light", false);
+    });
+
+    // Sidebar
+    $$(".side-link[data-page]").forEach(l => l.addEventListener("click", () => openPage(l.dataset.page)));
+    $("#mobileMenu").onclick = openSidebar;
+    $("#sidebarClose").onclick = closeSidebar;
+    $("#sidebarOverlay").onclick = closeSidebar;
+    $("#logoutBtn").onclick = () => logout();
+    $("#refreshBtn").onclick = async () => {
+        if (await loadAllData(true)) {
+            renderEverything();
+            updateSyncLabel();
+            showToast(t("refreshed"), "success");
+        }
+    };
+    $("#changePwdSideBtn").onclick = () => {
+        $("#changePwdForm").reset();
+        $("#pwdMeter span").style.width = "0";
+        if (isMobile()) closeSidebar();
+        openModal("changePwdModal");
+    };
+    $("#adminsSideBtn").onclick = () => {
+        $("#newAdminForm").reset();
+        renderAdminsList();
+        if (isMobile()) closeSidebar();
+        openModal("adminsModal");
+    };
+
+    // Form
+    $("#carForm").addEventListener("submit", saveCar);
+    $("#carImageUrl").addEventListener("input", e => setCarImagePreview(e.target.value));
+    $("#carImagePreviewImg").addEventListener("error", () => setCarImagePreview(""));
+    $("#carImageClearBtn").onclick = () => { $("#carImageUrl").value = ""; setCarImagePreview(""); };
+    $("#maintForm").addEventListener("submit", saveMaint);
+    $("#m_start").addEventListener("change", () => {
+        $("#m_end").min = $("#m_start").value;
+        if ($("#m_end").value < $("#m_start").value) $("#m_end").value = $("#m_start").value;
+    });
+    $("#changePwdForm").addEventListener("submit", changePassword);
+    $("#pwdNew").addEventListener("input", e => {
+        const s = passwordStrength(e.target.value);
+        const colors = ["var(--red)", "var(--red)", "var(--orange)", "var(--blue)", "var(--green)"];
+        const bar = $("#pwdMeter span");
+        bar.style.width = (e.target.value ? Math.max(1, s) * 25 : 0) + "%";
+        bar.style.background = colors[s];
+    });
+    $("#newAdminForm").addEventListener("submit", createAdmin);
+
+    // Modal
+    $$("[data-close]").forEach(b => b.addEventListener("click", () => closeModal(b.dataset.close)));
+    $$(".modal").forEach(m => m.addEventListener("mousedown", e => { if (e.target === m) closeModal(m.id); }));
+
+    // Ủy quyền sự kiện cho nội dung render động
+    document.addEventListener("click", e => {
+        const el = e.target.closest("[data-go], [data-act], [data-detail], .tab, [data-car-edit], [data-car-delete], [data-maint], [data-maint-delete], [data-admin-delete], #addCarBtn, #addMaintBtn, #exportBookings, #exportPayments, #exportCustomers");
+        if (!el) return;
+
+        if (el.matches(".tab")) {
+            const group = el.closest("[data-tabs]")?.dataset.tabs;
+            if (!group) return;
+            ui[group] = group === "revenueRange" ? Number(el.dataset.value) : el.dataset.value;
+            if (group === "revenueRange") renderDashboard();
+            else if (group === "bookingTab") renderBookings();
+            else if (group === "fleetStatus") renderFleet();
+            else if (group === "paymentTab") renderPayments();
+            else if (group === "maintTab") renderMaintenance();
+            return;
+        }
+        if (el.dataset.go) {
+            if (el.dataset.tab) { ui.bookingTab = el.dataset.tab; renderBookings(); }
+            openPage(el.dataset.go);
+            return;
+        }
+        if (el.dataset.act) { e.stopPropagation(); bookingAction(el.dataset.act, el.dataset.id); return; }
+        if (el.dataset.detail) { openBookingDetail(el.dataset.detail); return; }
+        if (el.dataset.carEdit) { openCarModal(cars.find(c => c.id === Number(el.dataset.carEdit))); return; }
+        if (el.dataset.carDelete) { deleteCar(Number(el.dataset.carDelete)); return; }
+        if (el.dataset.maint) { updateMaint(Number(el.dataset.id), el.dataset.maint); return; }
+        if (el.dataset.maintDelete) { deleteMaint(Number(el.dataset.maintDelete)); return; }
+        if (el.dataset.adminDelete) { deleteAdmin(Number(el.dataset.adminDelete)); return; }
+        if (el.id === "addCarBtn") return openCarModal();
+        if (el.id === "addMaintBtn") return openMaintModal();
+        if (el.id === "exportBookings") {
+            return downloadCsv("godrive-bookings.csv", [
+                [t("code"), t("customer"), "Email", t("phone"), t("car"), t("pickup"), t("return"), t("total"), t("status")],
+                ...bookings.map(b => [b.id, b.customerName, b.customerEmail || "", b.customerPhone || "", b.carName, b.startDate, b.endDate, b.total, statusLabel(b.status)])
+            ]);
+        }
+        if (el.id === "exportPayments") {
+            return downloadCsv("godrive-payments.csv", [
+                [t("txn"), t("customer"), t("method"), t("amount"), t("status"), t("time")],
+                ...payments.map(p => [p.txnCode, p.customerName, methodLabel(p.method), p.amount, statusLabel(p.status), p.paidAt || ""])
+            ]);
+        }
+        if (el.id === "exportCustomers") {
+            return downloadCsv("godrive-customers.csv", [
+                [t("customer"), "Email", t("phone"), t("joined"), t("bookingsCount"), t("spent"), t("tier")],
+                ...customers.map(c => [c.name, c.email, c.phone || "", c.joinedAt, c.totalBookings || 0, c.totalSpent || 0, statusLabel(c.tier)])
+            ]);
+        }
+    });
+
+    document.addEventListener("input", e => {
+        const id = e.target.id;
+        if (id === "bookingSearch") { ui.bookingSearch = e.target.value; renderBookings(); }
+        if (id === "fleetSearch") { ui.fleetSearch = e.target.value; renderFleet(); }
+        if (id === "customerSearch") { ui.customerSearch = e.target.value; renderCustomers(); }
+        if (id === "paymentSearch") { ui.paymentSearch = e.target.value; renderPayments(); }
+    });
+
+    document.addEventListener("change", e => {
+        if (e.target.dataset.carStatus) changeCarStatus(Number(e.target.dataset.carStatus), e.target.value);
+    });
+
+    document.addEventListener("keydown", e => {
+        if (e.key === "Escape") {
+            const open = $$(".modal:not(.hidden)");
+            if (open.length) {
+                if (open.some(m => m.id === "confirmModal")) $("#confirmCancel").click();
+                else closeModal(open[open.length - 1].id);
+            } else if (isMobile()) closeSidebar();
+        }
+        // Phím "/" để nhảy tới ô tìm kiếm của trang hiện tại
+        if (e.key === "/" && !/input|textarea|select/i.test(document.activeElement?.tagName || "")) {
+            const search = $(`#${currentPage}Page input[type=search]`);
+            if (search) { e.preventDefault(); search.focus(); }
+        }
+    });
+
+    window.addEventListener("resize", () => { if (!isMobile()) closeSidebar(); });
+    window.addEventListener("hashchange", () => {
+        const name = location.hash.slice(1);
+        if (name && name !== currentPage) openPage(name);
+    });
+
+    // Tự làm mới dữ liệu định kỳ khi tab đang mở và không có hộp thoại nào
+    setInterval(async () => {
+        updateSyncLabel();
+        if (document.hidden || !dataLoaded || $$(".modal:not(.hidden)").length) return;
+        if (lastSync && Date.now() - lastSync < AUTO_REFRESH_MS) return;
+        if (document.activeElement?.matches("input, select, textarea")) return;
+        if (await loadAllData()) renderEverything();
+    }, 15000);
+}
+
+/* ================== Khởi động ================== */
+
+async function startApp() {
+    updateAdminProfile();
+    showApp();
+    const start = location.hash.slice(1);
+    openPage($("#" + start + "Page") ? start : "dashboard");
+    renderDashboard();
+    if (await loadAllData()) {
+        renderEverything();
+        updateSyncLabel();
+    }
+}
+
 (async function boot() {
+    applyStaticTranslations();
+    bindEvents();
     if (!getToken()) { showLogin(); return; }
     try {
+        currentAdmin = JSON.parse(store(CURRENT_ADMIN_KEY) || "null");
         currentAdmin = await api("/api/login.php?action=me");
-        localStorage.setItem(CURRENT_ADMIN_KEY, JSON.stringify(currentAdmin));
-        showApp();
-        await afterLoginInit();
+        store(CURRENT_ADMIN_KEY, JSON.stringify(currentAdmin));
+        await startApp();
     } catch (err) {
-        logout();
-        showToast(err.message);
+        if (getToken()) logout(true);
+        showToast(err.message, "error");
     }
 })();

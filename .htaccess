@@ -2,12 +2,20 @@
 DirectoryIndex index.html
 Options -Indexes
 
+# Không cho truy cập file ẩn (vd. .git, .jwt_secret)
+<IfModule mod_authz_core.c>
+  <FilesMatch "^\.(?!htaccess)">
+    Require all denied
+  </FilesMatch>
+</IfModule>
+
 <IfModule mod_rewrite.c>
   RewriteEngine On
 
+  # Một số hosting (CGI/FastCGI) làm mất header Authorization -> chuyển nó thành biến môi trường
+  RewriteCond %{HTTP:Authorization} .
+  RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
   # Pretty admin URL
   RewriteRule ^admin/?$ admin.html [L,QSA]
-
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
 </IfModule>

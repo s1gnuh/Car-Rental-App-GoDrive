@@ -1,6 +1,6 @@
 # 🚗 GoDrive — Ứng dụng thuê xe
 
-GoRide là website thuê xe gồm **trang khách** (đặt xe không cần tài khoản) và **bảng điều khiển admin** để quản lý toàn bộ hoạt động. Dự án viết bằng HTML, CSS, JavaScript thuần và PHP, lưu dữ liệu vào file JSON nên không cần database hay Node.js. Có thể chạy trên hosting miễn phí như InfinityFree.
+GoDrive là website thuê xe gồm **trang khách** (đặt xe không cần tài khoản) và **bảng điều khiển admin** để quản lý toàn bộ hoạt động. Dự án viết bằng HTML, CSS, JavaScript thuần và PHP, lưu dữ liệu vào file JSON nên không cần database hay Node.js. Có thể chạy trên hosting miễn phí như InfinityFree.
 
 ## ✨ Tính năng
 
@@ -8,11 +8,13 @@ GoRide là website thuê xe gồm **trang khách** (đặt xe không cần tài 
 - Xem danh sách xe, lọc theo loại (Sedan / SUV / Hatchback) và địa điểm, sắp xếp theo giá hoặc độ nổi bật
 - Đặt xe chỉ với họ tên, số điện thoại và email; tự tính tổng tiền theo số ngày
 - Tự động chặn đặt trùng lịch trên cùng một xe
-- Tra cứu trạng thái đơn bằng email hoặc số điện thoại
+- Tra cứu trạng thái đơn bằng cách nhập cả email và số điện thoại đã dùng khi đặt
+- Giao diện song ngữ Việt - Anh và chế độ sáng/tối (tự theo hệ điều hành, có nút chuyển), tối ưu cho điện thoại
 
 **Admin** (`/admin`)
 - Đăng nhập bằng token, đổi mật khẩu, tạo/xóa tài khoản admin
-- Dashboard thống kê với biểu đồ doanh thu và trạng thái đơn
+- Dashboard với doanh thu thực tế theo 7/30 ngày, so sánh với kỳ trước, danh sách việc cần xử lý
+- Song ngữ Việt - Anh, chế độ sáng/tối, tự làm mới dữ liệu mỗi phút, phím tắt `/` để tìm kiếm
 - Quản lý đơn đặt xe (duyệt / hủy), đội xe (thêm / sửa / xóa, ảnh xe bằng URL), khách hàng, thanh toán (xuất CSV) và lịch bảo trì
 - Trạng thái xe tự cập nhật theo đơn và lịch bảo trì (`available` → `rented` / `maintenance`)
 
@@ -45,9 +47,10 @@ Tài khoản mặc định: `admin` / `admin123`. **Hãy đổi mật khẩu nga
 
 ## 🔐 Lưu ý bảo mật trước khi đưa lên production
 
-- Đổi `JWT_SECRET` trong `api/_helpers.php` và không commit secret thật lên GitHub.
+- Secret ký token được tự sinh ngẫu nhiên ở lần chạy đầu và lưu trong `data/.jwt_secret` (đã nằm trong `.gitignore`, không commit file này). Có thể đặt cố định bằng biến môi trường `GODRIVE_JWT_SECRET` (tối thiểu 16 ký tự). Xóa file này sẽ đăng xuất toàn bộ admin.
 - Đổi mật khẩu admin mặc định và không để hash mật khẩu thật trong repo công khai.
 - Kiểm tra `data/.htaccess` đã hoạt động (truy cập `/data/admins.json` phải bị từ chối)
+- Dữ liệu từ khách (tên, email...) luôn được escape khi hiển thị; mọi API ghi đều kiểm tra đầu vào và chạy tuần tự bằng khóa file (`data/.write.lock`) để không mất dữ liệu khi nhiều người đặt cùng lúc
 
 ## 🔌 API tóm tắt
 

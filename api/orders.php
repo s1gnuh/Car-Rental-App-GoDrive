@@ -8,18 +8,20 @@ $method = method();
 $action = action();
 
 if ($method === "GET" && $action === "lookup") {
-    $email = trim($_GET["email"] ?? "");
-    $phone = trim($_GET["phone"] ?? "");
-    if ($email === "" && $phone === "") fail("Cần email hoặc số điện thoại");
+    // Khách không có tài khoản nên phải khớp CẢ email lẫn số điện thoại của cùng một đơn,
+    // tránh việc chỉ cần biết một thông tin là xem được đơn của người khác.
+    $email = clean_str($_GET["email"] ?? "", 150);
+    $phone = clean_str($_GET["phone"] ?? "", 20);
+    if ($email === "" || $phone === "") fail("Cần nhập cả email và số điện thoại đã dùng khi đặt");
 
-    $phoneNorm = preg_replace("/\s+/", "", $phone);
+    $phoneNorm = preg_replace("/[\s.()-]+/", "", $phone);
     $bookings = read_json($bookingsFile);
     $result = array_values(array_filter($bookings, function ($b) use ($email, $phoneNorm) {
-        $matchEmail = $email !== "" && isset($b["customerEmail"])
+        $matchEmail = isset($b["customerEmail"])
             && strtolower($b["customerEmail"]) === strtolower($email);
-        $matchPhone = $phoneNorm !== "" && isset($b["customerPhone"])
-            && preg_replace("/\s+/", "", $b["customerPhone"]) === $phoneNorm;
-        return $matchEmail || $matchPhone;
+        $matchPhone = isset($b["customerPhone"])
+            && preg_replace("/[\s.()-]+/", "", $b["customerPhone"]) === $phoneNorm;
+        return $matchEmail && $matchPhone;
     }));
     usort($result, fn($a, $b) => (int)$b["id"] - (int)$a["id"]);
     respond($result);
@@ -34,17 +36,24 @@ if ($method === "GET") {
 
 if ($method === "POST" && $action === "") {
     $body = body_json();
-    $customerName = trim($body["customerName"] ?? "");
-    $customerEmail = trim($body["customerEmail"] ?? "");
-    $customerPhone = trim($body["customerPhone"] ?? "");
+    $customerName = preg_replace('/\s+/u', " ", clean_str($body["customerName"] ?? "", 100));
+    $customerEmail = clean_str($body["customerEmail"] ?? "", 150);
+    $customerPhone = clean_str($body["customerPhone"] ?? "", 20);
     $carId = (int)($body["carId"] ?? 0);
     $startDate = $body["startDate"] ?? "";
     $endDate = $body["endDate"] ?? "";
-    $location = $body["location"] ?? "";
+    $location = clean_str($body["location"] ?? "", 100);
 
     if (!$customerName || !$customerEmail || !$customerPhone || !$carId || !$startDate || !$endDate) {
         fail("Thiếu thông tin đặt xe");
     }
+    if (!filter_var($customerEmail, FILTER_VALIDATE_EMAIL)) fail("Email không hợp lệ");
+    if (!valid_name($customerName)) fail("Họ tên chỉ được chứa chữ cái");
+    if (!valid_phone($customerPhone)) fail("Số điện thoại chỉ được gồm 9-10 chữ số");
+    if (!valid_date($startDate) || !valid_date($endDate)) fail("Ngày không hợp lệ");
+    if ($startDate < date("Y-m-d")) fail("Ngày nhận xe không được ở quá khứ");
+    if ($endDate <= $startDate) fail("Ngày trả xe phải sau ngày nhận xe");
+    if ((strtotime($endDate) - strtotime($startDate)) / 86400 > 90) fail("Thời gian thuê tối đa 90 ngày");
 
     $cars = read_json($carsFile);
     $car = null;
@@ -126,6 +135,7 @@ if ($method === "PATCH") {
     if ($idx < 0) fail("Không tìm thấy đơn", 404);
 
     if ($action === "mark-rented") {
+        if (($bookings[$idx]["status"] ?? "") !== "confirmed") fail("Chỉ đơn đã xác nhận mới bàn giao xe được");
         $cars = read_json($carsFile);
         foreach ($cars as &$c) {
             if ((int)$c["id"] === (int)$bookings[$idx]["carId"]) {
@@ -141,6 +151,7 @@ if ($method === "PATCH") {
     $data = body_json();
     $status = $data["status"] ?? "";
     if ($status === "") fail("Thiếu trạng thái");
+    require_enum($status, BOOKING_STATUSES, "Trạng thái");
     $bookings[$idx]["status"] = $status;
     write_json($bookingsFile, $bookings);
 

@@ -4,71 +4,177 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GoDriver - Đặt xe dễ dàng</title>
+  <title>GoDrive - Thuê xe tự lái dễ dàng</title>
+  <meta name="description" content="GoDrive - thuê xe tự lái nhanh chóng, giá minh bạch, không cần tài khoản. Có xe tại Hà Nội, TP. Hồ Chí Minh và Đà Nẵng." />
+  <meta name="theme-color" content="#5b3fd9" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='9' fill='%235b3fd9'/><text x='16' y='22' font-family='Arial' font-weight='700' font-size='17' fill='white' text-anchor='middle'>G</text></svg>" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css" />
+  <script>
+    // Áp dụng chế độ sáng/tối trước khi trang hiển thị để tránh nháy màu
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem("godrive_theme"); } catch (e) { }
+      if (t !== "light" && t !== "dark") t = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      document.documentElement.setAttribute("data-theme", t);
+    })();
+  </script>
 </head>
 
 <body>
-  <div id="toast"></div>
+  <!-- Bộ icon SVG dùng chung (<svg><use href="#i-..."/></svg>) -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+      <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></symbol>
+      <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+      <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></symbol>
+      <symbol id="i-arrow-up" viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+      <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></symbol>
+      <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.870M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+      <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M2 12h3M19 12h3M4.93 19.070l2.12-2.12M16.95 7.05l2.12-2.12"/></symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></symbol>
+      <symbol id="i-tag" viewBox="0 0 24 24"><path d="M12 2H2v10l9.29 9.29a1 1 0 0 0 1.41 0l8.59-8.59a1 1 0 0 0 0-1.41z"/><circle cx="7" cy="7" r="1.5"/></symbol>
+      <symbol id="i-headset" viewBox="0 0 24 24"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></symbol>
+      <symbol id="i-zap" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+      <symbol id="i-phone" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.630-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></symbol>
+      <symbol id="i-mail" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></symbol>
+      <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+      <symbol id="i-car" viewBox="0 0 24 24"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9L18.4 10.5 16 7.2a2 2 0 0 0-1.6-.8H9.6a2 2 0 0 0-1.6.8l-2.4 3.3-2.1.6C2.7 11.3 2 12.1 2 13v3c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M9 17h6"/></symbol>
+      <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></symbol>
+      <symbol id="i-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+      <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol>
+      <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+      <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></symbol>
+      <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></symbol>
+    </defs>
+  </svg>
 
-  <header class="navbar">
+  <a class="skip-link" href="#cars" data-i18n="skip">Bỏ qua đến danh sách xe</a>
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <header class="navbar" id="navbar">
     <div class="container nav-inner">
-      <a href="#home" class="brand">
+      <a href="#home" class="brand" aria-label="GoDrive">
         <span class="brand-icon">G</span>
-        <span>Go<span>Ride</span></span>
+        <span>Go<span>Drive</span></span>
       </a>
 
-      <nav class="nav-links">
-        <a href="#home">Trang chủ</a>
-        <a href="#cars">Tìm xe</a>
-        <a href="#about">Về chúng tôi</a>
-        <a href="#contact">Liên hệ</a>
+      <nav class="nav-links" id="navLinks" data-i18n-aria="nav.aria" aria-label="Điều hướng chính">
+        <a href="#home" class="active" data-i18n="nav.home">Trang chủ</a>
+        <a href="#cars" data-i18n="nav.cars">Tìm xe</a>
+        <a href="#how" data-i18n="nav.how">Cách thuê</a>
+        <a href="#about" data-i18n="nav.about">Vì sao chọn chúng tôi</a>
+        <a href="#faq" data-i18n="nav.faq">Hỏi đáp</a>
+        <div class="nav-mobile-actions">
+          <button class="btn btn-light full" data-open-lookup>
+            <svg class="i"><use href="#i-file" /></svg> <span data-i18n="nav.lookup">Tra cứu đơn</span>
+          </button>
+        </div>
       </nav>
 
       <div class="nav-actions">
-        <button class="btn btn-light" id="lookupBtn">Tra cứu đơn</button>
-        <a href="/admin" class="btn btn-outline">Admin</a>
+        <button class="btn btn-ghost" id="lookupBtn">
+          <svg class="i"><use href="#i-file" /></svg><span data-i18n="nav.lookup">Tra cứu đơn</span>
+        </button>
+        <button class="icon-btn lang-toggle" id="langToggle" data-i18n-aria="lang.switch" aria-label="Switch to English">
+          <svg class="i"><use href="#i-globe" /></svg><span id="langLabel">EN</span>
+        </button>
+        <button class="icon-btn theme-toggle" id="themeToggle" data-i18n-aria="theme.toggle" aria-label="Đổi chế độ sáng/tối">
+          <svg class="i icon-sun"><use href="#i-sun" /></svg>
+          <svg class="i icon-moon"><use href="#i-moon" /></svg>
+        </button>
+        <a href="#cars" class="btn btn-primary nav-cta" data-i18n="nav.book">Đặt xe ngay</a>
       </div>
 
-      <button class="menu-toggle" id="menuToggle">☰</button>
+      <button class="menu-toggle" id="menuToggle" data-i18n-aria="nav.menu" aria-label="Mở menu" aria-expanded="false" aria-controls="navLinks">
+        <svg class="i icon-open"><use href="#i-menu" /></svg>
+        <svg class="i icon-close"><use href="#i-x" /></svg>
+      </button>
     </div>
   </header>
 
   <main>
     <section class="hero" id="home">
+      <div class="hero-bg" aria-hidden="true">
+        <span class="blob blob-1"></span>
+        <span class="blob blob-2"></span>
+        <span class="grid-dots"></span>
+      </div>
+
       <div class="container hero-grid">
         <div class="hero-content">
-          <span class="eyebrow">THUÊ XE DỄ DÀNG · DI CHUYỂN TỰ DO</span>
-          <h1>Khám phá hành trình<br><span>theo cách của bạn</span></h1>
-          <p>Đặt chiếc xe phù hợp trong vài phút. Không cần tài khoản, nhanh chóng & minh bạch.</p>
-          <div class="hero-buttons">
-            <a href="#cars" class="btn btn-primary btn-large">Tìm xe ngay <span>→</span></a>
-            <a href="#about" class="btn btn-white btn-large">Tìm hiểu thêm</a>
+          <span class="pill reveal">
+            <span class="pill-dot"></span> <span data-i18n="hero.pill">Đặt xe trong 30 giây · Không cần tài khoản</span>
+          </span>
+          <h1 class="reveal" style="--d:80ms" data-i18n-html="hero.title">Khám phá hành trình<br><span class="gradient-text">theo cách của bạn</span></h1>
+          <p class="reveal" style="--d:160ms" data-i18n="hero.desc">Chọn chiếc xe phù hợp, xem trước tổng chi phí và đặt ngay. GoDrive xác nhận nhanh, giá minh bạch, không phí ẩn.</p>
+          <div class="hero-buttons reveal" style="--d:240ms">
+            <a href="#cars" class="btn btn-primary btn-large"><span data-i18n="hero.cta">Tìm xe ngay</span> <svg class="i"><use href="#i-arrow" /></svg></a>
+            <a href="#how" class="btn btn-white btn-large" data-i18n="hero.how">Cách thuê xe</a>
           </div>
+          <ul class="hero-stats reveal" style="--d:320ms">
+            <li><strong id="statCars">–</strong><span data-i18n="hero.statCars">xe sẵn sàng</span></li>
+            <li><strong>3</strong><span data-i18n="hero.statCities">thành phố</span></li>
+            <li><strong>24/7</strong><span data-i18n="hero.statSupport">hỗ trợ</span></li>
+          </ul>
         </div>
 
-        <div class="hero-visual">
-          <div class="hero-circle"></div>
+        <div class="hero-visual reveal" style="--d:200ms" aria-hidden="true">
+          <div class="hero-ring"></div>
           <div class="floating-card floating-top">
-            <span class="float-icon green">✓</span>
-            <div><strong>Đặt xe thành công</strong><small>Vừa xong</small></div>
+            <span class="float-icon green"><svg class="i"><use href="#i-check" /></svg></span>
+            <div><strong data-i18n="hero.float1">Đặt xe thành công</strong><small data-i18n="hero.float1s">Admin sẽ liên hệ xác nhận</small></div>
           </div>
-          <div class="car-illustration">
-            <div class="car-shadow"></div>
-            <div class="car-body">
-              <div class="car-window window-left"></div>
-              <div class="car-window window-right"></div>
-              <div class="car-wheel wheel-left"></div>
-              <div class="car-wheel wheel-right"></div>
-              <div class="car-light"></div>
-            </div>
-          </div>
+
+          <svg class="hero-car" viewBox="0 0 480 230">
+            <defs>
+              <linearGradient id="carBody" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#7c63ff" />
+                <stop offset="1" stop-color="#4a2fc4" />
+              </linearGradient>
+              <linearGradient id="carGlass" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#e6f1ff" />
+                <stop offset="1" stop-color="#9fb8e6" />
+              </linearGradient>
+            </defs>
+            <g class="road">
+              <path d="M0 214H480" stroke="#d9d4f5" stroke-opacity=".7" stroke-width="3" stroke-dasharray="26 18" />
+            </g>
+            <ellipse cx="245" cy="200" rx="200" ry="9" fill="rgba(60,40,150,.18)" />
+            <g class="car-bounce">
+              <path d="M40 150c0-22 12-32 34-36l66-10c22-24 56-42 100-44h60c34 0 60 16 84 40l36 8c22 4 32 18 32 38v14c0 8-6 14-14 14H54c-8 0-14-6-14-14Z" fill="url(#carBody)" />
+              <path d="M162 104c18-22 42-30 74-30h14v30Z" fill="url(#carGlass)" />
+              <path d="M264 74h34c24 0 42 10 62 30h-96Z" fill="url(#carGlass)" />
+              <path d="M257 106v62" stroke="#3b23a8" stroke-width="2" opacity=".6" />
+              <path d="M64 136h372" stroke="#fff" stroke-width="2" opacity=".18" />
+              <rect x="426" y="122" width="22" height="10" rx="5" fill="#ffd36b" />
+              <rect x="40" y="124" width="12" height="12" rx="4" fill="#ff6b81" />
+              <rect x="222" y="118" width="22" height="4" rx="2" fill="#fff" opacity=".5" />
+              <rect x="300" y="118" width="22" height="4" rx="2" fill="#fff" opacity=".5" />
+            </g>
+            <g class="wheel" style="transform-origin:122px 176px">
+              <circle cx="122" cy="176" r="32" fill="#1d1b2e" />
+              <circle cx="122" cy="176" r="19" fill="#d7dbef" />
+              <path d="M122 159v34M105 176h34M110 164l24 24M134 164l-24 24" stroke="#8a8fae" stroke-width="3" />
+              <circle cx="122" cy="176" r="6" fill="#4a2fc4" />
+            </g>
+            <g class="wheel" style="transform-origin:372px 176px">
+              <circle cx="372" cy="176" r="32" fill="#1d1b2e" />
+              <circle cx="372" cy="176" r="19" fill="#d7dbef" />
+              <path d="M372 159v34M355 176h34M360 164l24 24M384 164l-24 24" stroke="#8a8fae" stroke-width="3" />
+              <circle cx="372" cy="176" r="6" fill="#4a2fc4" />
+            </g>
+          </svg>
+
           <div class="floating-card floating-bottom">
-            <span class="float-icon orange">★</span>
-            <div><strong>4.9/5</strong><small>Đánh giá trung bình</small></div>
+            <span class="float-icon orange"><svg class="i"><use href="#i-star" /></svg></span>
+            <div><strong>4.9/5</strong><small data-i18n="hero.float2s">Đánh giá trung bình</small></div>
           </div>
         </div>
       </div>
@@ -76,142 +182,241 @@
 
     <section class="search-section" id="search">
       <div class="container">
-        <div class="search-box">
-          <div class="search-heading">
-            <span class="search-icon">⌕</span>
-            <div>
-              <h3>Tìm chiếc xe phù hợp</h3>
-              <p>Chọn thông tin chuyến đi của bạn (không cần đăng ký)</p>
-            </div>
-          </div>
-
+        <form class="search-box reveal" id="searchForm" onsubmit="return false">
           <div class="search-fields">
-            <label>
-              <span>Địa điểm nhận xe</span>
+            <label class="field">
+              <span class="field-label"><svg class="i"><use href="#i-pin" /></svg> <span data-i18n="search.location">Địa điểm nhận xe</span></span>
               <select id="locationFilter">
-                <option value="">Tất cả địa điểm</option>
-                <option value="Hà Nội">Hà Nội</option>
-                <option value="TP. Hồ Chí Minh">TP. Hồ Chí Minh</option>
-                <option value="Đà Nẵng">Đà Nẵng</option>
+                <option value="" data-i18n="search.allLocations">Tất cả địa điểm</option>
+                <option value="Hà Nội" data-i18n="city.hn">Hà Nội</option>
+                <option value="TP. Hồ Chí Minh" data-i18n="city.hcm">TP. Hồ Chí Minh</option>
+                <option value="Đà Nẵng" data-i18n="city.dn">Đà Nẵng</option>
               </select>
             </label>
-            <label>
-              <span>Ngày nhận xe</span>
+            <label class="field">
+              <span class="field-label"><svg class="i"><use href="#i-calendar" /></svg> <span data-i18n="search.start">Ngày nhận xe</span></span>
               <input type="date" id="startDate">
             </label>
-            <label>
-              <span>Ngày trả xe</span>
+            <label class="field">
+              <span class="field-label"><svg class="i"><use href="#i-calendar" /></svg> <span data-i18n="search.end">Ngày trả xe</span></span>
               <input type="date" id="endDate">
             </label>
-            <button class="btn btn-primary search-button" id="searchBtn">Tìm xe <span>→</span></button>
+            <button class="btn btn-primary search-button" id="searchBtn" type="submit">
+              <svg class="i"><use href="#i-search" /></svg> <span data-i18n="search.btn">Tìm xe</span>
+            </button>
           </div>
-        </div>
+          <p class="search-hint" id="searchHint"></p>
+        </form>
       </div>
     </section>
 
     <section class="section" id="cars">
       <div class="container">
-        <div class="section-heading">
-          <div><span class="eyebrow">LỰA CHỌN HÀNG ĐẦU</span>
-            <h2>Xe được yêu thích</h2>
+        <div class="section-heading reveal">
+          <div>
+            <span class="eyebrow" data-i18n="cars.eyebrow">Đội xe của chúng tôi</span>
+            <h2 data-i18n="cars.title">Chọn chiếc xe phù hợp</h2>
+            <p class="section-sub" id="carCount"></p>
           </div>
-          <a href="#cars" class="view-all">Xem tất cả <span>→</span></a>
         </div>
 
-        <div class="filter-row">
-          <button class="filter-chip active" data-filter="all">Tất cả</button>
-          <button class="filter-chip" data-filter="Sedan">Sedan</button>
-          <button class="filter-chip" data-filter="SUV">SUV</button>
-          <button class="filter-chip" data-filter="Hatchback">Hatchback</button>
-          <select class="sort-select" id="sortCars">
-            <option value="featured">Nổi bật nhất</option>
-            <option value="low">Giá thấp đến cao</option>
-            <option value="high">Giá cao đến thấp</option>
-          </select>
+        <div class="filter-row reveal">
+          <div class="chips" role="tablist" data-i18n-aria="cars.filterAria" aria-label="Lọc theo loại xe">
+            <button class="filter-chip active" data-filter="all" role="tab" aria-selected="true" data-i18n="cars.all">Tất cả</button>
+            <button class="filter-chip" data-filter="Sedan" role="tab" aria-selected="false">Sedan</button>
+            <button class="filter-chip" data-filter="SUV" role="tab" aria-selected="false">SUV</button>
+            <button class="filter-chip" data-filter="Hatchback" role="tab" aria-selected="false">Hatchback</button>
+          </div>
+          <label class="sort-wrap">
+            <span class="sr-only" data-i18n="cars.sort">Sắp xếp</span>
+            <select class="sort-select" id="sortCars">
+              <option value="featured" data-i18n="cars.sortFeatured">Nổi bật nhất</option>
+              <option value="low" data-i18n="cars.sortLow">Giá thấp đến cao</option>
+              <option value="high" data-i18n="cars.sortHigh">Giá cao đến thấp</option>
+            </select>
+          </label>
         </div>
 
-        <div class="car-grid" id="carGrid"></div>
-        <div class="empty-state hidden" id="emptyCars">Không tìm thấy xe phù hợp.</div>
+        <div class="car-grid" id="carGrid" aria-live="polite"></div>
+        <div class="empty-state hidden" id="emptyCars">
+          <div class="empty-icon"><svg class="i"><use href="#i-car" /></svg></div>
+          <h3 data-i18n="cars.emptyTitle">Không tìm thấy xe phù hợp</h3>
+          <p data-i18n="cars.emptyDesc">Thử chọn địa điểm khác hoặc bỏ bớt bộ lọc.</p>
+          <button class="btn btn-light" id="resetFilters" data-i18n="cars.reset">Xóa bộ lọc</button>
+        </div>
       </div>
     </section>
 
-    <section class="features-section" id="about">
+    <section class="section section-tint" id="how">
       <div class="container">
-        <div class="center-heading"><span class="eyebrow">VÌ SAO CHỌN GoDrive?</span>
-          <h2>Trải nghiệm thuê xe<br><span>khác biệt</span></h2>
+        <div class="center-heading reveal">
+          <span class="eyebrow" data-i18n="how.eyebrow">Đơn giản trong 3 bước</span>
+          <h2 data-i18n-html="how.title">Thuê xe chưa bao giờ <span class="gradient-text">dễ đến thế</span></h2>
+        </div>
+        <ol class="steps">
+          <li class="step reveal" style="--d:0ms">
+            <span class="step-num">1</span>
+            <div class="step-icon"><svg class="i"><use href="#i-search" /></svg></div>
+            <h3 data-i18n="how.s1">Chọn xe & ngày thuê</h3>
+            <p data-i18n="how.s1d">Lọc theo loại xe, địa điểm và xem ngay giá thuê theo ngày.</p>
+          </li>
+          <li class="step reveal" style="--d:120ms">
+            <span class="step-num">2</span>
+            <div class="step-icon"><svg class="i"><use href="#i-user" /></svg></div>
+            <h3 data-i18n="how.s2">Điền thông tin liên hệ</h3>
+            <p data-i18n="how.s2d">Chỉ cần họ tên, số điện thoại và email. Tổng tiền được tính sẵn.</p>
+          </li>
+          <li class="step reveal" style="--d:240ms">
+            <span class="step-num">3</span>
+            <div class="step-icon"><svg class="i"><use href="#i-car" /></svg></div>
+            <h3 data-i18n="how.s3">Nhận xác nhận & lên đường</h3>
+            <p data-i18n="how.s3d">GoDrive liên hệ xác nhận đơn. Bạn tra cứu trạng thái bất cứ lúc nào.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section" id="about">
+      <div class="container">
+        <div class="center-heading reveal">
+          <span class="eyebrow" data-i18n="why.eyebrow">Vì sao chọn GoDrive?</span>
+          <h2 data-i18n-html="why.title">Trải nghiệm thuê xe <span class="gradient-text">khác biệt</span></h2>
         </div>
         <div class="feature-grid">
-          <article class="feature-card">
-            <div class="feature-icon purple">⌁</div>
-            <h3>Không cần tài khoản</h3>
-            <p>Chỉ cần nhập thông tin liên lạc. Đơn giản, nhanh chóng trong 30 giây.</p>
+          <article class="feature-card reveal" style="--d:0ms">
+            <div class="feature-icon purple"><svg class="i"><use href="#i-zap" /></svg></div>
+            <h3 data-i18n="why.f1">Không cần tài khoản</h3>
+            <p data-i18n="why.f1d">Chỉ cần thông tin liên lạc. Đơn giản, nhanh chóng trong 30 giây.</p>
           </article>
-          <article class="feature-card">
-            <div class="feature-icon orange">▣</div>
-            <h3>Giá cả minh bạch</h3>
-            <p>Không phí ẩn. Biết chính xác bạn sẽ trả bao nhiêu trước khi xác nhận.</p>
+          <article class="feature-card reveal" style="--d:100ms">
+            <div class="feature-icon orange"><svg class="i"><use href="#i-tag" /></svg></div>
+            <h3 data-i18n="why.f2">Giá cả minh bạch</h3>
+            <p data-i18n="why.f2d">Không phí ẩn. Biết chính xác số tiền phải trả trước khi xác nhận.</p>
           </article>
-          <article class="feature-card">
-            <div class="feature-icon green">♧</div>
-            <h3>Hỗ trợ tận tâm</h3>
-            <p>Đội ngũ GoDrive luôn sẵn sàng hỗ trợ bạn 24/7 trong suốt chuyến đi.</p>
+          <article class="feature-card reveal" style="--d:200ms">
+            <div class="feature-icon green"><svg class="i"><use href="#i-shield" /></svg></div>
+            <h3 data-i18n="why.f3">Không lo trùng lịch</h3>
+            <p data-i18n="why.f3d">Hệ thống tự kiểm tra lịch xe, đảm bảo xe luôn sẵn sàng cho bạn.</p>
           </article>
+          <article class="feature-card reveal" style="--d:300ms">
+            <div class="feature-icon blue"><svg class="i"><use href="#i-headset" /></svg></div>
+            <h3 data-i18n="why.f4">Hỗ trợ tận tâm</h3>
+            <p data-i18n="why.f4d">Đội ngũ GoDrive luôn sẵn sàng hỗ trợ bạn 24/7 trong suốt chuyến đi.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-tint" id="faq">
+      <div class="container faq-wrap">
+        <div class="faq-intro reveal">
+          <span class="eyebrow" data-i18n="faq.eyebrow">Hỏi đáp</span>
+          <h2 data-i18n="faq.title">Câu hỏi thường gặp</h2>
+          <p data-i18n-html="faq.desc">Chưa tìm thấy câu trả lời? Gọi ngay <a href="tel:0365551920">0365 551 920</a> để được hỗ trợ.</p>
+        </div>
+        <div class="faq-list reveal" style="--d:120ms">
+          <details class="faq-item" open>
+            <summary data-i18n="faq.q1">Tôi có cần tạo tài khoản để đặt xe không?</summary>
+            <p data-i18n="faq.a1">Không. Bạn chỉ cần nhập họ tên, số điện thoại và email khi đặt xe.</p>
+          </details>
+          <details class="faq-item">
+            <summary data-i18n="faq.q2">Sau khi đặt, khi nào đơn được xác nhận?</summary>
+            <p data-i18n="faq.a2">Đơn mới có trạng thái "Chờ xác nhận". Nhân viên GoDrive sẽ liên hệ với bạn qua số điện thoại đã nhập để xác nhận đơn.</p>
+          </details>
+          <details class="faq-item">
+            <summary data-i18n="faq.q3">Làm sao để xem lại đơn đã đặt?</summary>
+            <p data-i18n="faq.a3">Bấm "Tra cứu đơn" và nhập đúng email cùng số điện thoại đã dùng khi đặt. Cần cả hai thông tin để bảo vệ đơn của bạn.</p>
+          </details>
+          <details class="faq-item">
+            <summary data-i18n="faq.q4">Giá thuê được tính như thế nào?</summary>
+            <p data-i18n="faq.a4">Tổng tiền = giá thuê một ngày × số ngày thuê. Số tiền được hiển thị rõ trước khi bạn bấm xác nhận.</p>
+          </details>
         </div>
       </div>
     </section>
 
     <section class="cta-section" id="contact">
-      <div class="container cta-box">
-        <div><span class="eyebrow light">SẴN SÀNG CHO HÀNH TRÌNH?</span>
-          <h2>Bắt đầu chuyến đi<br>của bạn hôm nay</h2>
+      <div class="container">
+        <div class="cta-box reveal">
+          <div>
+            <span class="eyebrow light" data-i18n="cta.eyebrow">Sẵn sàng cho hành trình?</span>
+            <h2 data-i18n="cta.title">Bắt đầu chuyến đi của bạn hôm nay</h2>
+            <p data-i18n="cta.desc">Hàng loạt mẫu xe đời mới đang chờ bạn tại Hà Nội, TP. Hồ Chí Minh và Đà Nẵng.</p>
+          </div>
+          <div class="cta-actions">
+            <a href="#cars" class="btn btn-white btn-large"><span data-i18n="hero.cta">Tìm xe ngay</span> <svg class="i"><use href="#i-arrow" /></svg></a>
+            <a href="tel:0365551920" class="btn btn-glass btn-large"><svg class="i"><use href="#i-phone" /></svg> 0365 551 920</a>
+          </div>
         </div>
-        <a href="#cars" class="btn btn-white btn-large">Tìm xe ngay <span>→</span></a>
       </div>
     </section>
   </main>
 
   <footer>
     <div class="container footer-grid">
-      <div><a href="#home" class="brand"><span class="brand-icon">G</span><span>Go<span>Ride</span></span></a>
-        <p>Đồng hành cùng bạn trên mọi hành trình.</p>
+      <div>
+        <a href="#home" class="brand"><span class="brand-icon">G</span><span>Go<span>Drive</span></span></a>
+        <p class="footer-about" data-i18n="footer.about">Nền tảng thuê xe tự lái nhanh chóng, minh bạch. Đồng hành cùng bạn trên mọi hành trình.</p>
       </div>
       <div>
-        <h4>Khám phá</h4><a href="#cars">Tìm xe</a><a href="#about">Về chúng tôi</a>
+        <h4 data-i18n="footer.explore">Khám phá</h4>
+        <a href="#cars" data-i18n="nav.cars">Tìm xe</a>
+        <a href="#how" data-i18n="hero.how">Cách thuê xe</a>
+        <a href="#about" data-i18n="footer.aboutUs">Về chúng tôi</a>
       </div>
       <div>
-        <h4>Hỗ trợ</h4><a href="#" id="footerLookupBtn">Tra cứu đơn</a><a href="#contact">Liên hệ</a>
+        <h4 data-i18n="footer.support">Hỗ trợ</h4>
+        <a href="#" id="footerLookupBtn" data-i18n="nav.lookup">Tra cứu đơn</a>
+        <a href="#faq" data-i18n="faq.title">Câu hỏi thường gặp</a>
+        <a href="/admin" data-i18n="footer.admin">Dành cho quản trị</a>
       </div>
       <div>
-        <h4>Liên hệ</h4>
-        <p>support@goride.vn</p>
-        <p>1900 1234</p>
+        <h4 data-i18n="footer.contact">Liên hệ</h4>
+        <a href="mailto:support@godrive.vn" class="footer-contact"><svg class="i"><use href="#i-mail" /></svg> support@godrive.vn</a>
+        <a href="tel:0365551920" class="footer-contact"><svg class="i"><use href="#i-phone" /></svg> 0365 551 920</a>
+        <span class="footer-contact"><svg class="i"><use href="#i-clock" /></svg> <span data-i18n="footer.support247">Hỗ trợ 24/7</span></span>
       </div>
     </div>
-    <div class="copyright">© 2024 GoRide. Bản quyền thuộc về GoRide.</div>
+    <div class="copyright container" data-i18n="footer.copy">© 2026 GoDrive. Bản quyền thuộc về GoDrive.</div>
   </footer>
 
-  <div class="modal hidden" id="bookingModal">
+  <button class="back-to-top" id="backToTop" data-i18n-aria="backTop" aria-label="Lên đầu trang">
+    <svg class="i"><use href="#i-arrow-up" /></svg>
+  </button>
+
+  <div class="modal hidden" id="bookingModal" role="dialog" aria-modal="true" data-i18n-aria="booking.aria" aria-label="Đặt xe">
     <div class="modal-box booking-modal">
-      <button class="modal-close" data-close="bookingModal">×</button>
+      <button class="modal-close" data-close="bookingModal" data-i18n-aria="close" aria-label="Đóng">
+        <svg class="i"><use href="#i-x" /></svg>
+      </button>
       <div id="bookingContent"></div>
     </div>
   </div>
 
-  <div class="modal hidden" id="lookupModal">
+  <div class="modal hidden" id="lookupModal" role="dialog" aria-modal="true" aria-labelledby="lookupTitle">
     <div class="modal-box">
-      <button class="modal-close" data-close="lookupModal">×</button>
+      <button class="modal-close" data-close="lookupModal" data-i18n-aria="close" aria-label="Đóng">
+        <svg class="i"><use href="#i-x" /></svg>
+      </button>
       <div class="modal-logo">
-        <span class="brand-icon">⌕</span>
-        <h2>Tra cứu đơn đặt xe</h2>
-        <p>Nhập Email hoặc Số điện thoại đã dùng khi đặt</p>
+        <span class="modal-icon"><svg class="i"><use href="#i-file" /></svg></span>
+        <h2 id="lookupTitle" data-i18n="lookup.title">Tra cứu đơn đặt xe</h2>
+        <p data-i18n="lookup.desc">Nhập cả Email và Số điện thoại đã dùng khi đặt</p>
       </div>
-      <form id="lookupForm">
-        <label>Email<input type="email" id="lookupEmail" placeholder="email@example.com"></label>
-        <div style="text-align:center;margin:6px 0;color:#aaa;font-size:12px">— HOẶC —</div>
-        <label>Số điện thoại<input type="text" id="lookupPhone" placeholder="0912 345 678"></label>
-        <button class="btn btn-primary full" type="submit">Xem đơn của tôi</button>
+      <form id="lookupForm" novalidate>
+        <label class="field">
+          <span class="field-label">Email</span>
+          <input type="email" id="lookupEmail" placeholder="email@example.com" required autocomplete="email">
+        </label>
+        <label class="field">
+          <span class="field-label" data-i18n="form.phone">Số điện thoại</span>
+          <input type="tel" id="lookupPhone" placeholder="0912345678" required autocomplete="tel" inputmode="numeric" maxlength="10">
+        </label>
+        <button class="btn btn-primary full btn-large" type="submit" id="lookupSubmit">
+          <svg class="i"><use href="#i-search" /></svg> <span data-i18n="lookup.btn">Xem đơn của tôi</span>
+        </button>
       </form>
-      <div id="lookupResults" style="margin-top:16px"></div>
+      <div id="lookupResults" class="lookup-results"></div>
     </div>
   </div>
 

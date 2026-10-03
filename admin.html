@@ -4,351 +4,328 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GoRide Admin Dashboard</title>
-
+    <title>GoDrive Admin</title>
+    <meta name="robots" content="noindex" />
+    <meta name="theme-color" content="#5b3fd9" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='9' fill='%235b3fd9'/><text x='16' y='22' font-family='Arial' font-weight='700' font-size='17' fill='white' text-anchor='middle'>G</text></svg>" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/admin.css" />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Áp dụng chế độ sáng/tối trước khi trang hiển thị để tránh nháy màu
+        (function () {
+            var t = null;
+            try { t = localStorage.getItem("godrive_theme"); } catch (e) { }
+            if (t !== "light" && t !== "dark") t = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+            document.documentElement.setAttribute("data-theme", t);
+        })();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 </head>
 
 <body>
-    <div id="toast"></div>
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+        <defs>
+            <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></symbol>
+            <symbol id="i-clipboard" viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 12h6M9 16h4"/></symbol>
+            <symbol id="i-car" viewBox="0 0 24 24"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9L18.4 10.5 16 7.2a2 2 0 0 0-1.6-.8H9.6a2 2 0 0 0-1.6.8l-2.4 3.3-2.1.6C2.7 11.3 2 12.1 2 13v3c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M9 17h6"/></symbol>
+            <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+            <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M20 12V8H6a2 2 0 0 1 0-4h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></symbol>
+            <symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></symbol>
+            <symbol id="i-lock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+            <symbol id="i-user-plus" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></symbol>
+            <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
+            <symbol id="i-external" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/></symbol>
+            <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16M3 12a9 9 0 0 1 15.5-6.2L21 8M21 3v5h-5M3 21v-5h5"/></symbol>
+            <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></symbol>
+            <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+            <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></symbol>
+            <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></symbol>
+            <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+            <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24M10.73 5.08A10.4 10.4 0 0 1 12 5c6.5 0 10 7 10 7a13.2 13.2 0 0 1-1.67 2.68M6.61 6.61A13.5 13.5 0 0 0 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.39-1.61M2 2l20 20"/></symbol>
+            <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+            <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+            <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+            <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+            <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></symbol>
+            <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+            <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></symbol>
+            <symbol id="i-key" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6M15.5 7.5l3 3L22 7l-3-3"/></symbol>
+            <symbol id="i-trend-up" viewBox="0 0 24 24"><path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/></symbol>
+            <symbol id="i-trend-down" viewBox="0 0 24 24"><path d="m22 17-8.5-8.5-5 5L2 7"/><path d="M16 17h6v-6"/></symbol>
+            <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+            <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></symbol>
+            <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.82 0L6 21"/></symbol>
+            <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></symbol>
+            <symbol id="i-phone" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></symbol>
+            <symbol id="i-mail" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></symbol>
+            <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol>
+            <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+            <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></symbol>
+            <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></symbol>
+            <symbol id="i-play" viewBox="0 0 24 24"><path d="m6 3 14 9-14 9z"/></symbol>
+            <symbol id="i-key-round" viewBox="0 0 24 24"><path d="M15 7h.01M19 7a4 4 0 1 1-7.5 2L3 17.5V21h3.5l1-1v-2h2v-2h2l1.5-1.5A4 4 0 0 1 19 7Z"/></symbol>
+        </defs>
+    </svg>
 
+    <div id="toast" role="status" aria-live="polite"></div>
+
+    <!-- ============ Đăng nhập ============ -->
     <div id="adminLoginWrapper" class="login-wrapper hidden">
-        <div class="login-box">
-            <div class="login-brand">
-                <span class="logo">G</span>
-                <h1>Go<span>Ride</span> Admin</h1>
-                <p>Đăng nhập để truy cập bảng điều khiển</p>
+        <div class="login-art" aria-hidden="true">
+            <div class="login-art-inner">
+                <div class="brand brand-light"><span class="logo">G</span><span>Go<span>Drive</span></span></div>
+                <h2 data-i18n="login.artTitle">Quản lý đội xe chuyên nghiệp, mọi lúc mọi nơi</h2>
+                <ul class="login-points">
+                    <li><svg class="i"><use href="#i-check" /></svg><span data-i18n="login.p1">Theo dõi doanh thu và đơn đặt xe theo thời gian thực</span></li>
+                    <li><svg class="i"><use href="#i-check" /></svg><span data-i18n="login.p2">Quản lý đội xe, lịch bảo trì và khách hàng</span></li>
+                    <li><svg class="i"><use href="#i-check" /></svg><span data-i18n="login.p3">Giao diện sáng/tối và song ngữ Việt - Anh</span></li>
+                </ul>
             </div>
-            <form id="loginForm">
-                <label>Tên đăng nhập
-                    <input type="text" id="loginUsername" placeholder="Tên đăng nhập" required autocomplete="username" />
-                </label>
-                <br>
-                <br>
-                <label>Mật khẩu
-                    <input type="password" id="loginPassword" placeholder="Mật khẩu" required autocomplete="current-password" />
-                </label>
-                <br>
-                <br>
-                <button class="btn btn-primary full" type="submit" id="loginSubmitBtn">Đăng nhập</button>
-            </form>
+        </div>
+        <div class="login-panel">
+            <div class="login-tools">
+                <a href="/" class="text-btn"><svg class="i"><use href="#i-arrow" /></svg><span data-i18n="nav.site">Về trang khách hàng</span></a>
+                <div class="tool-group">
+                    <button class="icon-btn lang-toggle" data-lang-toggle data-i18n-aria="lang.switch" aria-label="Switch to English"><svg class="i"><use href="#i-globe" /></svg><span class="lang-label">EN</span></button>
+                    <button class="icon-btn theme-toggle" data-theme-toggle data-i18n-aria="theme.toggle" aria-label="Đổi chế độ sáng/tối">
+                        <svg class="i icon-sun"><use href="#i-sun" /></svg><svg class="i icon-moon"><use href="#i-moon" /></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="login-box">
+                <div class="login-brand">
+                    <span class="logo">G</span>
+                    <h1 data-i18n="login.title">Chào mừng trở lại</h1>
+                    <p data-i18n="login.subtitle">Đăng nhập để truy cập bảng điều khiển GoDrive</p>
+                </div>
+                <form id="loginForm" novalidate>
+                    <label class="field">
+                        <span class="field-label" data-i18n="login.username">Tên đăng nhập hoặc email</span>
+                        <span class="input-icon">
+                            <svg class="i"><use href="#i-users" /></svg>
+                            <input type="text" id="loginUsername" required autocomplete="username" />
+                        </span>
+                    </label>
+                    <label class="field">
+                        <span class="field-label" data-i18n="login.password">Mật khẩu</span>
+                        <span class="input-icon">
+                            <svg class="i"><use href="#i-lock" /></svg>
+                            <input type="password" id="loginPassword" required autocomplete="current-password" />
+                            <button type="button" class="pwd-toggle" id="pwdToggle" data-i18n-aria="login.showPwd" aria-label="Hiện mật khẩu">
+                                <svg class="i"><use href="#i-eye" /></svg>
+                            </button>
+                        </span>
+                    </label>
+                    <p class="form-error hidden" id="loginError"></p>
+                    <button class="btn btn-primary full btn-large" type="submit" id="loginSubmitBtn"><span data-i18n="login.submit">Đăng nhập</span></button>
+                </form>
+                <p class="login-foot"><svg class="i"><use href="#i-shield" /></svg><span data-i18n="login.foot">Khu vực dành riêng cho quản trị viên</span></p>
+            </div>
         </div>
     </div>
 
-    <div id="adminAppWrapper" class="hidden">
+    <!-- ============ Ứng dụng ============ -->
+    <div id="adminAppWrapper" class="app hidden">
         <aside class="sidebar" id="adminSidebar">
-            <div class="admin-brand">
-                <span class="logo">G</span>
-                <span>Go<span>Ride</span></span>
-                <button type="button" class="sidebar-close" id="sidebarClose" aria-label="Đóng menu">×</button>
-            </div>
-
-            <div class="admin-profile">
-                <div class="profile-avatar" id="adminAvatar">AD</div>
-                <div>
-                    <strong id="adminName">Admin GoRide</strong>
-                    <small id="adminRole">Quản trị viên</small>
-                </div>
+            <div class="sidebar-head">
+                <div class="brand"><span class="logo">G</span><span>Go<span>Drive</span></span><span class="brand-tag">Admin</span></div>
+                <button type="button" class="icon-btn sidebar-close" id="sidebarClose" data-i18n-aria="nav.closeMenu" aria-label="Đóng menu"><svg class="i"><use href="#i-x" /></svg></button>
             </div>
 
             <nav class="side-nav">
-                <button class="side-link active" data-page="dashboard">
-                    <span>▦</span> Tổng quan
-                </button>
-                <button class="side-link" data-page="bookings">
-                    <span>▤</span> Quản lý đơn
-                </button>
-                <button class="side-link" data-page="fleet">
-                    <span>▱</span> Đội xe
-                </button>
-                <button class="side-link" data-page="customers">
-                    <span>♙</span> Khách hàng
-                </button>
-                <button class="side-link" data-page="payments">
-                    <span>₫</span> Thanh toán
-                </button>
-                <button class="side-link" data-page="maintenance">
-                    <span>⚙</span> Bảo trì
-                </button>
+                <p class="side-label" data-i18n="nav.main">Quản lý</p>
+                <button class="side-link active" data-page="dashboard"><svg class="i"><use href="#i-grid" /></svg><span data-i18n="nav.dashboard">Tổng quan</span></button>
+                <button class="side-link" data-page="bookings"><svg class="i"><use href="#i-clipboard" /></svg><span data-i18n="nav.bookings">Đơn đặt xe</span><span class="side-badge hidden" id="pendingBadge">0</span></button>
+                <button class="side-link" data-page="fleet"><svg class="i"><use href="#i-car" /></svg><span data-i18n="nav.fleet">Đội xe</span></button>
+                <button class="side-link" data-page="customers"><svg class="i"><use href="#i-users" /></svg><span data-i18n="nav.customers">Khách hàng</span></button>
+                <button class="side-link" data-page="payments"><svg class="i"><use href="#i-wallet" /></svg><span data-i18n="nav.payments">Thanh toán</span></button>
+                <button class="side-link" data-page="maintenance"><svg class="i"><use href="#i-wrench" /></svg><span data-i18n="nav.maintenance">Bảo trì</span></button>
+
+                <p class="side-label" data-i18n="nav.system">Hệ thống</p>
+                <button class="side-link" id="adminsSideBtn"><svg class="i"><use href="#i-user-plus" /></svg><span data-i18n="nav.admins">Tài khoản admin</span></button>
+                <button class="side-link" id="changePwdSideBtn"><svg class="i"><use href="#i-key" /></svg><span data-i18n="nav.password">Đổi mật khẩu</span></button>
+                <a class="side-link" href="/" target="_blank" rel="noopener"><svg class="i"><use href="#i-external" /></svg><span data-i18n="nav.site">Về trang khách hàng</span></a>
             </nav>
 
-            <div class="sidebar-bottom">
-                <button class="link-btn" id="changePwdSideBtn">🔒 Đổi mật khẩu</button>
-                <button class="link-btn" id="newAdminSideBtn">+ Tạo admin mới</button>
-                <a href="/" class="back-site">← Về trang khách hàng</a>
-                <button class="logout-btn" id="logoutBtn">⇥ Đăng xuất</button>
+            <div class="sidebar-foot">
+                <div class="profile">
+                    <div class="avatar" id="adminAvatar">AD</div>
+                    <div class="profile-text">
+                        <strong id="adminName">Admin</strong>
+                        <small id="adminRole">admin</small>
+                    </div>
+                    <button class="icon-btn ghost" id="logoutBtn" data-i18n-aria="nav.logout" aria-label="Đăng xuất" data-tip><svg class="i"><use href="#i-logout" /></svg></button>
+                </div>
             </div>
         </aside>
 
         <div class="sidebar-overlay" id="sidebarOverlay" hidden></div>
 
-        <main class="main-content">
+        <main class="main">
             <header class="topbar">
-                <div>
-                    <button class="mobile-menu" id="mobileMenu">☰</button>
+                <button class="icon-btn mobile-menu" id="mobileMenu" data-i18n-aria="nav.openMenu" aria-label="Mở menu"><svg class="i"><use href="#i-menu" /></svg></button>
+                <div class="topbar-title">
                     <h1 id="pageTitle">Tổng quan</h1>
-                    <p id="pageSubtitle">Theo dõi hoạt động kinh doanh của bạn</p>
+                    <p id="pageSubtitle"></p>
                 </div>
-
                 <div class="topbar-actions">
-                    <div class="live-status">
-                        <span class="live-dot"></span>
-                        <span id="connectionText">Đồng bộ JSON</span>
-                    </div>
-                    <button class="icon-btn" id="changePwdBtn" title="Đổi mật khẩu">🔒</button>
-                    <button class="icon-btn" id="newAdminBtn" title="Tạo admin">+</button>
-                    <div class="top-avatar" id="topAvatar">AD</div>
+                    <span class="sync-status" id="syncStatus"><span class="live-dot"></span><span id="lastUpdated"></span></span>
+                    <button class="icon-btn" id="refreshBtn" data-i18n-aria="action.refresh" aria-label="Làm mới"><svg class="i"><use href="#i-refresh" /></svg></button>
+                    <button class="icon-btn lang-toggle" data-lang-toggle data-i18n-aria="lang.switch" aria-label="Switch to English"><svg class="i"><use href="#i-globe" /></svg><span class="lang-label">EN</span></button>
+                    <button class="icon-btn theme-toggle" data-theme-toggle data-i18n-aria="theme.toggle" aria-label="Đổi chế độ sáng/tối">
+                        <svg class="i icon-sun"><use href="#i-sun" /></svg><svg class="i icon-moon"><use href="#i-moon" /></svg>
+                    </button>
+                    <div class="avatar avatar-sm" id="topAvatar">AD</div>
                 </div>
             </header>
 
-            <section class="page page-active" id="dashboardPage">
-                <div class="page-toolbar">
-                    <div>
-                        <span class="last-update">Cập nhật lần cuối: <strong id="lastUpdated">vừa xong</strong></span>
-                    </div>
-                    <button class="btn btn-primary" id="refreshBtn">↻ Làm mới</button>
-                </div>
-
-                <div class="stat-grid">
-                    <div class="stat-card purple-card">
-                        <div class="stat-icon">₫</div>
-                        <span>Doanh thu tháng</span>
-                        <strong id="revenueStat">0 ₫</strong>
-                        <small class="positive">↑ 12.5% so với tháng trước</small>
-                    </div>
-                    <div class="stat-card blue-card">
-                        <div class="stat-icon">▤</div>
-                        <span>Tổng đơn đặt xe</span>
-                        <strong id="bookingStat">0</strong>
-                        <small class="positive">↑ 8.4% so với tháng trước</small>
-                    </div>
-                    <div class="stat-card orange-card">
-                        <div class="stat-icon">▱</div>
-                        <span>Xe đang cho thuê</span>
-                        <strong id="rentedStat">0</strong>
-                        <small id="fleetDetail">Trên tổng số 0 xe</small>
-                    </div>
-                    <div class="stat-card green-card">
-                        <div class="stat-icon">♙</div>
-                        <span>Khách hàng</span>
-                        <strong id="customerStat">0</strong>
-                        <small class="positive">↑ 8.2% so với tháng trước</small>
-                    </div>
-                </div>
-
-                <div class="chart-grid">
-                    <div class="panel revenue-panel">
-                        <div class="panel-header">
-                            <div>
-                                <h2>Doanh thu</h2>
-                                <p>Thống kê doanh thu trong 7 ngày gần nhất</p>
-                            </div>
-                            <select id="revenueRange">
-                                <option value="7">7 ngày qua</option>
-                                <option value="30">30 ngày qua</option>
-                            </select>
-                        </div>
-                        <div class="chart-container">
-                            <canvas id="revenueChart"></canvas>
-                        </div>
-                    </div>
-
-                    <div class="panel status-panel">
-                        <div class="panel-header">
-                            <div>
-                                <h2>Trạng thái đơn</h2>
-                                <p>Cập nhật theo thời gian thực</p>
-                            </div>
-                        </div>
-                        <div class="donut-wrapper">
-                            <canvas id="bookingStatusChart"></canvas>
-                            <div class="donut-center">
-                                <strong id="totalBookingCenter">0</strong>
-                                <span>Tổng đơn</span>
-                            </div>
-                        </div>
-                        <div class="legend" id="bookingLegend"></div>
-                    </div>
-                </div>
-
-                <div class="bottom-grid">
-                    <div class="panel">
-                        <div class="panel-header">
-                            <div>
-                                <h2>Đơn đặt xe gần đây</h2>
-                                <p>Các đơn mới nhất trong hệ thống</p>
-                            </div>
-                            <button class="text-btn" data-go="bookings">Xem tất cả →</button>
-                        </div>
-                        <div class="table-scroll">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Mã đơn</th>
-                                        <th>Khách hàng</th>
-                                        <th>Xe</th>
-                                        <th>Ngày thuê</th>
-                                        <th>Tổng tiền</th>
-                                        <th>Trạng thái</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="recentBookings"></tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <div class="panel">
-                        <div class="panel-header">
-                            <div>
-                                <h2>Tình trạng đội xe</h2>
-                                <p>Cập nhật trực tiếp</p>
-                            </div>
-                            <button class="text-btn" data-go="fleet">Quản lý →</button>
-                        </div>
-                        <div class="fleet-summary">
-                            <div class="fleet-circle">
-                                <span id="availablePercent">0%</span>
-                                <small>xe sẵn sàng</small>
-                            </div>
-                            <div class="fleet-list">
-                                <div><i class="dot available-dot"></i><span>Đang rảnh</span><strong id="availableCount">0</strong></div>
-                                <div><i class="dot rented-dot"></i><span>Đang thuê</span><strong id="rentedCount">0</strong></div>
-                                <div><i class="dot maintenance-dot"></i><span>Bảo trì</span><strong id="maintenanceCount">0</strong></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section class="page" id="bookingsPage">
-                <div class="page-toolbar">
-                    <div class="filter-group">
-                        <input type="search" id="bookingSearch" placeholder="Tìm theo mã đơn, khách hàng..." />
-                        <select id="bookingStatusFilter">
-                            <option value="all">Tất cả trạng thái</option>
-                            <option value="pending">Chờ duyệt</option>
-                            <option value="confirmed">Đã xác nhận</option>
-                            <option value="cancelled">Đã hủy</option>
-                        </select>
-                    </div>
-                    <button class="btn btn-primary" id="exportBookings">↓ Xuất báo cáo</button>
-                </div>
-                <div class="panel">
-                    <div class="panel-header">
-                        <div>
-                            <h2>Tất cả đơn đặt xe</h2>
-                            <p id="bookingResultCount">0 đơn</p>
-                        </div>
-                        <span class="realtime-label"><span class="live-dot"></span> Live</span>
-                    </div>
-                    <div class="table-scroll">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Mã đơn</th>
-                                    <th>Khách hàng</th>
-                                    <th>Xe</th>
-                                    <th>Thời gian</th>
-                                    <th>Tổng tiền</th>
-                                    <th>Trạng thái</th>
-                                    <th>Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody id="allBookings"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-            <section class="page" id="fleetPage">
-                <div class="page-toolbar">
-                    <div class="filter-group">
-                        <input type="search" id="fleetSearch" placeholder="Tìm xe..." />
-                        <select id="fleetStatusFilter">
-                            <option value="all">Tất cả trạng thái</option>
-                            <option value="available">Rảnh</option>
-                            <option value="rented">Đã thuê</option>
-                            <option value="maintenance">Bảo trì</option>
-                        </select>
-                    </div>
-                    <button class="btn btn-primary" id="addCarBtn">+ Thêm xe</button>
-                </div>
-                <div class="fleet-card-grid" id="fleetCards"></div>
-            </section>
-
-            <section class="page" id="customersPage"></section>
-            <section class="page" id="paymentsPage"></section>
-            <section class="page" id="maintenancePage"></section>
+            <div class="content">
+                <section class="page page-active" id="dashboardPage"></section>
+                <section class="page" id="bookingsPage"></section>
+                <section class="page" id="fleetPage"></section>
+                <section class="page" id="customersPage"></section>
+                <section class="page" id="paymentsPage"></section>
+                <section class="page" id="maintenancePage"></section>
+            </div>
         </main>
     </div>
 
-    <div class="modal hidden" id="carModal">
-        <div class="modal-box">
-            <button class="modal-close" data-close="carModal">×</button>
-            <h2 id="carModalTitle">Thêm xe mới</h2>
-            <form id="carForm">
+    <!-- ============ Modals ============ -->
+    <div class="modal hidden" id="carModal" role="dialog" aria-modal="true" aria-labelledby="carModalTitle">
+        <div class="modal-box modal-lg">
+            <div class="modal-head">
+                <h2 id="carModalTitle"></h2>
+                <button class="icon-btn ghost" data-close="carModal" data-i18n-aria="action.close" aria-label="Đóng"><svg class="i"><use href="#i-x" /></svg></button>
+            </div>
+            <form id="carForm" novalidate>
                 <input type="hidden" id="carId" />
-                <input type="hidden" id="carImage" />
-                <div class="car-image-editor">
-                    <div class="car-image-preview" id="carImagePreview">
-                        <span id="carImagePlaceholder">Chưa có ảnh</span>
-                        <img id="carImagePreviewImg" alt="Ảnh xe" hidden />
+                <div class="car-editor">
+                    <div class="car-preview" id="carImagePreview">
+                        <span class="car-preview-empty" id="carImagePlaceholder"><svg class="i"><use href="#i-image" /></svg><span data-i18n="car.noImage">Chưa có ảnh</span></span>
+                        <img id="carImagePreviewImg" alt="" hidden />
                     </div>
-                    <div class="car-image-actions">
-                        <label>Link ảnh xe
+                    <div class="car-editor-fields">
+                        <label class="field"><span class="field-label" data-i18n="car.imageUrl">Link ảnh xe</span>
                             <input type="url" id="carImageUrl" placeholder="https://example.com/car.jpg" />
                         </label>
-                        <button type="button" class="btn btn-outline full" id="carImageClearBtn">Xóa ảnh</button>
-                        <p class="car-image-hint">Dán URL ảnh (JPG, PNG, WEBP…)</p>
+                        <p class="field-hint" data-i18n="car.imageHint">Dán URL ảnh bắt đầu bằng https:// (JPG, PNG, WEBP)</p>
+                        <button type="button" class="btn btn-outline btn-sm" id="carImageClearBtn"><svg class="i"><use href="#i-trash" /></svg><span data-i18n="car.clearImage">Xóa ảnh</span></button>
                     </div>
                 </div>
-                <label>Tên xe <input id="carName" required placeholder="Toyota Camry" /></label>
-                <label>Hãng xe <input id="carBrand" required placeholder="Toyota" /></label>
-                <label>Loại xe
-                    <select id="carType">
-                        <option value="Sedan">Sedan</option>
-                        <option value="SUV">SUV</option>
-                        <option value="Hatchback">Hatchback</option>
-                    </select>
-                </label>
-                <label>Số chỗ <input id="carSeats" required type="number" min="2" value="5" /></label>
-                <label>Giá thuê/ngày <input id="carPrice" required type="number" min="0" /></label>
-                <label>Địa điểm <input id="carLocation" required value="Hà Nội" /></label>
-                <button class="btn btn-primary full" type="submit" id="carSaveBtn">Lưu thông tin</button>
+                <div class="form-grid">
+                    <label class="field"><span class="field-label" data-i18n="car.name">Tên xe *</span><input id="carName" required placeholder="Toyota Camry" /></label>
+                    <label class="field"><span class="field-label" data-i18n="car.brand">Hãng xe</span><input id="carBrand" placeholder="Toyota" /></label>
+                    <label class="field"><span class="field-label" data-i18n="car.type">Loại xe</span>
+                        <select id="carType">
+                            <option value="Sedan">Sedan</option>
+                            <option value="SUV">SUV</option>
+                            <option value="Hatchback">Hatchback</option>
+                        </select>
+                    </label>
+                    <label class="field"><span class="field-label" data-i18n="car.seats">Số chỗ</span><input id="carSeats" required type="number" min="1" max="50" value="5" /></label>
+                    <label class="field"><span class="field-label" data-i18n="car.price">Giá thuê / ngày (₫) *</span><input id="carPrice" required type="number" min="1" step="10000" /></label>
+                    <label class="field"><span class="field-label" data-i18n="car.location">Địa điểm</span>
+                        <select id="carLocation">
+                            <option value="Hà Nội">Hà Nội</option>
+                            <option value="TP. Hồ Chí Minh">TP. Hồ Chí Minh</option>
+                            <option value="Đà Nẵng">Đà Nẵng</option>
+                        </select>
+                    </label>
+                </div>
+                <label class="check-field"><input type="checkbox" id="carFeatured" /><span data-i18n="car.featured">Đánh dấu là xe nổi bật trên trang khách</span></label>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-ghost" data-close="carModal" data-i18n="action.cancel">Hủy</button>
+                    <button class="btn btn-primary" type="submit" id="carSaveBtn"><span data-i18n="action.save">Lưu thông tin</span></button>
+                </div>
             </form>
         </div>
     </div>
 
-    <div class="modal hidden" id="changePwdModal">
+    <div class="modal hidden" id="maintModal" role="dialog" aria-modal="true" aria-labelledby="maintModalTitle">
         <div class="modal-box">
-            <button class="modal-close" data-close="changePwdModal">×</button>
-            <h2>Đổi mật khẩu</h2>
-            <form id="changePwdForm">
-                <label>Mật khẩu cũ <input type="password" id="pwdOld" required placeholder="••••••" /></label>
-                <label>Mật khẩu mới <input type="password" id="pwdNew" required placeholder="Ít nhất 6 ký tự" /></label>
-                <label>Xác nhận mật khẩu mới <input type="password" id="pwdNew2" required placeholder="Nhập lại" /></label>
-                <button class="btn btn-primary full" type="submit" id="changePwdBtn">Cập nhật mật khẩu</button>
+            <div class="modal-head">
+                <h2 id="maintModalTitle" data-i18n="maint.new">Lên lịch bảo trì</h2>
+                <button class="icon-btn ghost" data-close="maintModal" data-i18n-aria="action.close" aria-label="Đóng"><svg class="i"><use href="#i-x" /></svg></button>
+            </div>
+            <form id="maintForm" novalidate>
+                <label class="field"><span class="field-label" data-i18n="maint.car">Xe *</span><select id="m_car" required></select></label>
+                <label class="field"><span class="field-label" data-i18n="maint.type">Hạng mục *</span><input id="m_type" required /></label>
+                <div class="form-grid">
+                    <label class="field"><span class="field-label" data-i18n="maint.start">Ngày bắt đầu</span><input id="m_start" type="date" required /></label>
+                    <label class="field"><span class="field-label" data-i18n="maint.end">Ngày kết thúc</span><input id="m_end" type="date" required /></label>
+                </div>
+                <label class="field"><span class="field-label" data-i18n="maint.cost">Chi phí dự kiến (₫)</span><input id="m_cost" type="number" min="0" step="10000" value="0" /></label>
+                <label class="field"><span class="field-label" data-i18n="maint.note">Ghi chú</span><textarea id="m_note" rows="3"></textarea></label>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-ghost" data-close="maintModal" data-i18n="action.cancel">Hủy</button>
+                    <button class="btn btn-primary" type="submit" id="maintSaveBtn"><span data-i18n="maint.save">Lên lịch</span></button>
+                </div>
             </form>
         </div>
     </div>
 
-    <div class="modal hidden" id="newAdminModal">
+    <div class="modal hidden" id="bookingModal" role="dialog" aria-modal="true" aria-labelledby="bookingModalTitle">
         <div class="modal-box">
-            <button class="modal-close" data-close="newAdminModal">×</button>
-            <h2>Tạo tài khoản Admin</h2>
-            <form id="newAdminForm">
-                <label>Tên hiển thị <input id="a_name" required placeholder="Nguyễn Văn B" /></label>
-                <label>Username (đăng nhập) <input id="a_user" required placeholder="admin2" /></label>
-                <label>Email <input id="a_email" type="email" placeholder="admin2@goride.vn" /></label>
-                <label>Mật khẩu <input id="a_pwd" required type="password" placeholder="Ít nhất 6 ký tự" /></label>
-                <button class="btn btn-primary full" type="submit" id="newAdminBtnSubmit">Tạo tài khoản</button>
+            <div class="modal-head">
+                <h2 id="bookingModalTitle"></h2>
+                <button class="icon-btn ghost" data-close="bookingModal" data-i18n-aria="action.close" aria-label="Đóng"><svg class="i"><use href="#i-x" /></svg></button>
+            </div>
+            <div id="bookingDetail"></div>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="changePwdModal" role="dialog" aria-modal="true" aria-labelledby="pwdTitle">
+        <div class="modal-box">
+            <div class="modal-head">
+                <h2 id="pwdTitle" data-i18n="nav.password">Đổi mật khẩu</h2>
+                <button class="icon-btn ghost" data-close="changePwdModal" data-i18n-aria="action.close" aria-label="Đóng"><svg class="i"><use href="#i-x" /></svg></button>
+            </div>
+            <form id="changePwdForm" novalidate>
+                <label class="field"><span class="field-label" data-i18n="pwd.old">Mật khẩu hiện tại</span><input type="password" id="pwdOld" required autocomplete="current-password" /></label>
+                <label class="field"><span class="field-label" data-i18n="pwd.new">Mật khẩu mới (ít nhất 6 ký tự)</span><input type="password" id="pwdNew" required autocomplete="new-password" /></label>
+                <div class="pwd-meter" id="pwdMeter"><span></span></div>
+                <label class="field"><span class="field-label" data-i18n="pwd.confirm">Nhập lại mật khẩu mới</span><input type="password" id="pwdNew2" required autocomplete="new-password" /></label>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-ghost" data-close="changePwdModal" data-i18n="action.cancel">Hủy</button>
+                    <button class="btn btn-primary" type="submit" id="pwdSaveBtn"><span data-i18n="pwd.save">Cập nhật mật khẩu</span></button>
+                </div>
             </form>
-            <div id="adminsList" style="margin-top:22px;padding-top:18px;border-top:1px solid #eee"></div>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="adminsModal" role="dialog" aria-modal="true" aria-labelledby="adminsTitle">
+        <div class="modal-box modal-lg">
+            <div class="modal-head">
+                <h2 id="adminsTitle" data-i18n="nav.admins">Tài khoản admin</h2>
+                <button class="icon-btn ghost" data-close="adminsModal" data-i18n-aria="action.close" aria-label="Đóng"><svg class="i"><use href="#i-x" /></svg></button>
+            </div>
+            <div id="adminsList" class="admins-list"></div>
+            <p class="form-section-title" data-i18n="admins.create">Tạo tài khoản mới</p>
+            <form id="newAdminForm" novalidate>
+                <div class="form-grid">
+                    <label class="field"><span class="field-label" data-i18n="admins.name">Tên hiển thị *</span><input id="a_name" required /></label>
+                    <label class="field"><span class="field-label" data-i18n="admins.username">Username *</span><input id="a_user" required autocomplete="off" placeholder="admin2" /></label>
+                    <label class="field"><span class="field-label">Email</span><input id="a_email" type="email" placeholder="admin2@godrive.vn" /></label>
+                    <label class="field"><span class="field-label" data-i18n="admins.password">Mật khẩu * (≥ 6 ký tự)</span><input id="a_pwd" required type="password" autocomplete="new-password" /></label>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn btn-primary" type="submit" id="adminSaveBtn"><svg class="i"><use href="#i-user-plus" /></svg><span data-i18n="admins.submit">Tạo tài khoản</span></button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal hidden" id="confirmModal" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle">
+        <div class="modal-box modal-sm">
+            <div class="confirm-icon" id="confirmIcon"><svg class="i"><use href="#i-alert" /></svg></div>
+            <h2 id="confirmTitle"></h2>
+            <p id="confirmText"></p>
+            <div class="modal-actions center">
+                <button class="btn btn-ghost" id="confirmCancel" data-i18n="action.cancel">Hủy</button>
+                <button class="btn btn-danger" id="confirmOk"></button>
+            </div>
         </div>
     </div>
 

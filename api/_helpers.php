@@ -9,8 +9,27 @@ if ($_SERVER["REQUEST_METHOD"] === "OPTIONS") {
     exit;
 }
 
+date_default_timezone_set("Asia/Ho_Chi_Minh");
+
 define("DATA_DIR", dirname(__DIR__) . DIRECTORY_SEPARATOR . "data");
-define("JWT_SECRET", "goride-secret-key-2024");
+
+// Secret ký token: ưu tiên biến môi trường GODRIVE_JWT_SECRET, nếu không có thì
+// tự sinh ngẫu nhiên một lần và lưu vào data/.jwt_secret (thư mục data bị chặn truy cập web).
+function load_jwt_secret() {
+    $env = getenv("GODRIVE_JWT_SECRET");
+    if ($env !== false && strlen($env) >= 16) return $env;
+
+    $file = DATA_DIR . DIRECTORY_SEPARATOR . ".jwt_secret";
+    if (!is_dir(DATA_DIR)) mkdir(DATA_DIR, 0755, true);
+    if (is_file($file)) {
+        $secret = trim((string)file_get_contents($file));
+        if (strlen($secret) >= 32) return $secret;
+    }
+    $secret = bin2hex(random_bytes(32));
+    file_put_contents($file, $secret, LOCK_EX);
+    return $secret;
+}
+define("JWT_SECRET", load_jwt_secret());
 
 function ensure_data_dir() {
     if (!is_dir(DATA_DIR)) {
@@ -28,17 +47,34 @@ function read_json($file) {
     if (!file_exists($path)) {
         return [];
     }
-    $raw = file_get_contents($path);
+    $fh = fopen($path, "rb");
+    if (!$fh) return [];
+    flock($fh, LOCK_SH);
+    $raw = stream_get_contents($fh);
+    flock($fh, LOCK_UN);
+    fclose($fh);
     $data = json_decode($raw, true);
     return is_array($data) ? $data : [];
 }
 
 function write_json($file, $data) {
     ensure_data_dir();
-    file_put_contents(
+    $ok = file_put_contents(
         json_path($file),
-        json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
+        json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),
+        LOCK_EX
     );
+    if ($ok === false) fail("Không ghi được dữ liệu", 500);
+}
+
+// Request ghi dữ liệu (POST/PUT/PATCH/DELETE) chạy tuần tự: giữ khóa độc quyền
+// đến khi script kết thúc để hai request đọc-sửa-ghi không đè lên nhau.
+function acquire_write_lock() {
+    static $handle = null;
+    if ($handle) return;
+    ensure_data_dir();
+    $handle = fopen(json_path(".write.lock"), "c");
+    if ($handle) flock($handle, LOCK_EX);
 }
 
 function body_json() {
@@ -130,6 +166,55 @@ function method() {
     return strtoupper($_SERVER["REQUEST_METHOD"] ?? "GET");
 }
 
+if (!in_array(method(), ["GET", "HEAD", "OPTIONS"], true)) {
+    acquire_write_lock();
+}
+
 function action() {
     return isset($_GET["action"]) ? $_GET["action"] : "";
+}
+
+// ===== Validate đầu vào =====
+const BOOKING_STATUSES = ["pending", "confirmed", "cancelled"];
+const CAR_STATUSES = ["available", "rented", "maintenance"];
+const CAR_TYPES = ["Sedan", "SUV", "Hatchback"];
+const MAINT_STATUSES = ["scheduled", "in_progress", "completed"];
+
+function clean_str($value, $max = 200) {
+    $value = is_scalar($value) ? trim((string)$value) : "";
+    $value = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', "", $value) ?? "";
+    // Cắt theo ký tự UTF-8 (không dùng mbstring vì hosting có thể không bật)
+    if (preg_match('/^.{0,' . (int)$max . '}/su', $value, $m)) return $m[0];
+    return substr($value, 0, $max);
+}
+
+function valid_date($value) {
+    if (!is_string($value)) return false;
+    $d = DateTime::createFromFormat("Y-m-d", $value);
+    return $d && $d->format("Y-m-d") === $value;
+}
+
+// Số điện thoại: chỉ gồm chữ số, 9-10 số
+function valid_phone($value) {
+    return (bool)preg_match('/^\d{9,10}$/', $value);
+}
+
+// Họ tên: chỉ gồm chữ cái (kể cả tiếng Việt có dấu), các từ cách nhau một khoảng trắng
+function valid_name($value) {
+    return (bool)preg_match('/^[\p{L}\p{M}]+(?: [\p{L}\p{M}]+)*$/u', $value);
+}
+
+// Chỉ cho phép ảnh http(s) hoặc để trống.
+function clean_image_url($value) {
+    $url = is_scalar($value) ? trim((string)$value) : "";
+    if ($url === "") return "";
+    if (strlen($url) > 2000 || !preg_match("#^https?://#i", $url)) {
+        fail("Link ảnh phải bắt đầu bằng http:// hoặc https://");
+    }
+    return $url;
+}
+
+function require_enum($value, $allowed, $label) {
+    if (!in_array($value, $allowed, true)) fail("$label không hợp lệ");
+    return $value;
 }

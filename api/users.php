@@ -18,16 +18,27 @@ if ($action === "maintenance") {
     if ($method === "POST") {
         $list = read_json("maintenance.json");
         $data = body_json();
+        $carId = (int)($data["carId"] ?? 0);
+        $car = null;
+        foreach (read_json("cars.json") as $c) {
+            if ((int)$c["id"] === $carId) { $car = $c; break; }
+        }
+        if (!$car) fail("Không tìm thấy xe", 404);
+        $startDate = $data["startDate"] ?? date("Y-m-d");
+        $endDate = $data["endDate"] ?? date("Y-m-d");
+        if (!valid_date($startDate) || !valid_date($endDate) || $endDate < $startDate) fail("Ngày bảo trì không hợp lệ");
+        $cost = (int)($data["cost"] ?? 0);
+        if ($cost < 0) fail("Chi phí không hợp lệ");
         $newItem = [
             "id" => next_id($list),
-            "carId" => (int)($data["carId"] ?? 0),
-            "carName" => $data["carName"] ?? "",
-            "type" => $data["type"] ?? "",
-            "cost" => (int)($data["cost"] ?? 0),
-            "startDate" => $data["startDate"] ?? date("Y-m-d"),
-            "endDate" => $data["endDate"] ?? date("Y-m-d"),
-            "status" => $data["status"] ?? "scheduled",
-            "note" => $data["note"] ?? ""
+            "carId" => $carId,
+            "carName" => $car["name"],
+            "type" => clean_str($data["type"] ?? "", 100),
+            "cost" => $cost,
+            "startDate" => $startDate,
+            "endDate" => $endDate,
+            "status" => require_enum($data["status"] ?? "scheduled", MAINT_STATUSES, "Trạng thái"),
+            "note" => clean_str($data["note"] ?? "", 500)
         ];
         $list[] = $newItem;
         write_json("maintenance.json", $list);
@@ -42,11 +53,25 @@ if ($action === "maintenance") {
         }
         if ($idx < 0) fail("Không tìm thấy", 404);
         $data = body_json();
-        $list[$idx] = array_merge($list[$idx], $data);
-        $list[$idx]["id"] = $id;
-        if (isset($data["cost"])) $list[$idx]["cost"] = (int)$data["cost"];
+        $update = [];
+        if (array_key_exists("type", $data)) $update["type"] = clean_str($data["type"], 100);
+        if (array_key_exists("note", $data)) $update["note"] = clean_str($data["note"], 500);
+        if (array_key_exists("cost", $data)) {
+            $update["cost"] = (int)$data["cost"];
+            if ($update["cost"] < 0) fail("Chi phí không hợp lệ");
+        }
+        foreach (["startDate", "endDate"] as $key) {
+            if (array_key_exists($key, $data)) {
+                if (!valid_date($data[$key])) fail("Ngày bảo trì không hợp lệ");
+                $update[$key] = $data[$key];
+            }
+        }
+        if (array_key_exists("status", $data)) {
+            $update["status"] = require_enum($data["status"], MAINT_STATUSES, "Trạng thái");
+        }
+        $list[$idx] = array_merge($list[$idx], $update);
 
-        $status = $data["status"] ?? "";
+        $status = $update["status"] ?? "";
         if ($status === "in_progress") {
             $cars = read_json("cars.json");
             foreach ($cars as &$c) {

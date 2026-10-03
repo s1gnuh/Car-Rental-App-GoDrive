@@ -3,7 +3,7 @@
     "id": 1,
     "username": "admin",
     "name": "Administrator",
-    "email": "admin@goride.vn",
+    "email": "admin@godrive.vn",
     "passwordHash": "$2y$10$aNkZnurWmVv7SUDo4g5o0.gn5WiQiXkl3bxsrMW/rcB61Hb4aZcPG",
     "createdAt": "2026-09-19T07:19:32.158Z"
   }

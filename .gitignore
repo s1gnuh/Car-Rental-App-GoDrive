@@ -3,3 +3,5 @@ data/*.bak
 .env
 *.log
 .vscode/
+data/.jwt_secret
+data/.write.lock
