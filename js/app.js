@@ -119,6 +119,8 @@ const EN_STATIC = {
     "footer.disclaimer": "Disclaimer",
     "demo.text": "A non-commercial learning project, not a real car rental service. No real bookings or payments.",
     "demo.more": "Read the disclaimer",
+    "demo.short": "A learning project, not a real service.",
+    "demo.moreShort": "Details",
     "backTop": "Back to top",
     "close": "Close",
     "booking.aria": "Book a car",
@@ -1245,12 +1247,15 @@ function initSpotlight() {
     }, { passive: true });
 }
 
-// Dải thông báo "dự án học tập": người xem có thể ẩn, lựa chọn được nhớ trên trình duyệt đó
+// Dải thông báo "dự án học tập" luôn dính ở đầu trang, không tắt được.
+// Chiều cao của dải được đưa vào biến --demo-h để thanh menu và các vị trí cố định nằm ngay bên dưới.
 function initDemoBar() {
     const bar = $("#demoBar");
     if (!bar) return;
-    if (store("godrive_demo_hidden") === "1") bar.remove();
-    else $("#demoClose").onclick = () => { store("godrive_demo_hidden", "1"); bar.remove(); };
+    const sync = () => document.documentElement.style.setProperty("--demo-h", `${bar.offsetHeight}px`);
+    sync();
+    if ("ResizeObserver" in window) new ResizeObserver(sync).observe(bar);
+    else window.addEventListener("resize", sync);
 }
 
 function initHeroCar() {
