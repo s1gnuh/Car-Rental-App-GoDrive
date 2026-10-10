@@ -726,7 +726,7 @@ function renderMarquee() {
     if (!list.length) return;
     const item = ([key, b], hidden) => `
         <button class="marquee-item" data-brand-jump="${esc(key)}" ${hidden ? 'tabindex="-1" aria-hidden="true"' : ""}>
-            <span class="mq-mark">${esc(b.name.charAt(0).toUpperCase())}</span>
+            <span class="mq-mark">${BrandLogos.mark(b.name)}</span>
             <span class="mq-name">${esc(b.name)}</span>
             <small>${esc(t("brandCars", { n: b.count }))}</small>
         </button>`;

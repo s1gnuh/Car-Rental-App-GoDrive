@@ -3182,14 +3182,22 @@ footer .brand:hover {
 }
 
 .mq-mark {
-  width: 34px;
-  height: 34px;
+  height: 32px;
+  flex: none;
   display: grid;
   place-items: center;
-  border-radius: 50%;
-  font-weight: 800;
-  color: #fff;
-  background: linear-gradient(135deg, #7a5cff, var(--primary-700));
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid var(--line);
+  padding: 4px 8px;
+}
+
+.mq-mark img,
+.mq-mark svg {
+  height: 100%;
+  width: auto;
+  max-width: 110px;
+  display: block;
 }
 
 .mq-name {

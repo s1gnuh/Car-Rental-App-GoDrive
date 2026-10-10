@@ -28,7 +28,7 @@ foreach ($page in @("index.html", "admin.html", "disclaimer.html")) {
 }
 
 # 2. Nén các file cần upload (đường dẫn dùng dấu / cho server Linux)
-$items = @("index.html", "admin.html", "disclaimer.html", ".htaccess", "version.json", "api", "css", "js")
+$items = @("index.html", "admin.html", "disclaimer.html", ".htaccess", "version.json", "api", "css", "js", "img")
 if ([System.IO.File]::Exists($Out)) { [System.IO.File]::Delete($Out) }
 $zip = [System.IO.Compression.ZipFile]::Open($Out, "Create")
 try {
