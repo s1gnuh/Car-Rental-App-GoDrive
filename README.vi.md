@@ -302,7 +302,9 @@ Script gắn số phiên bản mới vào `version.json` và các link `?v=` tro
 ├── js/
 │   ├── app.js            # Logic trang khách + bản dịch
 │   ├── admin.js          # Logic trang quản trị + bản dịch
-│   └── car-art.js        # Hình minh họa xe SVG dùng chung
+│   ├── car-art.js        # Hình minh họa xe SVG dùng chung
+│   └── brand-logos.js    # Logo chính thức hãng xe (img/brands/), dùng chung
+├── img/brands/           # File logo PNG dùng bởi brand-logos.js
 ├── api/
 │   ├── _helpers.php      # Lưu JSON, khóa file, token, kiểm tra dữ liệu, hạng khách, đồng bộ thanh toán
 │   ├── login.php         # Đăng nhập, mật khẩu, tài khoản admin

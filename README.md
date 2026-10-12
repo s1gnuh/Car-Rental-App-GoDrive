@@ -302,7 +302,9 @@ The script stamps a new version into `version.json` and the HTML `?v=` links, th
 ├── js/
 │   ├── app.js            # Customer site logic + translations
 │   ├── admin.js          # Admin logic + translations
-│   └── car-art.js        # SVG car illustrations shared by both sites
+│   ├── car-art.js        # SVG car illustrations shared by both sites
+│   └── brand-logos.js    # Official brand logos (img/brands/), shared by both sites
+├── img/brands/           # Brand logo PNGs used by brand-logos.js
 ├── api/
 │   ├── _helpers.php      # JSON storage, locking, tokens, validation, tiers, payment sync
 │   ├── login.php         # Sign-in, password, admin accounts
