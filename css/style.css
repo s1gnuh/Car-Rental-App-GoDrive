@@ -3182,21 +3182,22 @@ footer .brand:hover {
 }
 
 .mq-mark {
-  height: 32px;
+  width: 40px;
+  height: 40px;
   flex: none;
   display: grid;
   place-items: center;
   border-radius: 10px;
   background: #fff;
   border: 1px solid var(--line);
-  padding: 4px 8px;
+  padding: 6px;
 }
 
 .mq-mark img,
 .mq-mark svg {
+  width: 100%;
   height: 100%;
-  width: auto;
-  max-width: 110px;
+  object-fit: contain;
   display: block;
 }
 

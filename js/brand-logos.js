@@ -10,7 +10,8 @@
         }[ch]));
     }
 
-    // Tên file PNG trong img/brands/ (nguồn: Wikimedia Commons, logo chính thức hiện hành của hãng)
+    // Tên file PNG trong img/brands/: chỉ phần biểu tượng (icon), không kèm tên hãng.
+    // Nguồn: Wikimedia Commons (Toyota, VinFast) và Simple Icons - huy hiệu chính hãng hiện hành.
     const LOGOS = {
         toyota: "toyota.png",
         honda: "honda.png",
